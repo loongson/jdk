@@ -1381,7 +1381,7 @@ void MacroAssembler::cmpxchg(Address addr, Register oldval, Register newval,
 
   bind(fail);
   if (barrier)
-    membar(LoadLoad);
+    dbar(0x700);
   if (retold && oldval != R0)
     move(oldval, resflag);
   if (!exchange) {
@@ -1406,7 +1406,7 @@ void MacroAssembler::cmpxchg(Address addr, Register oldval, Register newval,
 
   bind(neq);
   if (barrier)
-    membar(LoadLoad);
+    dbar(0x700);
   if (retold && oldval != R0)
     move(oldval, tmp);
   if (fail)
@@ -1440,7 +1440,7 @@ void MacroAssembler::cmpxchg32(Address addr, Register oldval, Register newval,
 
   bind(fail);
   if (barrier)
-    membar(LoadLoad);
+    dbar(0x700);
   if (retold && oldval != R0)
     move(oldval, resflag);
   if (!exchange) {
@@ -1467,7 +1467,7 @@ void MacroAssembler::cmpxchg32(Address addr, Register oldval, Register newval, R
 
   bind(neq);
   if (barrier)
-    membar(LoadLoad);
+    dbar(0x700);
   if (retold && oldval != R0)
     move(oldval, tmp);
   if (fail)
@@ -3029,10 +3029,14 @@ void MacroAssembler::membar(Membar_mask_bits hint){
   address last = code()->last_insn();
   if (last != nullptr && ((NativeInstruction*)last)->is_sync() && prev == last) {
     code()->set_last_insn(nullptr);
+    NativeMembar *membar = (NativeMembar*)prev;
+    // merged membar
+    // e.g. LoadLoad and LoadLoad|LoadStore to LoadLoad|LoadStore
+    membar->set_hint(membar->get_hint() & (~hint & 0xF));
     block_comment("merged membar");
   } else {
     code()->set_last_insn(pc());
-    dbar(hint);
+    Assembler::membar(hint);
   }
 }
 

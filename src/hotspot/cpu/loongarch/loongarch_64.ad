@@ -10251,7 +10251,8 @@ instruct orL_Reg_P2XReg(mRegL dst, mRegP src1, mRegLorI2L src2) %{
 %}
 
 // Xor Long Register with Register
-instruct xorL_Reg_Reg(mRegL dst, mRegL src1, mRegL src2) %{
+
+instruct xorL_Reg_Reg(mRegL dst, mRegLorI2L src1, mRegLorI2L src2) %{
   match(Set dst (XorL src1 src2));
   format %{ "XOR    $dst, $src1, $src2 @ xorL_Reg_Reg\t" %}
   ins_encode %{
@@ -10260,6 +10261,15 @@ instruct xorL_Reg_Reg(mRegL dst, mRegL src1, mRegL src2) %{
     Register src2_reg = as_Register($src2$$reg);
 
     __ xorr(dst_reg, src1_reg, src2_reg);
+  %}
+  ins_pipe( ialu_reg_reg );
+%}
+
+instruct xorL_Reg_P2XReg(mRegL dst, mRegP src1, mRegLorI2L src2) %{
+  match(Set dst (XorL (CastP2X src1) src2));
+  format %{ "XOR    $dst, $src1, $src2 @ xorL_Reg_P2XReg\t" %}
+  ins_encode %{
+    __ xorr($dst$$Register, $src1$$Register, $src2$$Register);
   %}
   ins_pipe( ialu_reg_reg );
 %}

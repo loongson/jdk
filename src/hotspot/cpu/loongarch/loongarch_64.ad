@@ -3041,6 +3041,15 @@ operand immF_0() %{
   interface(CONST_INTER);
 %}
 
+operand immFVec() %{
+  predicate(UseLSX && Assembler::is_vec_imm(n->getf()));
+  match(ConF);
+
+  op_cost(5);
+  format %{ %}
+  interface(CONST_INTER);
+%}
+
 // Double-precision floating-point immediate
 operand immD() %{
   match(ConD);
@@ -3053,6 +3062,15 @@ operand immD() %{
 // Double-precision floating-point zero
 operand immD_0() %{
   predicate(jlong_cast(n->getd()) == 0);
+  match(ConD);
+
+  op_cost(5);
+  format %{ %}
+  interface(CONST_INTER);
+%}
+
+operand immDVec() %{
+  predicate(UseLSX && Assembler::is_vec_imm(n->getd()));
   match(ConD);
 
   op_cost(5);
@@ -10992,6 +11010,19 @@ instruct loadConF(regF dst, immF src) %{
   ins_pipe( fpu_loadF );
 %}
 
+instruct loadConFVec(regF dst, immFVec src) %{
+  match(Set dst src);
+  ins_cost(50);
+
+  format %{ "vldi  $dst, $src # load FLOAT $src @ loadConFVec" %}
+  ins_encode %{
+    int val = Assembler::get_vec_imm($src$$constant);
+
+    __ vldi($dst$$FloatRegister, val);
+  %}
+  ins_pipe( fpu_loadF );
+%}
+
 
 instruct loadConD_immD_0(regD dst, immD_0 zero) %{
   match(Set dst zero);
@@ -11020,6 +11051,19 @@ instruct loadConD(regD dst, immD src) %{
       __ li(AT, con_offset);
       __ fldx_d($dst$$FloatRegister, $constanttablebase, AT);
     }
+  %}
+  ins_pipe( fpu_loadF );
+%}
+
+instruct loadConDVec(regD dst, immDVec src) %{
+  match(Set dst src);
+  ins_cost(50);
+
+  format %{ "vldi  $dst, $src # load DOUBLE $src @ loadConDVec" %}
+  ins_encode %{
+    int val = Assembler::get_vec_imm($src$$constant);
+
+    __ vldi($dst$$FloatRegister, val);
   %}
   ins_pipe( fpu_loadF );
 %}

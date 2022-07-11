@@ -74,6 +74,32 @@ Address::Address(address loc, RelocationHolder spec) {
   _rspec = spec;
 }
 
+bool Assembler::is_vec_imm(float val) {
+  juint x = *reinterpret_cast<juint*>(&val);
+  juint masked = x & 0x7e07ffff;
+
+  return (masked == 0x3e000000 || masked == 0x40000000);
+}
+
+bool Assembler::is_vec_imm(double val) {
+  julong x = *reinterpret_cast<julong*>(&val);
+  julong masked = x & 0x7fc0ffffffffffff;
+
+  return (masked == 0x3fc0000000000000 || masked == 0x4000000000000000);
+}
+
+int Assembler::get_vec_imm(float val) {
+  juint x = *reinterpret_cast<juint*>(&val);
+
+  return simm13((0b11011 << 8) | (((x >> 24) & 0xc0) ^ 0x40) | ((x >> 19) & 0x3f));
+}
+
+int Assembler::get_vec_imm(double val) {
+  julong x = *reinterpret_cast<julong*>(&val);
+
+  return simm13((0b11100 << 8) | (((x >> 56) & 0xc0) ^ 0x40) | ((x >> 48) & 0x3f));
+}
+
 int AbstractAssembler::code_fill_byte() {
   return 0x00;                  // illegal instruction 0x00000000
 }

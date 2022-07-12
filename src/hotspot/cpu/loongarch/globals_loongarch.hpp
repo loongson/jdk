@@ -105,7 +105,13 @@ define_pd_global(intx, InitArrayShortSize, 8*BytesPerLong);
           "Enables intrinsification of BigInteger.shiftLeft/Right()")       \
                                                                             \
   product(bool, UseActiveCoresMP, false,                                    \
-                "Eliminate barriers for single active cpu")
+                "Eliminate barriers for single active cpu")                 \
+                                                                            \
+  product(uintx, NUMAMinHeapSizePerNode, 128 * M,                           \
+          "The minimum heap size required for each NUMA node to init VM")   \
+                                                                            \
+  product(uintx, NUMAMinG1RegionNumberPerNode, 8,                           \
+          "Min initial region number for per NUMA node while using G1GC")
 
 // end of ARCH_FLAGS
 

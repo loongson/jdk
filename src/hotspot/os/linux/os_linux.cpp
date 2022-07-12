@@ -4394,6 +4394,44 @@ void os::Linux::numa_init() {
       // If there's only one node (they start from 0) or if the process
       // is bound explicitly to a single node using membind, disable NUMA
       UseNUMA = false;
+#ifdef LOONGARCH64
+    } else if (InitialHeapSize < NUMAMinHeapSizePerNode * os::numa_get_groups_num()) {
+      // The MaxHeapSize is not actually used by the JVM unless your program
+      // creates enough objects to require it. A much smaller amount, called
+      // the InitialHeapSize, is allocated during JVM initialization.
+      //
+      // Setting the minimum and maximum heap size to the same value is typically
+      // not a good idea because garbage collection is delayed until the heap is
+      // full. Therefore, the first time that the GC runs, the process can take
+      // longer. Also, the heap is more likely to be fragmented and require a heap
+      // compaction. Start your application with the minimum heap size that your
+      // application requires. When the GC starts up, it runs frequently and
+      // efficiently because the heap is small.
+      //
+      // If the GC cannot find enough garbage, it runs compaction. If the GC finds
+      // enough garbage, or any of the other conditions for heap expansion are met,
+      // the GC expands the heap.
+      //
+      // Therefore, an application typically runs until the heap is full. Then,
+      // successive garbage collection cycles recover garbage. When the heap is
+      // full of live objects, the GC compacts the heap. If sufficient garbage
+      // is still not recovered, the GC expands the heap.
+      if (FLAG_IS_DEFAULT(UseNUMA)) {
+        FLAG_SET_ERGO(UseNUMA, false);
+      } else if (UseNUMA) {
+        log_info(os)("UseNUMA is disabled since insufficient initial heap size.");
+        UseNUMA = false;
+      }
+    } else if (FLAG_IS_CMDLINE(NewSize) &&
+               (NewSize < ScaleForWordSize(1*M) * os::numa_get_groups_num())) {
+      if (FLAG_IS_DEFAULT(UseNUMA)) {
+        FLAG_SET_ERGO(UseNUMA, false);
+      } else if (UseNUMA) {
+        log_info(os)("Handcrafted MaxNewSize should be large enough "
+                     "to avoid GC trigger before VM initialization completed.");
+        UseNUMA = false;
+      }
+#endif
     } else {
       LogTarget(Info,os) log;
       LogStream ls(log);

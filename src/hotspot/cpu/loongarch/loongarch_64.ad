@@ -553,7 +553,7 @@ reg_class all_reg32(
                   /* T7,  AT */
                      T6,
                      T5,
-                  /* T4,  jarl T4 */
+                     T4,
                      T3,
                      T2,
                      T1,
@@ -626,7 +626,7 @@ reg_class all_reg(
                  /* T7, T7_H,  AT */
                     T6, T6_H,
                     T5, T5_H,
-                 /* T4, T4_H,  jalr  T4    */
+                    T4, T4_H,
                     T3, T3_H,
                     T2, T2_H,
                     T1, T1_H,
@@ -926,6 +926,12 @@ void reg_mask_init() {
     _ANY_REG32_mask.Remove(OptoReg::as_OptoReg(r22->as_VMReg()));
     _ANY_REG_mask.SUBTRACT(_FP_REG_mask);
     _PTR_REG_mask.SUBTRACT(_FP_REG_mask);
+  }
+
+  if (UseZGC || UseShenandoahGC) {
+    _ANY_REG32_mask.Remove(OptoReg::as_OptoReg(r16->as_VMReg()));
+    _ANY_REG_mask.SUBTRACT(_T4_LONG_REG_mask);
+    _PTR_REG_mask.SUBTRACT(_T4_LONG_REG_mask);
   }
 }
 
@@ -2366,12 +2372,12 @@ encode %{
   %}
 
 
-  enc_class enc_PartialSubtypeCheck(mRegP result, mRegP sub, mRegP super, mRegI tmp) %{
+  enc_class enc_PartialSubtypeCheck(mRegP result, mRegP sub, mRegP super, mRegI tmp, mRegI tmp2) %{
     Register result = $result$$Register;
     Register sub    = $sub$$Register;
     Register super  = $super$$Register;
     Register length = $tmp$$Register;
-    Register tmp    = T4;
+    Register tmp    = $tmp2$$Register;
     Label miss;
 
     // result may be the same as sub
@@ -8258,9 +8264,9 @@ instruct cmpD3_reg_reg(mRegI dst, regD src1, regD src2) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct clear_array(t8RegL cnt, t3_RegP base, Universe dummy) %{
+instruct clear_array(t8RegL cnt, t3_RegP base, Universe dummy, mRegI tmp) %{
   match(Set dummy (ClearArray cnt base));
-  effect(USE_KILL base);
+  effect(USE_KILL base, TEMP tmp);
   format %{ "CLEAR_ARRAY base = $base, cnt = $cnt # Clear doublewords" %}
   ins_encode %{
     // Assume cnt is the number of bytes in an array to be cleared,
@@ -8268,7 +8274,7 @@ instruct clear_array(t8RegL cnt, t3_RegP base, Universe dummy) %{
     Register base = $base$$Register;
     Register cnt = $cnt$$Register;
     Register end = SCR1;
-    Register tmp = SCR2;
+    Register tmp = $tmp$$Register;
     FloatRegister zero = fscratch;
     Label inthead, intloop, done;
     Label loop, lt16, lt32;
@@ -8380,10 +8386,10 @@ instruct clear_array_imm(immL cnt, t3_RegP base, Universe dummy) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct clear_array_imm_lsx(immL_gt_7 cnt, t3_RegP base, Universe dummy) %{
+instruct clear_array_imm_lsx(immL_gt_7 cnt, t3_RegP base, Universe dummy, mRegI tmp) %{
   predicate(UseLSX);
   match(Set dummy (ClearArray cnt base));
-  effect(USE_KILL base);
+  effect(USE_KILL base, TEMP tmp);
   ins_cost(80);
   format %{ "CLEAR_ARRAY base = $base, cnt = $cnt # Clear doublewords by LSX" %}
   ins_encode %{
@@ -8391,7 +8397,7 @@ instruct clear_array_imm_lsx(immL_gt_7 cnt, t3_RegP base, Universe dummy) %{
     // and base points to the starting address of the array.
     Register base = $base$$Register;
     Register end = SCR1;
-    Register tmp = SCR2;
+    Register tmp = $tmp$$Register;
     FloatRegister zero = fscratch;
     long cnt  = $cnt$$constant;
     Label loop, lt16;
@@ -8424,10 +8430,10 @@ instruct clear_array_imm_lsx(immL_gt_7 cnt, t3_RegP base, Universe dummy) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct clear_array_imm_lasx(immL_gt_15 cnt, t3_RegP base, Universe dummy) %{
+instruct clear_array_imm_lasx(immL_gt_15 cnt, t3_RegP base, Universe dummy, mRegI tmp) %{
   predicate(UseLASX && false);
   match(Set dummy (ClearArray cnt base));
-  effect(USE_KILL base);
+  effect(USE_KILL base, TEMP tmp);
   ins_cost(60);
   format %{ "CLEAR_ARRAY base = $base, cnt = $cnt # Clear doublewords by LASX" %}
   ins_encode %{
@@ -8435,7 +8441,7 @@ instruct clear_array_imm_lasx(immL_gt_15 cnt, t3_RegP base, Universe dummy) %{
     // and base points to the starting address of the array.
     Register base = $base$$Register;
     Register end = SCR1;
-    Register tmp = SCR2;
+    Register tmp = $tmp$$Register;
     FloatRegister zero = fscratch;
     long cnt  = $cnt$$constant;
     Label loop, lt32;
@@ -11320,13 +11326,13 @@ instruct leaPIdxScale(mRegP dst, mRegP reg, mRegLorI2L lreg, immI_0_3 scale)
 // array for an instance of the superklass.  Set a hidden internal cache on a
 // hit (cache is checked with exposed code in gen_subtype_check()).  Return
 // NZ for a miss or zero for a hit.  The encoding ALSO sets flags.
-instruct partialSubtypeCheck( mRegP result, no_T8_mRegP sub, no_T8_mRegP super, mT8RegI tmp ) %{
+instruct partialSubtypeCheck( mRegP result, no_T8_mRegP sub, no_T8_mRegP super, mRegI tmp2,  mT8RegI tmp ) %{
   match(Set result (PartialSubtypeCheck sub super));
-  effect(KILL tmp);
+  effect(KILL tmp, TEMP tmp2);
   ins_cost(1100);  // slightly larger than the next version
   format %{ "partialSubtypeCheck result=$result, sub=$sub, super=$super, tmp=$tmp " %}
 
-  ins_encode( enc_PartialSubtypeCheck(result, sub, super, tmp) );
+  ins_encode( enc_PartialSubtypeCheck(result, sub, super, tmp, tmp2) );
   ins_pipe( pipe_slow );
 %}
 

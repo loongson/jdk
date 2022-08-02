@@ -190,8 +190,8 @@ void MacroAssembler::patchable_jump_far(Register ra, jlong offs) {
   jint si18, si20;
   guarantee(is_simm(offs, 38), "Not signed 38-bit offset");
   split_simm38(offs, si18, si20);
-  pcaddu18i(T4, si20);
-  jirl(ra, T4, si18);
+  pcaddu18i(AT, si20);
+  jirl(ra, AT, si18);
 }
 
 void MacroAssembler::patchable_jump(address target, bool force_patchable) {
@@ -294,9 +294,9 @@ address MacroAssembler::emit_trampoline_stub(int insts_call_instruction_offset,
   // Now, create the trampoline stub's code:
   // - load the call
   // - call
-  pcaddi(T4, 0);
-  ld_d(T4, T4, 16);
-  jr(T4);
+  pcaddi(AT, 0);
+  ld_d(AT, AT, 16);
+  jr(AT);
   nop();  //align
   assert(offset() - stub_start_offset == NativeCallTrampolineStub::data_offset,
          "should be");
@@ -678,9 +678,9 @@ void MacroAssembler::call(address entry, RelocationHolder& rh){
 
 void MacroAssembler::call_long(address entry) {
   jlong value = (jlong)entry;
-  lu12i_w(T4, split_low20(value >> 12));
-  lu32i_d(T4, split_low20(value >> 32));
-  jirl(RA, T4, split_low12(value));
+  lu12i_w(AT, split_low20(value >> 12));
+  lu32i_d(AT, split_low20(value >> 32));
+  jirl(RA, AT, split_low12(value));
 }
 
 address MacroAssembler::ic_call(address entry, jint method_index) {
@@ -1418,7 +1418,7 @@ void MacroAssembler::verify_oop_subroutine() {
   // A0: char* error message
   // A1: oop   object to verify
   Label exit, error;
-  // increment counter
+  // increment counter, SCR2 has be saved in caller verify_oop
   li(SCR2, (long)StubRoutines::verify_oop_count_addr());
   ld_w(SCR1, SCR2, 0);
   addi_d(SCR1, SCR1, 1);

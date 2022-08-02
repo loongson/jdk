@@ -32,8 +32,6 @@
 
 #define __ masm->
 
-#define T4 RT4
-
 #ifdef PRODUCT
 #define BLOCK_COMMENT(str) /* nothing */
 #else

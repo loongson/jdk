@@ -178,6 +178,8 @@ REGISTER_DECLARATION(Register, R31,   r31);
 #define V1       RA1
 
 #define SCR1     RT7
+
+// SCR2 is allocable in C2 Compiler
 #define SCR2     RT4
 
 //for interpreter frame

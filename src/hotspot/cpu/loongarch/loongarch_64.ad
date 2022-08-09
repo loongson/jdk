@@ -565,7 +565,8 @@ reg_class all_reg32(
                      A3,
                      A2,
                      A1,
-                     A0 );
+                     A0,
+                     FP );
 
 reg_class int_reg %{
   return _ANY_REG32_mask;
@@ -637,7 +638,8 @@ reg_class all_reg(
                     A3, A3_H,
                     A2, A2_H,
                     A1, A1_H,
-                    A0, A0_H
+                    A0, A0_H,
+                    FP, FP_H
                   );
 
 
@@ -917,6 +919,13 @@ void reg_mask_init() {
     _ANY_REG32_mask.Remove(OptoReg::as_OptoReg(r28->as_VMReg()));
     _ANY_REG_mask.Remove(OptoReg::as_OptoReg(r28->as_VMReg()));
     _PTR_REG_mask.Remove(OptoReg::as_OptoReg(r28->as_VMReg()));
+  }
+
+  // FP(r22) is not allocatable when PreserveFramePointer is on
+  if (PreserveFramePointer) {
+    _ANY_REG32_mask.Remove(OptoReg::as_OptoReg(r22->as_VMReg()));
+    _ANY_REG_mask.SUBTRACT(_FP_REG_mask);
+    _PTR_REG_mask.SUBTRACT(_FP_REG_mask);
   }
 }
 
@@ -1832,11 +1841,16 @@ void MachEpilogNode::format( PhaseRegAlloc *ra_, outputStream* st ) const {
 
   assert((framesize & (StackAlignmentInBytes-1)) == 0, "frame size not aligned");
 
-  st->print_cr("addi_d   SP, SP, %d # Rlease stack @ MachEpilogNode", framesize);
-  st->print("\t");
   st->print_cr("ld_d    RA, SP, %d # Restore RA @ MachEpilogNode", -wordSize);
   st->print("\t");
   st->print_cr("ld_d    FP, SP, %d # Restore FP @ MachEpilogNode", -wordSize*2);
+  st->print("\t");
+  if (Assembler::is_simm(framesize, 12)) {
+    st->print_cr("addi_d   SP, SP, %d # Rlease stack @ MachEpilogNode", framesize);
+  } else {
+    st->print_cr("li   AT, %d # Rlease stack @ MachEpilogNode", framesize);
+    st->print_cr("add_d   SP, SP, AT # Rlease stack @ MachEpilogNode");
+  }
   if( do_polling() && C->is_method_compilation() ) {
     st->print("\t");
     st->print_cr("ld_d    AT, poll_offset[thread] #polling_word_offset\n\t"
@@ -2048,7 +2062,14 @@ void MachPrologNode::format( PhaseRegAlloc *ra_, outputStream* st ) const {
   }
   st->print("st_d       RA, %d(SP)  @ MachPrologNode\n\t", -wordSize);
   st->print("st_d       FP, %d(SP)  @ MachPrologNode\n\t", -wordSize*2);
-  st->print("addi_d   FP, SP, -%d \n\t", wordSize*2);
+  if (PreserveFramePointer) {
+    if (Assembler::is_simm((framesize - wordSize * 2), 12)) {
+      st->print("addi_d   FP, SP, %d \n\t", framesize - wordSize*2);
+    } else {
+      st->print("li   AT, %d \n\t", framesize - wordSize*2);
+      st->print("add_d   FP, AT \n\t");
+    }
+  }
   st->print("addi_d   SP, SP, -%d \t",framesize);
   if (C->stub_function() == NULL && BarrierSet::barrier_set()->barrier_set_nmethod() != NULL) {
     st->print("\n\t");
@@ -2103,11 +2124,13 @@ void MachPrologNode::emit(CodeBuffer &cbuf, PhaseRegAlloc *ra_) const {
   }
   __ st_d(RA, Address(SP, framesize - wordSize));
   __ st_d(FP, Address(SP, framesize - wordSize * 2));
-  if (Assembler::is_simm((framesize - wordSize * 2), 12)) {
-    __ addi_d(FP, SP, framesize - wordSize * 2);
-  } else {
-    __ li(AT, framesize - wordSize * 2);
-    __ add_d(FP, SP, AT);
+  if (PreserveFramePointer) {
+    if (Assembler::is_simm((framesize - wordSize * 2), 12)) {
+      __ addi_d(FP, SP, framesize - wordSize * 2);
+    } else {
+      __ li(AT, framesize - wordSize * 2);
+      __ add_d(FP, SP, AT);
+    }
   }
 
   assert((__ pc() - start) >= 1 * BytesPerInstWord, "No enough room for patch_verified_entry");

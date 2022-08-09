@@ -11240,30 +11240,30 @@ instruct storeSSD(stackSlotD dst, regD src)
   ins_pipe(fpu_storeF);
 %}
 
-instruct cmpFastLock(FlagsReg cr, mRegP object, mRegP box, mRegI tmp, mRegI scr) %{
+instruct cmpFastLock(FlagsReg cr, mRegP object, mRegP box, mRegL tmp1, mRegL tmp2) %{
   match(Set cr (FastLock object box));
-  effect(TEMP tmp, TEMP scr);
-  ins_cost(300);
-  format %{ "FASTLOCK $cr <-- $object, $box, $tmp, $scr #@ cmpFastLock" %}
+  effect(TEMP_DEF cr, TEMP tmp1, TEMP tmp2);
+
+  format %{ "FASTLOCK $cr <-- $object, $box, $tmp1, $tmp2 #@ cmpFastLock" %}
+
   ins_encode %{
-    __ fast_lock($object$$Register, $box$$Register, $cr$$Register, $tmp$$Register, $scr$$Register);
+    __ fast_lock($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register);
   %}
 
   ins_pipe( pipe_slow );
-  ins_pc_relative(1);
 %}
 
-instruct cmpFastUnlock(FlagsReg cr, mRegP object, mRegP box, mRegI tmp, mRegI scr) %{
+instruct cmpFastUnlock(FlagsReg cr, mRegP object, mRegP box, mRegL tmp1, mRegL tmp2) %{
   match(Set cr (FastUnlock object box));
-  effect(TEMP tmp, TEMP scr);
-  ins_cost(300);
-  format %{ "FASTUNLOCK $cr <-- $object, $box, $tmp #@cmpFastUnlock" %}
+  effect(TEMP_DEF cr, TEMP tmp1, TEMP tmp2);
+
+  format %{ "FASTUNLOCK $cr <-- $object, $box, $tmp1, $tmp2 #@ cmpFastUnlock" %}
+
   ins_encode %{
-    __ fast_unlock($object$$Register, $box$$Register, $cr$$Register, $tmp$$Register, $scr$$Register);
+    __ fast_unlock($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register);
   %}
 
   ins_pipe( pipe_slow );
-  ins_pc_relative(1);
 %}
 
 // Store CMS card-mark Immediate 0

@@ -32,287 +32,155 @@
 #include "runtime/objectMonitor.hpp"
 #include "runtime/stubRoutines.hpp"
 
-// Fast_Lock and Fast_Unlock used by C2
 
-// Because the transitions from emitted code to the runtime
-// monitorenter/exit helper stubs are so slow it's critical that
-// we inline both the stack-locking fast-path and the inflated fast path.
-//
-// See also: cmpFastLock and cmpFastUnlock.
-//
-// What follows is a specialized inline transliteration of the code
-// in slow_enter() and slow_exit().  If we're concerned about I$ bloat
-// another option would be to emit TrySlowEnter and TrySlowExit methods
-// at startup-time.  These methods would accept arguments as
-// (Obj, Self, box, Scratch) and return success-failure
-// indications in the icc.ZFlag.  Fast_Lock and Fast_Unlock would simply
-// marshal the arguments and emit calls to TrySlowEnter and TrySlowExit.
-// In practice, however, the # of lock sites is bounded and is usually small.
-// Besides the call overhead, TrySlowEnter and TrySlowExit might suffer
-// if the processor uses simple bimodal branch predictors keyed by EIP
-// Since the helper routines would be called from multiple synchronization
-// sites.
-//
-// An even better approach would be write "MonitorEnter()" and "MonitorExit()"
-// in java - using j.u.c and unsafe - and just bind the lock and unlock sites
-// to those specialized methods.  That'd give us a mostly platform-independent
-// implementation that the JITs could optimize and inline at their pleasure.
-// Done correctly, the only time we'd need to cross to native could would be
-// to park() or unpark() threads.  We'd also need a few more unsafe operators
-// to (a) prevent compiler-JIT reordering of non-volatile accesses, and
-// (b) explicit barriers or fence operations.
-//
-// TODO:
-//
-// *  Arrange for C2 to pass "Self" into Fast_Lock and Fast_Unlock in one of the registers (scr).
-//    This avoids manifesting the Self pointer in the Fast_Lock and Fast_Unlock terminals.
-//    Given TLAB allocation, Self is usually manifested in a register, so passing it into
-//    the lock operators would typically be faster than reifying Self.
-//
-// *  Ideally I'd define the primitives as:
-//       fast_lock   (nax Obj, nax box, res, tmp, nax scr) where tmp and scr are KILLED.
-//       fast_unlock (nax Obj, box, res, nax tmp) where tmp are KILLED
-//    Unfortunately ADLC bugs prevent us from expressing the ideal form.
-//    Instead, we're stuck with a rather awkward and brittle register assignments below.
-//    Furthermore the register assignments are overconstrained, possibly resulting in
-//    sub-optimal code near the synchronization site.
-//
-// *  Eliminate the sp-proximity tests and just use "== Self" tests instead.
-//    Alternately, use a better sp-proximity test.
-//
-// *  Currently ObjectMonitor._Owner can hold either an sp value or a (THREAD *) value.
-//    Either one is sufficient to uniquely identify a thread.
-//    TODO: eliminate use of sp in _owner and use get_thread(tr) instead.
-//
-// *  Intrinsify notify() and notifyAll() for the common cases where the
-//    object is locked by the calling thread but the waitlist is empty.
-//    avoid the expensive JNI call to JVM_Notify() and JVM_NotifyAll().
-//
-// *  use jccb and jmpb instead of jcc and jmp to improve code density.
-//    But beware of excessive branch density on AMD Opterons.
-//
-// *  Both Fast_Lock and Fast_Unlock set the ICC.ZF to indicate success
-//    or failure of the fast-path.  If the fast-path fails then we pass
-//    control to the slow-path, typically in C.  In Fast_Lock and
-//    Fast_Unlock we often branch to DONE_LABEL, just to find that C2
-//    will emit a conditional branch immediately after the node.
-//    So we have branches to branches and lots of ICC.ZF games.
-//    Instead, it might be better to have C2 pass a "FailureLabel"
-//    into Fast_Lock and Fast_Unlock.  In the case of success, control
-//    will drop through the node.  ICC.ZF is undefined at exit.
-//    In the case of failure, the node will branch directly to the
-//    FailureLabel
+// using the cr register as the bool result: 0 for failed; others success.
+void C2_MacroAssembler::fast_lock(Register oop, Register box, Register flag,
+                                  Register disp_hdr, Register tmp) {
+  Label cont;
+  Label object_has_monitor;
 
-// obj: object to lock
-// box: on-stack box address (displaced header location)
-// tmp: tmp -- KILLED
-// scr: tmp -- KILLED
-void C2_MacroAssembler::fast_lock(Register objReg, Register boxReg, Register resReg,
-                                  Register tmpReg, Register scrReg) {
-  Label IsInflated, DONE, DONE_SET;
+  assert_different_registers(oop, box, tmp, disp_hdr, flag);
 
-  // Ensure the register assignents are disjoint
-  guarantee(objReg != boxReg, "");
-  guarantee(objReg != tmpReg, "");
-  guarantee(objReg != scrReg, "");
-  guarantee(boxReg != tmpReg, "");
-  guarantee(boxReg != scrReg, "");
-
-  block_comment("FastLock");
-
-  // Possible cases that we'll encounter in fast_lock
-  // ------------------------------------------------
-  // * Inflated
-  //    -- unlocked
-  //    -- Locked
-  //       = by self
-  //       = by other
-  // * neutral
-  // * stack-locked
-  //    -- by self
-  //       = sp-proximity test hits
-  //       = sp-proximity test generates false-negative
-  //    -- by other
-  //
+  // Load markWord from object into displaced_header.
+  assert(oopDesc::mark_offset_in_bytes() == 0, "offset of _mark is not 0");
+  ld_d(disp_hdr, oop, oopDesc::mark_offset_in_bytes());
 
   if (DiagnoseSyncOnValueBasedClasses != 0) {
-    load_klass(tmpReg, objReg);
-    ld_w(tmpReg, Address(tmpReg, Klass::access_flags_offset()));
+    load_klass(flag, oop);
+    ld_wu(flag, Address(flag, Klass::access_flags_offset()));
     li(AT, JVM_ACC_IS_VALUE_BASED_CLASS);
-    andr(AT, tmpReg, AT);
-    sltui(scrReg, AT, 1);
-    beqz(scrReg, DONE_SET);
-   }
+    andr(AT, flag, AT);
+    move(flag, R0);
+    bnez(AT, cont);
+  }
 
-  ld_d(tmpReg, objReg, 0); //Fetch the markword of the object.
-  andi(AT, tmpReg, markWord::monitor_value);
-  bnez(AT, IsInflated); // inflated vs stack-locked|neutral|bias
+  // Check for existing monitor
+  andi(AT, disp_hdr, markWord::monitor_value);
+  bnez(AT, object_has_monitor); // inflated vs stack-locked|neutral|bias
 
   if (!UseHeavyMonitors) {
-    // Attempt stack-locking ...
-    ori(tmpReg, tmpReg, markWord::unlocked_value);
-    st_d(tmpReg, boxReg, 0); // Anticipate successful CAS
+    // Set tmp to be (markWord of object | UNLOCK_VALUE).
+    ori(tmp, disp_hdr, markWord::unlocked_value);
 
-    // If cmpxchg is succ, then scrReg = 1
-    cmpxchg(Address(objReg, 0), tmpReg, boxReg, scrReg, true, false, DONE_SET); // Updates tmpReg
+    // Initialize the box. (Must happen before we update the object mark!)
+    st_d(tmp, box, BasicLock::displaced_header_offset_in_bytes());
 
-    // Recursive locking
-    // The object is stack-locked: markword contains stack pointer to BasicLock.
-    // Locked by current thread if difference with current SP is less than one page.
-    sub_d(tmpReg, tmpReg, SP);
-    li(AT, 7 - os::vm_page_size());
-    andr(tmpReg, tmpReg, AT);
-    st_d(tmpReg, boxReg, 0);
+    // If cmpxchg is succ, then flag = 1
+    cmpxchg(Address(oop, 0), tmp, box, flag, true, false);
+    bnez(flag, cont);
 
-    sltui(resReg, tmpReg, 1); // resReg = (tmpReg == 0) ? 1 : 0
+    // If the compare-and-exchange succeeded, then we found an unlocked
+    // object, will have now locked it will continue at label cont
+    // We did not see an unlocked object so try the fast recursive case.
+
+    // Check if the owner is self by comparing the value in the
+    // markWord of object (disp_hdr) with the stack pointer.
+    sub_d(disp_hdr, tmp, SP);
+    li(tmp, (intptr_t) (~(os::vm_page_size()-1) | (uintptr_t)markWord::lock_mask_in_place));
+    // If (mark & lock_mask) == 0 and mark - sp < page_size,
+    // we are stack-locking and goto cont,
+    // hence we can store 0 as the displaced header in the box,
+    // which indicates that it is a recursive lock.
+    andr(tmp, disp_hdr, tmp);
+    st_d(tmp, box, BasicLock::displaced_header_offset_in_bytes());
+
+    sltui(flag, tmp, 1); // flag = (tmp == 0) ? 1 : 0
   } else {
-    andi(resReg, resReg, 0); // goto slow path
+    move(flag, R0); // goto slow path
   }
-  b(DONE);
 
-  bind(IsInflated);
+  b(cont);
+
+  // Handle existing monitor.
+  bind(object_has_monitor);
   // The object's monitor m is unlocked iff m->owner == NULL,
   // otherwise m->owner may contain a thread or a stack address.
+  //
+  // Try to CAS m->owner from NULL to current thread.
+  addi_d(tmp, disp_hdr, ObjectMonitor::owner_offset_in_bytes() - markWord::monitor_value);
+  cmpxchg(Address(tmp, 0), R0, TREG, flag, false, false);
 
-  // TODO: someday avoid the ST-before-CAS penalty by
-  // relocating (deferring) the following ST.
-  // We should also think about trying a CAS without having
-  // fetched _owner.  If the CAS is successful we may
-  // avoid an RTO->RTS upgrade on the $line.
-  // Without cast to int32_t a movptr will destroy r10 which is typically obj
+  // Store a non-null value into the box to avoid looking like a re-entrant
+  // lock. The fast-path monitor unlock code checks for
+  // markWord::monitor_value so use markWord::unused_mark which has the
+  // relevant bit set, and also matches ObjectSynchronizer::slow_enter.
   li(AT, (int32_t)intptr_t(markWord::unused_mark().value()));
-  st_d(AT, boxReg, 0);
+  st_d(AT, box, BasicLock::displaced_header_offset_in_bytes());
 
-  ld_d(AT, Address(tmpReg, ObjectMonitor::owner_offset_in_bytes() - 2));
-  // if (m->owner != 0) => AT = 0, goto slow path.
-  move(scrReg, R0);
-  bnez(AT, DONE_SET);
+  bnez(flag, cont); // CAS success means locking succeeded
 
-  // It's inflated and appears unlocked
-  addi_d(tmpReg, tmpReg, ObjectMonitor::owner_offset_in_bytes() - 2);
-  cmpxchg(Address(tmpReg, 0), R0, TREG, scrReg, false, false);
-  // Intentional fall-through into DONE ...
+  bne(flag, TREG, cont); // Check for recursive locking
 
-  bind(DONE_SET);
-  move(resReg, scrReg);
+  // Recursive lock case
+  li(flag, 1);
+  increment(Address(disp_hdr, ObjectMonitor::recursions_offset_in_bytes() - markWord::monitor_value), 1);
 
-  // DONE is a hot target - we'd really like to place it at the
-  // start of cache line by padding with NOPs.
-  // See the AMD and Intel software optimization manuals for the
-  // most efficient "long" NOP encodings.
-  // Unfortunately none of our alignment mechanisms suffice.
-  bind(DONE);
-  // At DONE the resReg is set as follows ...
-  // Fast_Unlock uses the same protocol.
-  // resReg == 1 -> Success
-  // resREg == 0 -> Failure - force control through the slow-path
+  bind(cont);
 }
 
-// obj: object to unlock
-// box: box address (displaced header location), killed.
-// tmp: killed tmp; cannot be obj nor box.
-//
-// Some commentary on balanced locking:
-//
-// Fast_Lock and Fast_Unlock are emitted only for provably balanced lock sites.
-// Methods that don't have provably balanced locking are forced to run in the
-// interpreter - such methods won't be compiled to use fast_lock and fast_unlock.
-// The interpreter provides two properties:
-// I1:  At return-time the interpreter automatically and quietly unlocks any
-//      objects acquired the current activation (frame).  Recall that the
-//      interpreter maintains an on-stack list of locks currently held by
-//      a frame.
-// I2:  If a method attempts to unlock an object that is not held by the
-//      the frame the interpreter throws IMSX.
-//
-// Lets say A(), which has provably balanced locking, acquires O and then calls B().
-// B() doesn't have provably balanced locking so it runs in the interpreter.
-// Control returns to A() and A() unlocks O.  By I1 and I2, above, we know that O
-// is still locked by A().
-//
-// The only other source of unbalanced locking would be JNI.  The "Java Native Interface:
-// Programmer's Guide and Specification" claims that an object locked by jni_monitorenter
-// should not be unlocked by "normal" java-level locking and vice-versa.  The specification
-// doesn't specify what will occur if a program engages in such mixed-mode locking, however.
+// using cr flag to indicate the fast_unlock result: 0 for failed; others success.
+void C2_MacroAssembler::fast_unlock(Register oop, Register box, Register flag,
+                                    Register disp_hdr, Register tmp) {
+  Label cont;
+  Label object_has_monitor;
 
-void C2_MacroAssembler::fast_unlock(Register objReg, Register boxReg, Register resReg,
-                                    Register tmpReg, Register scrReg) {
-  Label DONE, DONE_SET, Stacked, Inflated;
+  assert_different_registers(oop, box, tmp, disp_hdr, flag);
 
-  guarantee(objReg != boxReg, "");
-  guarantee(objReg != tmpReg, "");
-  guarantee(objReg != scrReg, "");
-  guarantee(boxReg != tmpReg, "");
-  guarantee(boxReg != scrReg, "");
-
-  block_comment("FastUnlock");
+  // Find the lock address and load the displaced header from the stack.
+  ld_d(disp_hdr, Address(box, BasicLock::displaced_header_offset_in_bytes()));
 
   if (!UseHeavyMonitors) {
-    ld_d(tmpReg, boxReg, 0); // Examine the displaced header
-    sltui(AT, tmpReg, 1);
-    beqz(tmpReg, DONE_SET); // 0 indicates recursive stack-lock
+    // If the displaced header is 0, we have a recursive unlock.
+    sltui(flag, disp_hdr, 1); // flag = (disp_hdr == 0) ? 1 : 0
+    beqz(disp_hdr, cont);
   }
 
-  ld_d(tmpReg, objReg, 0); // Examine the object's markword
-  if (!UseHeavyMonitors) {
-    andi(AT, tmpReg, markWord::monitor_value);
-    beqz(AT, Stacked); // Inflated?
-  }
+  assert(oopDesc::mark_offset_in_bytes() == 0, "offset of _mark is not 0");
 
-  bind(Inflated);
-  // It's inflated.
-  // Despite our balanced locking property we still check that m->_owner == Self
-  // as java routines or native JNI code called by this thread might
-  // have released the lock.
-  // Refer to the comments in synchronizer.cpp for how we might encode extra
-  // state in _succ so we can avoid fetching EntryList|cxq.
-  //
-  // I'd like to add more cases in fast_lock() and fast_unlock() --
-  // such as recursive enter and exit -- but we have to be wary of
-  // I$ bloat, T$ effects and BP$ effects.
-  //
-  // If there's no contention try a 1-0 exit.  That is, exit without
-  // a costly MEMBAR or CAS.  See synchronizer.cpp for details on how
-  // we detect and recover from the race that the 1-0 exit admits.
-  //
-  // Conceptually Fast_Unlock() must execute a STST|LDST "release" barrier
-  // before it STs null into _owner, releasing the lock.  Updates
-  // to data protected by the critical section must be visible before
-  // we drop the lock (and thus before any other thread could acquire
-  // the lock and observe the fields protected by the lock).
-
-  // It's inflated
-  ld_d(scrReg, Address(tmpReg, ObjectMonitor::owner_offset_in_bytes() - 2));
-  xorr(scrReg, scrReg, TREG);
-
-  ld_d(AT, Address(tmpReg, ObjectMonitor::recursions_offset_in_bytes() - 2));
-  orr(scrReg, scrReg, AT);
-
-  move(AT, R0);
-  bnez(scrReg, DONE_SET);
-
-  ld_d(scrReg, Address(tmpReg, ObjectMonitor::cxq_offset_in_bytes() - 2));
-  ld_d(AT, Address(tmpReg, ObjectMonitor::EntryList_offset_in_bytes() - 2));
-  orr(scrReg, scrReg, AT);
-
-  move(AT, R0);
-  bnez(scrReg, DONE_SET);
-
-  addi_d(AT, tmpReg, ObjectMonitor::owner_offset_in_bytes()-2);
-  amswap_db_d(tmpReg, R0, AT);
-  li(resReg, 1);
-  b(DONE);
+  // Handle existing monitor.
+  ld_d(tmp, oop, oopDesc::mark_offset_in_bytes());
+  andi(AT, disp_hdr, markWord::monitor_value);
+  bnez(AT, object_has_monitor);
 
   if (!UseHeavyMonitors) {
-    bind(Stacked);
-    ld_d(tmpReg, boxReg, 0);
-    cmpxchg(Address(objReg, 0), boxReg, tmpReg, AT, false, false);
+    // Check if it is still a light weight lock, this is true if we
+    // see the stack address of the basicLock in the markWord of the
+    // object.
+    cmpxchg(Address(oop, 0), box, disp_hdr, flag, false, false);
+  } else {
+    move(flag, R0); // goto slow path
   }
 
-  bind(DONE_SET);
-  move(resReg, AT);
+  b(cont);
 
-  bind(DONE);
+  // Handle existing monitor.
+  bind(object_has_monitor);
+
+  addi_d(tmp, tmp, -(int)markWord::monitor_value); // monitor
+  ld_d(disp_hdr, Address(tmp, ObjectMonitor::recursions_offset_in_bytes()));
+
+  Label notRecursive;
+  beqz(disp_hdr, notRecursive);
+
+  // Recursive lock
+  addi_d(disp_hdr, disp_hdr, -1);
+  st_d(disp_hdr, Address(tmp, ObjectMonitor::recursions_offset_in_bytes()));
+  li(flag, 1);
+  b(cont);
+
+  bind(notRecursive);
+  ld_d(flag, Address(tmp, ObjectMonitor::EntryList_offset_in_bytes()));
+  ld_d(disp_hdr, Address(tmp, ObjectMonitor::cxq_offset_in_bytes()));
+  orr(AT, flag, disp_hdr);
+
+  move(flag, R0);
+  bnez(AT, cont);
+
+  addi_d(AT, tmp, ObjectMonitor::owner_offset_in_bytes());
+  amswap_db_d(tmp, R0, AT);
+  li(flag, 1);
+
+  bind(cont);
 }
 
 void C2_MacroAssembler::beq_long(Register rs, Register rt, Label& L) {

@@ -53,8 +53,11 @@ public:
   void cmp_branch_short(int flag, Register op1, Register op2, Label& L, bool is_signed);
   void cmp_branch_long(int flag, Register op1, Register op2, Label* L, bool is_signed);
   void cmp_branchEqNe_off21(int flag, Register op1, Label& L);
-  void fast_lock(Register obj, Register box, Register res, Register tmp, Register scr);
-  void fast_unlock(Register obj, Register box, Register res, Register tmp, Register scr);
+
+  void fast_lock(Register oop, Register box, Register flag,
+                 Register disp_hdr, Register tmp);
+  void fast_unlock(Register oop, Register box, Register flag,
+                   Register disp_hdr, Register tmp);
 
   // For C2 to support long branches
   void beq_long   (Register rs, Register rt, Label& L);

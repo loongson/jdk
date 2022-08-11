@@ -1715,6 +1715,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
   // Lock a synchronized method
   if (method->is_synchronized()) {
+    Label count;
     const int mark_word_offset = BasicLock::displaced_header_offset_in_bytes();
 
     // Get the handle (the 2nd argument)
@@ -1734,7 +1735,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       __ orr(swap_reg, swap_reg, AT);
 
       __ st_d(swap_reg, lock_reg, mark_word_offset);
-      __ cmpxchg(Address(obj_reg, 0), swap_reg, lock_reg, AT, true, false, lock_done);
+      __ cmpxchg(Address(obj_reg, 0), swap_reg, lock_reg, AT, true, false, count);
       // Test if the oopMark is an obvious stack pointer, i.e.,
       //  1) (mark & 3) == 0, and
       //  2) sp <= mark < mark + os::pagesize()
@@ -1753,6 +1754,9 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     } else {
       __ b(slow_path_lock);
     }
+
+    __ bind(count);
+    __ increment(Address(TREG, JavaThread::held_monitor_count_offset()), 1);
 
     // Slow path will re-enter here
     __ bind(lock_done);
@@ -1888,27 +1892,36 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   Label unlock_done;
   if (method->is_synchronized()) {
 
-    Label done;
-
     // Get locked oop from the handle we passed to jni
     __ ld_d( obj_reg, oop_handle_reg, 0);
 
+    Label done, not_recursive;
+
     if (!UseHeavyMonitors) {
       // Simple recursive lock?
-
       __ ld_d(AT, FP, lock_slot_fp_offset);
-      __ beq(AT, R0, done);
-      // Must save FSF if if it is live now because cmpxchg must use it
-      if (ret_type != T_FLOAT && ret_type != T_DOUBLE && ret_type != T_VOID) {
-        save_native_result(masm, ret_type, stack_slots);
-      }
+      __ bnez(AT, not_recursive);
+      __ decrement(Address(TREG, JavaThread::held_monitor_count_offset()), 1);
+      __ b(done);
+    }
 
+    __ bind(not_recursive);
+
+    // Must save FSF if if it is live now because cmpxchg must use it
+    if (ret_type != T_FLOAT && ret_type != T_DOUBLE && ret_type != T_VOID) {
+      save_native_result(masm, ret_type, stack_slots);
+    }
+
+    if (!UseHeavyMonitors) {
       //  get old displaced header
       __ ld_d(T8, FP, lock_slot_fp_offset);
       // get address of the stack lock
       __ addi_d(lock_reg, FP, lock_slot_fp_offset);
       // Atomic swap old header if oop still contains the stack lock
-      __ cmpxchg(Address(obj_reg, 0), lock_reg, T8, AT, false, false, unlock_done, &slow_path_unlock);
+      Label count;
+      __ cmpxchg(Address(obj_reg, 0), lock_reg, T8, AT, false, false, count, &slow_path_unlock);
+      __ bind(count);
+      __ decrement(Address(TREG, JavaThread::held_monitor_count_offset()), 1);
     } else {
       __ b(slow_path_unlock);
     }

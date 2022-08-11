@@ -823,7 +823,7 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
   if (UseHeavyMonitors) {
     call_VM(NOREG, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter), lock_reg);
   } else {
-    Label done, slow_case;
+    Label count, done, slow_case;
     const Register tmp_reg = T2;
     const Register scr_reg = T1;
     const int obj_offset = BasicObjectLock::obj_offset_in_bytes();
@@ -851,7 +851,7 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
 
     assert(lock_offset == 0, "displached header must be first word in BasicObjectLock");
 
-    cmpxchg(Address(scr_reg, 0), tmp_reg, lock_reg, AT, true, false, done);
+    cmpxchg(Address(scr_reg, 0), tmp_reg, lock_reg, AT, true, false, count);
 
     // Test if the oopMark is an obvious stack pointer, i.e.,
     //  1) (mark & 3) == 0, and
@@ -867,11 +867,15 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
     andr(tmp_reg, tmp_reg, AT);
     // Save the test result, for recursive case, the result is zero
     st_d(tmp_reg, lock_reg, mark_offset);
-    beqz(tmp_reg, done);
+    beqz(tmp_reg, count);
 
     bind(slow_case);
     // Call the runtime routine for slow case
     call_VM(NOREG, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter), lock_reg);
+    b(done);
+
+    bind(count);
+    increment(Address(TREG, JavaThread::held_monitor_count_offset()), 1);
 
     bind(done);
   }
@@ -895,7 +899,7 @@ void InterpreterMacroAssembler::unlock_object(Register lock_reg) {
   if (UseHeavyMonitors) {
     call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit), lock_reg);
   } else {
-    Label done;
+    Label count, done;
     const Register tmp_reg = T1;
     const Register scr_reg = T2;
     const Register hdr_reg = T3;
@@ -914,17 +918,20 @@ void InterpreterMacroAssembler::unlock_object(Register lock_reg) {
     // Load the old header from BasicLock structure
     ld_d(hdr_reg, tmp_reg, BasicLock::displaced_header_offset_in_bytes());
     // zero for recursive case
-    beqz(hdr_reg, done);
+    beqz(hdr_reg, count);
 
     // Atomic swap back the old header
-    cmpxchg(Address(scr_reg, 0), tmp_reg, hdr_reg, AT, false, false, done);
+    cmpxchg(Address(scr_reg, 0), tmp_reg, hdr_reg, AT, false, false, count);
 
     // Call the runtime routine for slow case.
     st_d(scr_reg, lock_reg, BasicObjectLock::obj_offset_in_bytes()); // restore obj
     call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit), lock_reg);
+    b(done);
+
+    bind(count);
+    decrement(Address(TREG, JavaThread::held_monitor_count_offset()), 1);
 
     bind(done);
-
     restore_bcp();
   }
 }

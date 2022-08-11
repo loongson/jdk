@@ -38,6 +38,7 @@ void C2_MacroAssembler::fast_lock(Register oop, Register box, Register flag,
                                   Register disp_hdr, Register tmp) {
   Label cont;
   Label object_has_monitor;
+  Label no_count;
 
   assert_different_registers(oop, box, tmp, disp_hdr, flag);
 
@@ -116,6 +117,13 @@ void C2_MacroAssembler::fast_lock(Register oop, Register box, Register flag,
   increment(Address(disp_hdr, ObjectMonitor::recursions_offset_in_bytes() - markWord::monitor_value), 1);
 
   bind(cont);
+  // flag == 1 indicates success
+  // flag == 0 indicates failure
+  beqz(flag, no_count);
+
+  increment(Address(TREG, JavaThread::held_monitor_count_offset()), 1);
+
+  bind(no_count);
 }
 
 // using cr flag to indicate the fast_unlock result: 0 for failed; others success.
@@ -123,6 +131,7 @@ void C2_MacroAssembler::fast_unlock(Register oop, Register box, Register flag,
                                     Register disp_hdr, Register tmp) {
   Label cont;
   Label object_has_monitor;
+  Label no_count;
 
   assert_different_registers(oop, box, tmp, disp_hdr, flag);
 
@@ -181,6 +190,13 @@ void C2_MacroAssembler::fast_unlock(Register oop, Register box, Register flag,
   li(flag, 1);
 
   bind(cont);
+  // flag == 1 indicates success
+  // flag == 0 indicates failure
+  beqz(flag, no_count);
+
+  decrement(Address(TREG, JavaThread::held_monitor_count_offset()), 1);
+
+  bind(no_count);
 }
 
 void C2_MacroAssembler::beq_long(Register rs, Register rt, Label& L) {

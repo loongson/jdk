@@ -38,6 +38,8 @@ const bool CCallingConventionRequiresIntsAsLongs = false;
 
 #define SUPPORTS_NATIVE_CX8
 
+#define SUPPORT_MONITOR_COUNT
+
 // FIXME: LA
 // This makes the games we play when patching difficult, so when we
 // come across an access that needs patching we deoptimize.  There are

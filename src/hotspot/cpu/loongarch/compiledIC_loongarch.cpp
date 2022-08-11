@@ -53,16 +53,10 @@ address CompiledStaticCall::emit_to_interp_stub(CodeBuffer &cbuf, address mark) 
 
   __ relocate(static_stub_Relocation::spec(mark), 0);
 
-  // Code stream for loading method may be changed.
-  __ ibar(0);
+  {
+    __ emit_static_call_stub();
+  }
 
-  // Rmethod contains Method*, it should be relocated for GC
-  // static stub relocation also tags the Method* in the code-stream.
-  __ mov_metadata(Rmethod, NULL);
-  // This is recognized as unresolved by relocs/nativeInst/ic code
-
-  cbuf.set_insts_mark();
-  __ patchable_jump(__ pc());
   // Update current stubs pointer and restore code_end.
   __ end_a_stub();
   return base;

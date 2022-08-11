@@ -22,13 +22,19 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2022, These
+ * modifications are Copyright (c) 2022, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 /**
  * @test SharedStubToInterpTest
  * @summary Checks that stubs to the interpreter can be shared for static or final method.
  * @bug 8280481
  * @library /test/lib
  *
- * @requires os.arch=="amd64" | os.arch=="x86_64" | os.arch=="i386" | os.arch=="x86" | os.arch=="aarch64"
+ * @requires os.arch=="amd64" | os.arch=="x86_64" | os.arch=="i386" | os.arch=="x86" | os.arch=="aarch64" | os.arch=="loongarch64"
  *
  * @run driver compiler.sharedstubs.SharedStubToInterpTest
  */

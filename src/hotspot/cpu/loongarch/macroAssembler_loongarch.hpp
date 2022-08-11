@@ -456,6 +456,8 @@ class MacroAssembler: public Assembler {
   // Emit the CompiledIC call idiom
   address ic_call(address entry, jint method_index = 0);
 
+  void emit_static_call_stub();
+
   // Jumps
   void jmp(address entry);
   void jmp(address entry, relocInfo::relocType rtype);

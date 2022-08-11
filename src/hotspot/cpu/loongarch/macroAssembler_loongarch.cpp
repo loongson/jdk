@@ -673,6 +673,17 @@ address MacroAssembler::ic_call(address entry, jint method_index) {
   return trampoline_call(AddressLiteral(entry, rh));
 }
 
+void MacroAssembler::emit_static_call_stub() {
+  // Code stream for loading method may be changed.
+  ibar(0);
+
+  // static stub relocation also tags the Method* in the code-stream.
+  mov_metadata(Rmethod, NULL);
+  // This is recognized as unresolved by relocs/nativeInst/ic code
+
+  patchable_jump(pc());
+}
+
 void MacroAssembler::c2bool(Register r) {
   sltu(r, R0, r);
 }

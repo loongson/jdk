@@ -917,8 +917,8 @@ void reg_mask_init() {
 
   if (UseCompressedOops && (CompressedOops::ptrs_base() != NULL)) {
     _ANY_REG32_mask.Remove(OptoReg::as_OptoReg(r28->as_VMReg()));
-    _ANY_REG_mask.Remove(OptoReg::as_OptoReg(r28->as_VMReg()));
-    _PTR_REG_mask.Remove(OptoReg::as_OptoReg(r28->as_VMReg()));
+    _ANY_REG_mask.SUBTRACT(_S5_LONG_REG_mask);
+    _PTR_REG_mask.SUBTRACT(_S5_LONG_REG_mask);
   }
 
   // FP(r22) is not allocatable when PreserveFramePointer is on

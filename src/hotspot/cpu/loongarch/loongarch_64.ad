@@ -1216,12 +1216,17 @@ bool Matcher::is_spillable_arg( int reg ) {
 
 uint Matcher::int_pressure_limit()
 {
-  return (INTPRESSURE == -1) ? 13 : INTPRESSURE;
+  uint default_intpresssure = _ANY_REG32_mask.Size() - 1;
+
+  if (!PreserveFramePointer) {
+    default_intpresssure--;
+  }
+  return (INTPRESSURE == -1) ? default_intpresssure : INTPRESSURE;
 }
 
 uint Matcher::float_pressure_limit()
 {
-  return (FLOATPRESSURE == -1) ? 6 : FLOATPRESSURE;
+  return (FLOATPRESSURE == -1) ? _FLT_REG_mask.Size() : FLOATPRESSURE;
 }
 
 bool Matcher::use_asm_for_ldiv_by_con( jlong divisor ) {

@@ -102,7 +102,7 @@ class StubGenerator: public StubCodeGenerator {
   // -4 [ S1                   ]
   // -3 [ TSR(S2)              ]
   // -2 [ LVP(S7)              ]
-  // -1 [ BCP(S1)              ]
+  // -1 [ BCP(S0)              ]
   //  0 [ saved fp             ] <--- fp_after_call
   //  1 [ return address       ]
   //  2 [ ptr. to call wrapper ] <--- a0 (old sp -->)fp
@@ -121,7 +121,10 @@ class StubGenerator: public StubCodeGenerator {
   //    [ argument word n-1    ] <--- sp
   //      ...
   //    [ argument word 0      ]
+  //-22 [ F31                  ]
   //      ...
+  //-15 [ F24                  ]
+  //-14 [ S8                   ]
   //-13 [ thread               ]
   //-12 [ result_type          ] <--- a2
   //-11 [ result               ] <--- a1
@@ -134,7 +137,7 @@ class StubGenerator: public StubCodeGenerator {
   // -4 [ S1                   ]
   // -3 [ TSR(S2)              ]
   // -2 [ LVP(S7)              ]
-  // -1 [ BCP(S1)              ]
+  // -1 [ BCP(S0)              ]
   //  0 [ saved fp             ] <--- fp_after_call
   //  1 [ return address       ]
   //  2 [                      ] <--- old sp
@@ -158,8 +161,16 @@ class StubGenerator: public StubCodeGenerator {
     result_off         = -11,
     result_type_off    = -12,
     thread_off         = -13,
-    total_off          = thread_off - 1,
     S8_off             = -14,
+    F24_off            = -15,
+    F25_off            = -16,
+    F26_off            = -17,
+    F27_off            = -18,
+    F28_off            = -19,
+    F29_off            = -20,
+    F30_off            = -21,
+    F31_off            = -22,
+    total_off          = F31_off,
   };
 
   address generate_call_stub(address& return_address) {
@@ -187,6 +198,15 @@ class StubGenerator: public StubCodeGenerator {
     __ st_d(A2, FP, result_type_off * wordSize);
     __ st_d(A7, FP, thread_off * wordSize);
     __ st_d(S8, FP, S8_off * wordSize);
+
+    __ fst_d(F24, FP, F24_off * wordSize);
+    __ fst_d(F25, FP, F25_off * wordSize);
+    __ fst_d(F26, FP, F26_off * wordSize);
+    __ fst_d(F27, FP, F27_off * wordSize);
+    __ fst_d(F28, FP, F28_off * wordSize);
+    __ fst_d(F29, FP, F29_off * wordSize);
+    __ fst_d(F30, FP, F30_off * wordSize);
+    __ fst_d(F31, FP, F31_off * wordSize);
 
     __ li(S8, (long)Interpreter::dispatch_table(itos));
 
@@ -278,6 +298,15 @@ class StubGenerator: public StubCodeGenerator {
     __ ld_d(S4, FP, S4_off * wordSize);
     __ ld_d(S5, FP, S5_off * wordSize);
     __ ld_d(S6, FP, S6_off * wordSize);
+
+    __ fld_d(F24, FP, F24_off * wordSize);
+    __ fld_d(F25, FP, F25_off * wordSize);
+    __ fld_d(F26, FP, F26_off * wordSize);
+    __ fld_d(F27, FP, F27_off * wordSize);
+    __ fld_d(F28, FP, F28_off * wordSize);
+    __ fld_d(F29, FP, F29_off * wordSize);
+    __ fld_d(F30, FP, F30_off * wordSize);
+    __ fld_d(F31, FP, F31_off * wordSize);
 
     __ leave();
 

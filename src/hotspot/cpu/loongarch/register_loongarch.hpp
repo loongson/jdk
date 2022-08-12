@@ -429,5 +429,6 @@ class ConcreteRegisterImpl : public AbstractRegisterImpl {
 };
 
 typedef AbstractRegSet<Register> RegSet;
+typedef AbstractRegSet<FloatRegister> FloatRegSet;
 
 #endif //CPU_LOONGARCH_REGISTER_LOONGARCH_HPP

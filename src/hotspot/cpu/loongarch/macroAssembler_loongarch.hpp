@@ -552,6 +552,8 @@ class MacroAssembler: public Assembler {
   void popad_except_v0();
   void push(RegSet regs) { if (regs.bits()) push(regs.bits()); }
   void pop(RegSet regs) { if (regs.bits()) pop(regs.bits()); }
+  void push_fpu(FloatRegSet regs) { if (regs.bits()) push_fpu(regs.bits()); }
+  void pop_fpu(FloatRegSet regs) { if (regs.bits()) pop_fpu(regs.bits()); }
 
   void li(Register rd, jlong value);
   void li(Register rd, address addr) { li(rd, (long)addr); }
@@ -668,6 +670,8 @@ class MacroAssembler: public Assembler {
 private:
   void push(unsigned int bitset);
   void pop(unsigned int bitset);
+  void push_fpu(unsigned int bitset);
+  void pop_fpu(unsigned int bitset);
 
   // Check the current thread doesn't need a cross modify fence.
   void verify_cross_modify_fence_not_required() PRODUCT_RETURN;

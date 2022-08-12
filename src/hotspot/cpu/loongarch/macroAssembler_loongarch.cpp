@@ -1743,6 +1743,38 @@ void MacroAssembler::pop(unsigned int bitset) {
   addi_d(SP, SP, align_up(count, 2) * wordSize);
 }
 
+void MacroAssembler::push_fpu(unsigned int bitset) {
+  unsigned char regs[31];
+  int count = 0;
+
+  bitset >>= 1;
+  for (int reg = 0; reg < 31; reg++) {
+    if (1 & bitset)
+      regs[count++] = reg;
+    bitset >>= 1;
+  }
+
+  addi_d(SP, SP, -align_up(count, 2) * wordSize);
+  for (int i = 0; i < count; i ++)
+    fst_d(as_FloatRegister(regs[i]), SP, i * wordSize);
+}
+
+void MacroAssembler::pop_fpu(unsigned int bitset) {
+  unsigned char regs[31];
+  int count = 0;
+
+  bitset >>= 1;
+  for (int reg = 0; reg < 31; reg++) {
+    if (1 & bitset)
+      regs[count++] = reg;
+    bitset >>= 1;
+  }
+
+  for (int i = 0; i < count; i ++)
+    fld_d(as_FloatRegister(regs[i]), SP, i * wordSize);
+  addi_d(SP, SP, align_up(count, 2) * wordSize);
+}
+
 void MacroAssembler::load_method_holder(Register holder, Register method) {
   ld_d(holder, Address(method, Method::const_offset()));                      // ConstMethod*
   ld_d(holder, Address(holder, ConstMethod::constants_offset()));             // ConstantPool*

@@ -94,6 +94,8 @@ void ZBarrierSetAssembler::load_at(MacroAssembler* masm,
   //
   // Slow path
   //
+  __ enter();
+
   if (dst != V0) {
     __ push(V0);
   }
@@ -112,6 +114,7 @@ void ZBarrierSetAssembler::load_at(MacroAssembler* masm,
     __ move(dst, V0);
     __ pop(V0);
   }
+  __ leave();
 
   __ bind(done);
 }
@@ -319,6 +322,57 @@ OptoReg::Name ZBarrierSetAssembler::refine_register(const Node* node, OptoReg::N
 #undef __
 #define __ _masm->
 
+class ZSaveLiveRegisters {
+private:
+  MacroAssembler* const _masm;
+  RegSet                _gp_regs;
+  FloatRegSet           _fp_regs;
+
+public:
+  void initialize(ZLoadBarrierStubC2* stub) {
+    // Record registers that needs to be saved/restored
+    RegMaskIterator rmi(stub->live());
+    while (rmi.has_next()) {
+      const OptoReg::Name opto_reg = rmi.next();
+      if (OptoReg::is_reg(opto_reg)) {
+        const VMReg vm_reg = OptoReg::as_VMReg(opto_reg);
+        if (vm_reg->is_Register()) {
+          _gp_regs += RegSet::of(vm_reg->as_Register());
+        } else if (vm_reg->is_FloatRegister()) {
+          _fp_regs += FloatRegSet::of(vm_reg->as_FloatRegister());
+        } else {
+          fatal("Unknown register type");
+        }
+      }
+    }
+
+    // Remove C-ABI SOE registers, scratch regs and _ref register that will be updated
+    _gp_regs -= RegSet::range(r23, r30) + RegSet::of(r3, r16, r19, stub->ref());
+  }
+
+  ZSaveLiveRegisters(MacroAssembler* masm, ZLoadBarrierStubC2* stub) :
+      _masm(masm),
+      _gp_regs(),
+      _fp_regs() {
+
+    // Figure out what registers to save/restore
+    initialize(stub);
+
+    // Save registers
+    __ push(_gp_regs);
+    __ push_fpu(_fp_regs);
+  }
+
+  ~ZSaveLiveRegisters() {
+    // Restore registers
+    __ pop_fpu(_fp_regs);
+    __ pop(_gp_regs);
+  }
+};
+
+#undef __
+#define __ _masm->
+
 class ZSetupArguments {
 private:
   MacroAssembler* const _masm;
@@ -363,6 +417,13 @@ public:
       }
     }
   }
+
+  ~ZSetupArguments() {
+    // Transfer result
+    if (_ref != V0) {
+      __ move(_ref, V0);
+    }
+  }
 };
 
 #undef __
@@ -374,23 +435,10 @@ void ZBarrierSetAssembler::generate_c2_load_barrier_stub(MacroAssembler* masm, Z
   // Stub entry
   __ bind(*stub->entry());
 
-  Register ref = stub->ref();
-
   {
-    if (ref != V0) {
-      __ push(V0);
-    }
-    __ pushad_except_v0();
-
+    ZSaveLiveRegisters save_live_registers(masm, stub);
     ZSetupArguments setup_arguments(masm, stub);
     __ call_VM_leaf(stub->slow_path(), 2);
-
-    __ popad_except_v0();
-
-    if (ref != V0) {
-      __ move(ref, V0);
-      __ pop(V0);
-    }
   }
   // Stub exit
   __ b(*stub->continuation());

@@ -1172,7 +1172,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     Label L, Lstatic;
     __ ld_d(t,method,in_bytes(Method::const_offset()));
     __ ld_hu(t, t, in_bytes(ConstMethod::size_of_parameters_offset()));
-    // LOONGARCH ABI: caller does not reserve space for the register auguments.
+    // LoongArch ABI: caller does not reserve space for the register auguments.
     // A0 and A1(if needed)
     __ ld_w(AT, Rmethod, in_bytes(Method::access_flags_offset()));
     __ andi(AT, AT, JVM_ACC_STATIC);
@@ -1235,7 +1235,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   //
   // if native function is static, and its second parameter has type length of double word,
   // and first parameter has type length of word, we have to reserve one word
-  // for the first parameter, according to loongarch abi.
+  // for the first parameter, according to LoongArch abi.
   // if native function is not static, and its third parameter has type length of double word,
   // and second parameter has type length of word, we have to reserve one word for the second
   // parameter.

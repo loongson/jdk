@@ -51,7 +51,7 @@ private:
   static inline void    put_int2r(jint *from, intptr_t *to, int& pos) { put_int2r(from, to + pos); pos += 2; }
 
 public:
-  // In LOONGARCH64, the sizeof intptr_t is 8 bytes, and each unit in JavaCallArguments::_value_buffer[]
+  // In LoongArch64, the sizeof intptr_t is 8 bytes, and each unit in JavaCallArguments::_value_buffer[]
   //   is 8 bytes.
   // If we only write the low 4 bytes with (jint *), the high 4-bits will be left with uncertain values.
   // Then, in JavaCallArguments::parameters(), the whole 8 bytes of a T_INT parameter is loaded.

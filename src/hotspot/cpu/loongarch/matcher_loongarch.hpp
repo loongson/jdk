@@ -38,7 +38,7 @@
     return false;
   }
 
-  // LOONGARCH doesn't support misaligned vectors store/load? FIXME
+  // LoongArch doesn't support misaligned vectors store/load? FIXME
   static constexpr bool misaligned_vectors_ok() {
     return false;
   }

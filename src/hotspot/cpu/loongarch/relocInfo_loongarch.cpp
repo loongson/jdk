@@ -67,7 +67,7 @@ void Relocation::pd_set_data_value(address x, intptr_t o, bool verify_only) {
     }
   } else {
     // Note:  Use runtime_call_type relocations for call32_operand.
-    assert(0, "call32_operand not supported in LOONGARCH64");
+    assert(0, "call32_operand not supported in LoongArch64");
   }
 }
 

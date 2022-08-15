@@ -526,9 +526,9 @@ void InterpreterMacroAssembler::jump_from_interpreted(Register method, Register 
 
 
 // The following two routines provide a hook so that an implementation
-// can schedule the dispatch in two parts.  loongarch64 does not do this.
+// can schedule the dispatch in two parts. LoongArch64 does not do this.
 void InterpreterMacroAssembler::dispatch_prolog(TosState state, int step) {
-  // Nothing loongarch64 specific to be done here
+  // Nothing LoongArch64 specific to be done here
 }
 
 void InterpreterMacroAssembler::dispatch_epilog(TosState state, int step) {
@@ -1840,7 +1840,7 @@ void InterpreterMacroAssembler::profile_return_type(Register mdp, Register ret, 
 }
 
 void InterpreterMacroAssembler::profile_parameters_type(Register mdp, Register tmp1, Register tmp2) {
-  guarantee(T4 == tmp1, "You are reqired to use T4 as the index register for LOONGARCH !");
+  guarantee(T4 == tmp1, "You are reqired to use T4 as the index register for LoongArch !");
 
   if (ProfileInterpreter && MethodData::profile_parameters()) {
     Label profile_continue, done;

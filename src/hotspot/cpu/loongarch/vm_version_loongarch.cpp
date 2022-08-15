@@ -282,7 +282,7 @@ void VM_Version::get_processor_features() {
   _features_string = os::strdup(buf);
 
   assert(!is_la32(), "Should Not Reach Here, what is the cpu type?");
-  assert( is_la64(), "Should be loongarch64");
+  assert( is_la64(), "Should be LoongArch64");
 
   if (FLAG_IS_DEFAULT(AllocatePrefetchStyle)) {
     FLAG_SET_DEFAULT(AllocatePrefetchStyle, 1);

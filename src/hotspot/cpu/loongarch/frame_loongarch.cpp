@@ -377,7 +377,7 @@ void frame::verify_deopt_original_pc(CompiledMethod* nm, intptr_t* unextended_sp
 // frame::adjust_unextended_sp
 #ifdef ASSERT
 void frame::adjust_unextended_sp() {
-  // On LOONGARCH, sites calling method handle intrinsics and lambda forms are treated
+  // On LoongArch, sites calling method handle intrinsics and lambda forms are treated
   // as any other call site. Therefore, no special action is needed when we are
   // returning to any of these call sites.
 

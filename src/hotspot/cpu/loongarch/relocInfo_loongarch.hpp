@@ -29,7 +29,7 @@
   // machine-dependent parts of class relocInfo
  private:
   enum {
-    // Since LOONGARCH instructions are whole words,
+    // Since LoongArch instructions are whole words,
     // the two low-order offset bits can always be discarded.
     offset_unit        =  4,
 

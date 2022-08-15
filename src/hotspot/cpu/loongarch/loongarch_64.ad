@@ -1050,7 +1050,7 @@ OptoRegPair Matcher::vector_return_value(uint ideal_reg) {
 bool Matcher::is_short_branch_offset(int rule, int br_size, int offset) {
   const int safety_zone = 3 * BytesPerInstWord;
   int offs = offset - br_size + 4;
-  // To be conservative on LOONGARCH
+  // To be conservative on LoongArch
   // branch node should be end with:
   //   branch inst
   offs = (offs < 0 ? offs - safety_zone : offs + safety_zone) >> 2;
@@ -5310,7 +5310,7 @@ instruct jmpCon_flags_long(cmpOpEqNe cop, FlagsReg cr, label labl) %{
   effect(USE labl);
 
   ins_cost(300);
-  format %{ "J$cop    $labl  #loongarch uses T0 as equivalent to eflag @jmpCon_flags_long" %}
+  format %{ "J$cop    $labl  #LoongArch uses T0 as equivalent to eflag @jmpCon_flags_long" %}
 
   ins_encode %{
     Label*    L =  $labl$$label;
@@ -5739,7 +5739,7 @@ instruct jmpCon_flags_short(cmpOpEqNe cop, FlagsReg cr, label labl) %{
   effect(USE labl);
 
   ins_cost(300);
-  format %{ "J$cop    $labl  #loongarch uses T0 as equivalent to eflag @jmpCon_flags_short" %}
+  format %{ "J$cop    $labl  #LoongArch uses T0 as equivalent to eflag @jmpCon_flags_short" %}
 
   ins_encode %{
     Label    &L =  *($labl$$label);

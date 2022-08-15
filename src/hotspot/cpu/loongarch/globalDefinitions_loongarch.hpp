@@ -25,7 +25,7 @@
 
 #ifndef CPU_LOONGARCH_GLOBALDEFINITIONS_LOONGARCH_HPP
 #define CPU_LOONGARCH_GLOBALDEFINITIONS_LOONGARCH_HPP
-// Size of LOONGARCH Instructions
+// Size of LoongArch Instructions
 const int BytesPerInstWord = 4;
 
 const int StackAlignmentInBytes = (2*wordSize);

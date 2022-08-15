@@ -27,7 +27,7 @@
 #include "opto/compile.hpp"
 #include "opto/node.hpp"
 
-// processor dependent initialization for loongarch
+// processor dependent initialization for LoongArch
 
 extern void reg_mask_init();
 

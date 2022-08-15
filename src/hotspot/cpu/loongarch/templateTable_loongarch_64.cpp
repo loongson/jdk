@@ -3353,7 +3353,7 @@ void TemplateTable::invokestatic(int byte_no) {
 void TemplateTable::fast_invokevfinal(int byte_no) {
   transition(vtos, vtos);
   assert(byte_no == f2_byte, "use this argument");
-  __ stop("fast_invokevfinal not used on loongarch64");
+  __ stop("fast_invokevfinal not used on LoongArch64");
 }
 
 // used registers : T0, T1, T2, T3, T1, A7

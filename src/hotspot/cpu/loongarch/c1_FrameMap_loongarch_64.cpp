@@ -354,7 +354,7 @@ LIR_Opr FrameMap::stack_pointer() {
 
 // JSR 292
 LIR_Opr FrameMap::method_handle_invoke_SP_save_opr() {
-  return LIR_OprFact::illegalOpr;  // Not needed on loongarch64
+  return LIR_OprFact::illegalOpr;  // Not needed on LoongArch64
 }
 
 bool FrameMap::validate_frame() {

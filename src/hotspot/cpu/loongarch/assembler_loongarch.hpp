@@ -1602,7 +1602,7 @@ public:
     return false;
   }
 
-  // LOONGARCH lui is sign extended, so if you wan't to use imm, you have to use the follow
+  // LoongArch lui is sign extended, so if you wan't to use imm, you have to use the follow
   static int split_low16(int x) {
     return (x & 0xffff);
   }
@@ -1733,7 +1733,7 @@ public:
   }
 
   //---<  calculate length of instruction  >---
-  // With LOONGARCH being a RISC architecture, this always is BytesPerInstWord
+  // With LoongArch being a RISC architecture, this always is BytesPerInstWord
   // instruction must start at passed address
   static unsigned int instr_len(unsigned char *instr) { return BytesPerInstWord; }
 

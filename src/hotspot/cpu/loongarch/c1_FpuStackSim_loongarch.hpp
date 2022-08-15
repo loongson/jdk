@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2022, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,7 @@
 #ifndef CPU_LOONGARCH_C1_FPUSTACKSIM_LOONGARCH_HPP
 #define CPU_LOONGARCH_C1_FPUSTACKSIM_LOONGARCH_HPP
 
-// No FPU stack on LOONGARCH
+// No FPU stack on LoongArch
 class FpuStackSim;
 
 #endif // CPU_LOONGARCH_C1_FPUSTACKSIM_LOONGARCH_HPP

@@ -47,7 +47,7 @@
 #define T8 RT8
 
 // The following code is a optimized version of fdlibm sin/cos implementation
-// (C code is in share/runtime/sharedRuntimeTrig.cpp) adapted for LOONGARCH64.
+// (C code is in share/runtime/sharedRuntimeTrig.cpp) adapted for LoongArch64.
 
 // Please refer to sin/cos approximation via polynomial and
 // trigonometric argument reduction techniques to the following literature:

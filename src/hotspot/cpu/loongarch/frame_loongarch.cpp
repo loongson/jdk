@@ -411,11 +411,11 @@ frame frame::sender_for_interpreter_frame(RegisterMap* map) const {
   // Since the interpreter always saves FP if we record where it is then
   // we don't have to always save FP on entry and exit to c2 compiled
   // code, on entry will be enough.
-#ifdef COMPILER2
+#ifdef COMPILER2_OR_JVMCI
   if (map->update_map()) {
     update_map_with_saved_link(map, (intptr_t**) addr_at(java_frame_link_offset));
   }
-#endif /* COMPILER2 */
+#endif // COMPILER2_OR_JVMCI
   return frame(sender_sp, unextended_sp, link(), sender_pc());
 }
 

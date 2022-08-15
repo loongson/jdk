@@ -1631,6 +1631,12 @@ public:
     return (x & 0xfff);
   }
 
+  static inline void split_simm32(jlong si32, jint& si12, jint& si20) {
+    si12 = ((jint)(si32 & 0xfff) << 20) >> 20;
+    si32 += (si32 & 0x800) << 1;
+    si20 = si32 >> 12;
+  }
+
   static inline void split_simm38(jlong si38, jint& si18, jint& si20) {
     si18 = ((jint)(si38 & 0x3ffff) << 14) >> 14;
     si38 += (si38 & 0x20000) << 1;

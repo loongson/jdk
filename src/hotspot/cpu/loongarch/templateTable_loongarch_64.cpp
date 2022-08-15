@@ -3462,7 +3462,6 @@ void TemplateTable::invokeinterface(int byte_no) {
   //       method.
   __ beq(Rmethod, R0, no_such_method);
 
-  __ profile_called_method(Rmethod, T0, T1);
   __ profile_arguments_type(T1, Rmethod, T0, true);
 
   // do the call

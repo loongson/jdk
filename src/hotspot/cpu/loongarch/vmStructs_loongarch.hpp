@@ -31,13 +31,6 @@
 // referenced by vmStructs.cpp.
 
 #define VM_STRUCTS_CPU(nonstatic_field, static_field, unchecked_nonstatic_field, volatile_nonstatic_field, nonproduct_nonstatic_field, c2_nonstatic_field, unchecked_c1_static_field, unchecked_c2_static_field)            \
-                                                                                                                                     \
-  /******************************/                                                                                                   \
-  /* JavaCallWrapper            */                                                                                                   \
-  /******************************/                                                                                                   \
-  /******************************/                                                                                                   \
-  /* JavaFrameAnchor            */                                                                                                   \
-  /******************************/                                                                                                   \
   volatile_nonstatic_field(JavaFrameAnchor,     _last_Java_fp,                                    intptr_t*)                         \
                                                                                                                                      \
 

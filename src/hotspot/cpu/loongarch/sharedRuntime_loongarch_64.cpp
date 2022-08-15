@@ -45,6 +45,9 @@
 #ifdef COMPILER2
 #include "opto/runtime.hpp"
 #endif
+#if INCLUDE_JVMCI
+#include "jvmci/jvmciJavaClasses.hpp"
+#endif
 
 #include <alloca.h>
 
@@ -673,6 +676,18 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
   // Will jump to the compiled code just as if compiled code was doing it.
   // Pre-load the register-jump target early, to schedule it better.
   __ ld_d(T4, Rmethod, in_bytes(Method::from_compiled_offset()));
+
+#if INCLUDE_JVMCI
+  if (EnableJVMCI) {
+    // check if this call should be routed towards a specific entry point
+    __ ld_d(AT, Address(TREG, in_bytes(JavaThread::jvmci_alternate_call_target_offset())));
+    Label no_alternative_target;
+    __ beqz(AT, no_alternative_target);
+    __ move(T4, AT);
+    __ st_d(R0, Address(TREG, in_bytes(JavaThread::jvmci_alternate_call_target_offset())));
+    __ bind(no_alternative_target);
+  }
+#endif // INCLUDE_JVMCI
 
   // Now generate the shuffle code.  Pick up all register args and move the
   // rest through the floating point stack top.
@@ -2135,8 +2150,14 @@ void SharedRuntime::generate_deopt_blob() {
   // allocate space for the code
   ResourceMark rm;
   // setup code generation tools
+  int pad = 0;
+#if INCLUDE_JVMCI
+  if (EnableJVMCI) {
+    pad += 512; // Increase the buffer size when compiling for JVMCI
+  }
+#endif
   //CodeBuffer     buffer ("deopt_blob", 4000, 2048);
-  CodeBuffer     buffer ("deopt_blob", 8000, 2048); // FIXME for debug
+  CodeBuffer     buffer ("deopt_blob", 8000+pad, 2048); // FIXME for debug
   MacroAssembler* masm  = new MacroAssembler( & buffer);
   int frame_size_in_words;
   OopMap* map = NULL;
@@ -2179,6 +2200,12 @@ void SharedRuntime::generate_deopt_blob() {
   __ b(cont);
 
   int reexecute_offset = __ pc() - start;
+#if INCLUDE_JVMCI && !defined(COMPILER1)
+  if (EnableJVMCI && UseJVMCICompiler) {
+    // JVMCI does not use this kind of deoptimization
+    __ should_not_reach_here();
+  }
+#endif
 
   // Reexecute case
   // return address is the pc describes what bci to do re-execute at
@@ -2187,6 +2214,44 @@ void SharedRuntime::generate_deopt_blob() {
   (void) reg_save.save_live_registers(masm, additional_words, &frame_size_in_words);
   __ li(reason, Deoptimization::Unpack_reexecute);
   __ b(cont);
+
+#if INCLUDE_JVMCI
+  Label after_fetch_unroll_info_call;
+  int implicit_exception_uncommon_trap_offset = 0;
+  int uncommon_trap_offset = 0;
+
+  if (EnableJVMCI) {
+    implicit_exception_uncommon_trap_offset = __ pc() - start;
+
+    __ ld_d(RA, Address(TREG, in_bytes(JavaThread::jvmci_implicit_exception_pc_offset())));
+    __ st_d(R0, Address(TREG, in_bytes(JavaThread::jvmci_implicit_exception_pc_offset())));
+
+    uncommon_trap_offset = __ pc() - start;
+
+    // Save everything in sight.
+    (void) reg_save.save_live_registers(masm, additional_words, &frame_size_in_words);
+    __ addi_d(SP, SP, -additional_words * wordSize);
+    // fetch_unroll_info needs to call last_java_frame()
+    Label retaddr;
+    __ set_last_Java_frame(NOREG, NOREG, retaddr);
+
+    __ ld_w(c_rarg1, Address(TREG, in_bytes(JavaThread::pending_deoptimization_offset())));
+    __ li(AT, -1);
+    __ st_w(AT, Address(TREG, in_bytes(JavaThread::pending_deoptimization_offset())));
+
+    __ li(reason, (int32_t)Deoptimization::Unpack_reexecute);
+    __ move(c_rarg0, TREG);
+    __ move(c_rarg2, reason); // exec mode
+    __ call((address)Deoptimization::uncommon_trap, relocInfo::runtime_call_type);
+    __ bind(retaddr);
+    oop_maps->add_gc_map( __ pc()-start, map->deep_copy());
+    __ addi_d(SP, SP, additional_words * wordSize);
+
+    __ reset_last_Java_frame(false);
+
+    __ b(after_fetch_unroll_info_call);
+  } // EnableJVMCI
+#endif // INCLUDE_JVMCI
 
   int   exception_offset = __ pc() - start;
   // Prolog for exception case
@@ -2239,8 +2304,8 @@ void SharedRuntime::generate_deopt_blob() {
   // Call C code.  Need thread and this frame, but NOT official VM entry
   // crud.  We cannot block on this call, no GC can happen.
 
-  __ move(A0, TREG);
-  __ move(A1, reason); // exec_mode
+  __ move(c_rarg0, TREG);
+  __ move(c_rarg1, reason); // exec_mode
   __ addi_d(SP, SP, -additional_words * wordSize);
 
   Label retaddr;
@@ -2256,6 +2321,12 @@ void SharedRuntime::generate_deopt_blob() {
   __ addi_d(SP, SP, additional_words * wordSize);
 
   __ reset_last_Java_frame(false);
+
+#if INCLUDE_JVMCI
+  if (EnableJVMCI) {
+    __ bind(after_fetch_unroll_info_call);
+  }
+#endif
 
   // Load UnrollBlock into S7
   __ move(unroll, V0);
@@ -2436,6 +2507,12 @@ void SharedRuntime::generate_deopt_blob() {
   masm->flush();
   _deopt_blob = DeoptimizationBlob::create(&buffer, oop_maps, 0, exception_offset, reexecute_offset, frame_size_in_words);
   _deopt_blob->set_unpack_with_exception_in_tls_offset(exception_in_tls_offset);
+#if INCLUDE_JVMCI
+  if (EnableJVMCI) {
+    _deopt_blob->set_uncommon_trap_offset(uncommon_trap_offset);
+    _deopt_blob->set_implicit_exception_uncommon_trap_offset(implicit_exception_uncommon_trap_offset);
+  }
+#endif
 }
 
 #ifdef COMPILER2

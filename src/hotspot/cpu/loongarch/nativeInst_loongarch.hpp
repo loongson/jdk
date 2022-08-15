@@ -70,6 +70,10 @@ class NativeInstruction {
   bool is_jump();
   bool is_safepoint_poll();
 
+  // Helper func for jvmci
+  bool is_lu12iw_lu32id() const;
+  bool is_pcaddu12i_add() const;
+
   // LoongArch has no instruction to generate a illegal instruction exception?
   // But `break  11` is not illegal instruction for LoongArch.
   static int illegal_instruction();
@@ -191,7 +195,7 @@ class NativeCall: public NativeInstruction {
   void set_destination_mt_safe(address dest, bool assert_lock = true);
 
   address get_trampoline();
-
+  address trampoline_jump(CodeBuffer &cbuf, address dest);
 };
 
 inline NativeCall* nativeCall_at(address address) {
@@ -217,8 +221,11 @@ inline NativeCall* nativeCall_before(address return_address) {
 class NativeFarCall: public NativeInstruction {
  public:
   enum loongarch_specific_constants {
-    instruction_size      = 2 * BytesPerInstWord,
+    instruction_offset    = 0,
+    instruction_size      = 2 * BytesPerInstWord
   };
+
+  address instruction_address() const { return addr_at(instruction_offset); }
 
   // We use MacroAssembler::patchable_call() for implementing a
   // call-anywhere instruction.

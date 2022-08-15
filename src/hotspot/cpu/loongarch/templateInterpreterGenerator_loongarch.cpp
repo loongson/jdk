@@ -612,6 +612,32 @@ address TemplateInterpreterGenerator::generate_deopt_entry_for(TosState state,
   __ st_d(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);
   __ restore_bcp();
   __ restore_locals();
+
+#if INCLUDE_JVMCI
+  // Check if we need to take lock at entry of synchronized method.  This can
+  // only occur on method entry so emit it only for vtos with step 0.
+  if (EnableJVMCI && state == vtos && step == 0) {
+    Label L;
+    __ ld_b(AT, Address(TREG, JavaThread::pending_monitorenter_offset()));
+    __ beqz(AT, L);
+    // Clear flag.
+    __ st_b(R0, Address(TREG, JavaThread::pending_monitorenter_offset()));
+    // Take lock.
+    lock_method();
+    __ bind(L);
+  } else {
+#ifdef ASSERT
+    if (EnableJVMCI) {
+      Label L;
+      __ ld_b(AT, Address(TREG, JavaThread::pending_monitorenter_offset()));
+      __ beqz(AT, L);
+      __ stop("unexpected pending monitor in deopt entry");
+      __ bind(L);
+    }
+#endif
+  }
+#endif
+
   // handle exceptions
   {
     Label L;

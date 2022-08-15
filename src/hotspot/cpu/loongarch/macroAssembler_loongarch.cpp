@@ -156,6 +156,24 @@ void MacroAssembler::pd_patch_instruction(address branch, address target, const 
     MacroAssembler masm(&cb);
     masm.pcaddi(as_Register(low(stub_inst, 5)), offs);
     return;
+  } else if (high(stub_inst, 7) == pcaddu12i_op) {
+    // pc-relative
+    jlong offs = target - branch;
+    guarantee(is_simm(offs, 32), "Not signed 32-bit offset");
+    jint si12, si20;
+    jint& stub_instNext = *(jint*)(branch+4);
+    split_simm32(offs, si12, si20);
+    CodeBuffer cb(branch, 2 * BytesPerInstWord);
+    MacroAssembler masm(&cb);
+    masm.pcaddu12i(as_Register(low(stub_inst, 5)), si20);
+    masm.addi_d(as_Register(low((stub_instNext), 5)), as_Register(low((stub_instNext) >> 5, 5)), si12);
+    return;
+  } else if (high(stub_inst, 7) == lu12i_w_op) {
+    // long call (absolute)
+    CodeBuffer cb(branch, 3 * BytesPerInstWord);
+    MacroAssembler masm(&cb);
+    masm.call_long(target);
+    return;
   }
 
   stub_inst = patched_branch(target - branch, stub_inst, 0);

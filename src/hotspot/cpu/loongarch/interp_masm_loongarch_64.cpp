@@ -185,7 +185,7 @@ void InterpreterMacroAssembler::load_earlyret_value(TosState state) {
     case atos:
       ld_ptr(V0, oop_addr);
       st_ptr(R0, oop_addr);
-      verify_oop(V0, state);
+      verify_oop(V0);
       break;
     case ltos:
       ld_ptr(V0, val_addr);               // fall through
@@ -457,7 +457,10 @@ void InterpreterMacroAssembler::push_d(FloatRegister r) {
 
 void InterpreterMacroAssembler::pop(TosState state) {
   switch (state) {
-    case atos: pop_ptr();           break;
+    case atos:
+      pop_ptr();
+      verify_oop(FSR);
+      break;
     case btos:
     case ztos:
     case ctos:
@@ -469,14 +472,15 @@ void InterpreterMacroAssembler::pop(TosState state) {
     case vtos: /* nothing to do */  break;
     default:   ShouldNotReachHere();
   }
-  verify_oop(FSR, state);
 }
 
 //FSR=V0,SSR=V1
 void InterpreterMacroAssembler::push(TosState state) {
-  verify_oop(FSR, state);
   switch (state) {
-    case atos: push_ptr();          break;
+    case atos:
+      verify_oop(FSR);
+      push_ptr();
+      break;
     case btos:
     case ztos:
     case ctos:
@@ -551,8 +555,10 @@ void InterpreterMacroAssembler::dispatch_base(TosState state,
     stop("broken stack frame");
     bind(L);
   }
-  // FIXME: I do not know which register should pass to verify_oop
-  if (verifyoop) verify_oop(FSR, state);
+
+  if (verifyoop && state == atos) {
+    verify_oop(FSR);
+  }
 
   Label safepoint;
   address* const safepoint_table = Interpreter::safept_table(state);
@@ -1894,12 +1900,6 @@ void InterpreterMacroAssembler::profile_parameters_type(Register mdp, Register t
     blt(R0, tmp1, loop);
 
     bind(profile_continue);
-  }
-}
-
-void InterpreterMacroAssembler::verify_oop(Register reg, TosState state) {
-  if (state == atos) {
-    MacroAssembler::verify_oop(reg);
   }
 }
 

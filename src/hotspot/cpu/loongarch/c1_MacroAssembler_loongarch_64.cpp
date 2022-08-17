@@ -318,7 +318,7 @@ void C1_MacroAssembler::load_parameter(int offset_in_words, Register reg) {
 #ifndef PRODUCT
 void C1_MacroAssembler::verify_stack_oop(int stack_offset) {
   if (!VerifyOops) return;
-  verify_oop_addr(Address(SP, stack_offset), "oop");
+  verify_oop_addr(Address(SP, stack_offset));
 }
 
 void C1_MacroAssembler::verify_not_null_oop(Register r) {

@@ -246,8 +246,6 @@ class InterpreterMacroAssembler: public MacroAssembler {
                            Register scratch2);
 
   // Debugging
-  // only if +VerifyOops && state == atos
-  void verify_oop(Register reg, TosState state = atos);
   // only if +VerifyFPU  && (state == ftos || state == dtos)
   void verify_FPU(int stack_depth, TosState state = ftos);
 

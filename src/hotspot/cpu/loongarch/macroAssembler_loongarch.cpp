@@ -1321,13 +1321,16 @@ void MacroAssembler::load_mirror(Register mirror, Register method, Register tmp)
   resolve_oop_handle(mirror, tmp);
 }
 
-void MacroAssembler::verify_oop(Register reg, const char* s) {
+void MacroAssembler::_verify_oop(Register reg, const char* s, const char* file, int line) {
   if (!VerifyOops) return;
 
   const char * b = NULL;
-  stringStream ss;
-  ss.print("verify_oop: %s: %s", reg->name(), s);
-  b = code_string(ss.as_string());
+  {
+    ResourceMark rm;
+    stringStream ss;
+    ss.print("verify_oop: %s: %s (%s:%d)", reg->name(), s, file, line);
+    b = code_string(ss.as_string());
+  }
 
   addi_d(SP, SP, -6 * wordSize);
   st_ptr(SCR1, Address(SP, 0 * wordSize));
@@ -1350,14 +1353,14 @@ void MacroAssembler::verify_oop(Register reg, const char* s) {
   addi_d(SP, SP, 6 * wordSize);
 }
 
-void MacroAssembler::verify_oop_addr(Address addr, const char* s) {
+void MacroAssembler::_verify_oop_addr(Address addr, const char* s, const char* file, int line) {
   if (!VerifyOops) return;
 
   const char* b = NULL;
   {
     ResourceMark rm;
     stringStream ss;
-    ss.print("verify_oop_addr: %s", s);
+    ss.print("verify_oop_addr: %s (%s:%d)", s, file, line);
     b = code_string(ss.as_string());
   }
 
@@ -1879,7 +1882,7 @@ void MacroAssembler::encode_heap_oop(Register r) {
 #ifdef ASSERT
   verify_heapbase("MacroAssembler::encode_heap_oop:heap base corrupted?");
 #endif
-  verify_oop(r, "broken oop in encode_heap_oop");
+  verify_oop_msg(r, "broken oop in encode_heap_oop");
   if (CompressedOops::base() == NULL) {
     if (CompressedOops::shift() != 0) {
       assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
@@ -1900,7 +1903,7 @@ void MacroAssembler::encode_heap_oop(Register dst, Register src) {
 #ifdef ASSERT
   verify_heapbase("MacroAssembler::encode_heap_oop:heap base corrupted?");
 #endif
-  verify_oop(src, "broken oop in encode_heap_oop");
+  verify_oop_msg(src, "broken oop in encode_heap_oop");
   if (CompressedOops::base() == NULL) {
     if (CompressedOops::shift() != 0) {
       assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
@@ -1931,7 +1934,7 @@ void MacroAssembler::encode_heap_oop_not_null(Register r) {
     bind(ok);
   }
 #endif
-  verify_oop(r, "broken oop in encode_heap_oop_not_null");
+  verify_oop_msg(r, "broken oop in encode_heap_oop_not_null");
   if (CompressedOops::base() != NULL) {
     sub_d(r, r, S5_heapbase);
   }
@@ -1952,7 +1955,7 @@ void MacroAssembler::encode_heap_oop_not_null(Register dst, Register src) {
     bind(ok);
   }
 #endif
-  verify_oop(src, "broken oop in encode_heap_oop_not_null2");
+  verify_oop_msg(src, "broken oop in encode_heap_oop_not_null2");
   if (CompressedOops::base() == NULL) {
     if (CompressedOops::shift() != 0) {
       assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
@@ -1997,7 +2000,7 @@ void MacroAssembler::decode_heap_oop(Register r) {
     add_d(r, r, S5_heapbase);
   }
   maskeqz(r, r, AT);
-  verify_oop(r, "broken oop in decode_heap_oop");
+  verify_oop_msg(r, "broken oop in decode_heap_oop");
 }
 
 void MacroAssembler::decode_heap_oop(Register dst, Register src) {
@@ -2035,7 +2038,7 @@ void MacroAssembler::decode_heap_oop(Register dst, Register src) {
     add_d(dst, src, S5_heapbase);
   }
   maskeqz(dst, dst, cond);
-  verify_oop(dst, "broken oop in decode_heap_oop");
+  verify_oop_msg(dst, "broken oop in decode_heap_oop");
 }
 
 void MacroAssembler::decode_heap_oop_not_null(Register r) {
@@ -2428,7 +2431,7 @@ void MacroAssembler::clinit_barrier(Register klass, Register scratch, Label* L_f
 void MacroAssembler::get_vm_result(Register oop_result, Register java_thread) {
   ld_d(oop_result, Address(java_thread, JavaThread::vm_result_offset()));
   st_d(R0, Address(java_thread, JavaThread::vm_result_offset()));
-  verify_oop(oop_result, "broken oop in call_VM_base");
+  verify_oop_msg(oop_result, "broken oop in call_VM_base");
 }
 
 void MacroAssembler::get_vm_result_2(Register metadata_result, Register java_thread) {

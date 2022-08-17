@@ -264,7 +264,7 @@ void ZBarrierSetAssembler::generate_c1_load_barrier_stub(LIR_Assembler* ce,
   __ call(stub->runtime_stub(), relocInfo::runtime_call_type);
 
   // Verify result
-  __ verify_oop(V0, "Bad oop");
+  __ verify_oop(V0);
 
   // Move result into place
   if (ref != V0) {

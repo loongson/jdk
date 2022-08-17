@@ -1872,14 +1872,7 @@ void MachEpilogNode::emit(CodeBuffer &cbuf, PhaseRegAlloc *ra_) const {
 
   assert((framesize & (StackAlignmentInBytes-1)) == 0, "frame size not aligned");
 
-  __ ld_d(RA, Address(SP, framesize - wordSize));
-  __ ld_d(FP, Address(SP, framesize - wordSize * 2));
-  if (Assembler::is_simm(framesize, 12)) {
-    __ addi_d(SP, SP, framesize);
-  } else {
-    __ li(AT, framesize);
-    __ add_d(SP, SP, AT);
-  }
+  __ remove_frame(framesize);
 
   if (StackReservedPages > 0 && C->has_reserved_stack_access()) {
     __ reserved_stack_check();
@@ -2069,9 +2062,9 @@ void MachPrologNode::format( PhaseRegAlloc *ra_, outputStream* st ) const {
   st->print("st_d       FP, %d(SP)  @ MachPrologNode\n\t", -wordSize*2);
   if (PreserveFramePointer) {
     if (Assembler::is_simm((framesize - wordSize * 2), 12)) {
-      st->print("addi_d   FP, SP, %d \n\t", framesize - wordSize*2);
+      st->print("addi_d   FP, SP, %d \n\t", framesize);
     } else {
-      st->print("li   AT, %d \n\t", framesize - wordSize*2);
+      st->print("li   AT, %d \n\t", framesize);
       st->print("add_d   FP, AT \n\t");
     }
   }
@@ -2121,22 +2114,7 @@ void MachPrologNode::emit(CodeBuffer &cbuf, PhaseRegAlloc *ra_) const {
     __ generate_stack_overflow_check(bangsize);
   }
 
-  if (Assembler::is_simm(-framesize, 12)) {
-    __ addi_d(SP, SP, -framesize);
-  } else {
-    __ li(AT, -framesize);
-    __ add_d(SP, SP, AT);
-  }
-  __ st_d(RA, Address(SP, framesize - wordSize));
-  __ st_d(FP, Address(SP, framesize - wordSize * 2));
-  if (PreserveFramePointer) {
-    if (Assembler::is_simm((framesize - wordSize * 2), 12)) {
-      __ addi_d(FP, SP, framesize - wordSize * 2);
-    } else {
-      __ li(AT, framesize - wordSize * 2);
-      __ add_d(FP, SP, AT);
-    }
-  }
+  __ build_frame(framesize);
 
   assert((__ pc() - start) >= 1 * BytesPerInstWord, "No enough room for patch_verified_entry");
 

@@ -95,24 +95,24 @@ class StubGenerator: public StubCodeGenerator {
   //      ...
   //    [ argument word 0      ]
   //      ...
-  // -8 [ S6                   ]
-  // -7 [ S5                   ]
-  // -6 [ S4                   ]
-  // -5 [ S3                   ]
-  // -4 [ S1                   ]
-  // -3 [ TSR(S2)              ]
-  // -2 [ LVP(S7)              ]
-  // -1 [ BCP(S0)              ]
-  //  0 [ saved fp             ] <--- fp_after_call
-  //  1 [ return address       ]
-  //  2 [ ptr. to call wrapper ] <--- a0 (old sp -->)fp
-  //  3 [ result               ] <--- a1
-  //  4 [ result_type          ] <--- a2
-  //  5 [ method               ] <--- a3
-  //  6 [ entry_point          ] <--- a4
-  //  7 [ parameters           ] <--- a5
-  //  8 [ parameter_size       ] <--- a6
-  //  9 [ thread               ] <--- a7
+  // -10 [ S6                   ]
+  //  -9 [ S5                   ]
+  //  -8 [ S4                   ]
+  //  -7 [ S3                   ]
+  //  -6 [ S1                   ]
+  //  -5 [ TSR(S2)              ]
+  //  -4 [ LVP(S7)              ]
+  //  -3 [ BCP(S0)              ]
+  //  -2 [ saved fp             ]
+  //  -1 [ return address       ]
+  //   0 [ ptr. to call wrapper ] <--- a0 (old sp -->) fp
+  //   1 [ result               ] <--- a1
+  //   2 [ result_type          ] <--- a2
+  //   3 [ method               ] <--- a3
+  //   4 [ entry_point          ] <--- a4
+  //   5 [ parameters           ] <--- a5
+  //   6 [ parameter_size       ] <--- a6
+  //   7 [ thread               ] <--- a7
 
   //
   // LA ABI does not save paras in sp.
@@ -121,56 +121,56 @@ class StubGenerator: public StubCodeGenerator {
   //    [ argument word n-1    ] <--- sp
   //      ...
   //    [ argument word 0      ]
-  //-22 [ F31                  ]
+  //-24 [                      ]
+  //-23 [ F31                  ]
   //      ...
-  //-15 [ F24                  ]
-  //-14 [ S8                   ]
-  //-13 [ thread               ]
-  //-12 [ result_type          ] <--- a2
-  //-11 [ result               ] <--- a1
-  //-10 [                      ]
-  // -9 [ ptr. to call wrapper ] <--- a0
-  // -8 [ S6                   ]
-  // -7 [ S5                   ]
-  // -6 [ S4                   ]
-  // -5 [ S3                   ]
-  // -4 [ S1                   ]
-  // -3 [ TSR(S2)              ]
-  // -2 [ LVP(S7)              ]
-  // -1 [ BCP(S0)              ]
-  //  0 [ saved fp             ] <--- fp_after_call
-  //  1 [ return address       ]
-  //  2 [                      ] <--- old sp
+  //-16 [ F24                  ]
+  //-15 [ S8                   ]
+  //-14 [ thread               ]
+  //-13 [ result_type          ] <--- a2
+  //-12 [ result               ] <--- a1
+  //-11 [ ptr. to call wrapper ] <--- a0
+  //-10 [ S6                   ]
+  // -9 [ S5                   ]
+  // -8 [ S4                   ]
+  // -7 [ S3                   ]
+  // -6 [ S1                   ]
+  // -5 [ TSR(S2)              ]
+  // -4 [ LVP(S7)              ]
+  // -3 [ BCP(S0)              ]
+  // -2 [ saved fp             ]
+  // -1 [ return address       ]
+  //  0 [                      ] <--- old sp = fp_after_call
   //
   // Find a right place in the call_stub for S8.
   // S8 will point to the starting point of Interpreter::dispatch_table(itos).
   // It should be saved/restored before/after Java calls.
   //
   enum call_stub_layout {
-    RA_off             =  1,
-    FP_off             =  0,
-    BCP_off            = -1,
-    LVP_off            = -2,
-    TSR_off            = -3,
-    S1_off             = -4,
-    S3_off             = -5,
-    S4_off             = -6,
-    S5_off             = -7,
-    S6_off             = -8,
-    call_wrapper_off   = -9,
-    result_off         = -11,
-    result_type_off    = -12,
-    thread_off         = -13,
-    S8_off             = -14,
-    F24_off            = -15,
-    F25_off            = -16,
-    F26_off            = -17,
-    F27_off            = -18,
-    F28_off            = -19,
-    F29_off            = -20,
-    F30_off            = -21,
-    F31_off            = -22,
-    total_off          = F31_off,
+    RA_off             = -1,
+    FP_off             = -2,
+    BCP_off            = -3,
+    LVP_off            = -4,
+    TSR_off            = -5,
+    S1_off             = -6,
+    S3_off             = -7,
+    S4_off             = -8,
+    S5_off             = -9,
+    S6_off             = -10,
+    call_wrapper_off   = -11,
+    result_off         = -12,
+    result_type_off    = -13,
+    thread_off         = -14,
+    S8_off             = -15,
+    F24_off            = -16,
+    F25_off            = -17,
+    F26_off            = -18,
+    F27_off            = -19,
+    F28_off            = -20,
+    F29_off            = -21,
+    F30_off            = -22,
+    F31_off            = -23,
+    total_off          = -24,
   };
 
   address generate_call_stub(address& return_address) {
@@ -3060,9 +3060,9 @@ class StubGenerator: public StubCodeGenerator {
 
     __ pop(V0);
     __ ld_d(rscratch2, SP, 0);
-    __ ld_d(FP, SP, 8);
+    __ ld_d(FP, SP, 1 * wordSize);
     __ ld_d(RA, SP, 2 * wordSize);
-    __ ld_d(T4, SP, 2 * wordSize + 8);
+    __ ld_d(T4, SP, 3 * wordSize);
 
     __ move(SP, rscratch2);
     __ jr(T4);
@@ -4631,7 +4631,7 @@ class StubGenerator: public StubCodeGenerator {
     __ ld_d(S7, SP, S7_off * wordSize);
 
     // discard arguments
-    __ move(SP, FP); // epilog
+    __ addi_d(SP, FP, -2 * wordSize); // epilog
     __ pop(FP);
     // check for pending exceptions
 #ifdef ASSERT

@@ -69,7 +69,7 @@ bool frame::safe_for_sender(JavaThread *thread) {
   // an fp must be within the stack and above (but not equal) sp
   // second evaluation on fp+ is added to handle situation where fp is -1
   bool fp_safe = thread->is_in_stack_range_excl(fp, sp) &&
-                 thread->is_in_full_stack_checked(fp + (java_frame_return_addr_offset * sizeof(void*)));
+                 thread->is_in_full_stack_checked(fp + (return_addr_offset * sizeof(void*)));
 
   // We know sp/unextended_sp are safe only fp is questionable here
 
@@ -112,13 +112,13 @@ bool frame::safe_for_sender(JavaThread *thread) {
         return false;
       }
 
-      sender_pc = (address) this->fp()[java_frame_return_addr_offset];
+      sender_pc = (address) this->fp()[return_addr_offset];
       // for interpreted frames, the value below is the sender "raw" sp,
       // which can be different from the sender unextended sp (the sp seen
       // by the sender) because of current frame local variables
-      sender_sp = (intptr_t*) addr_at(java_frame_sender_sp_offset);
+      sender_sp = (intptr_t*) addr_at(sender_sp_offset);
       sender_unextended_sp = (intptr_t*) this->fp()[interpreter_frame_sender_sp_offset];
-      saved_fp = (intptr_t*) this->fp()[java_frame_link_offset];
+      saved_fp = (intptr_t*) this->fp()[link_offset];
 
     } else {
       // must be some sort of compiled/runtime frame
@@ -136,9 +136,9 @@ bool frame::safe_for_sender(JavaThread *thread) {
       }
       sender_unextended_sp = sender_sp;
       // On LA the return_address is always the word on the stack
-      sender_pc = (address) *(sender_sp-1);
-      // Note: frame::java_frame_sender_sp_offset is only valid for compiled frame
-      saved_fp = (intptr_t*) *(sender_sp - frame::java_frame_sender_sp_offset);
+      sender_pc = (address) *(sender_sp - 1);
+      // Note: frame::sender_sp_offset is only valid for compiled frame
+      saved_fp = (intptr_t*) *(sender_sp - 2);
     }
 
 
@@ -241,7 +241,7 @@ bool frame::safe_for_sender(JavaThread *thread) {
 
   // Will the pc we fetch be non-zero (which we'll find at the oldest frame)
 
-  if ( (address) this->fp()[java_frame_return_addr_offset] == NULL) return false;
+  if ( (address) this->fp()[return_addr_offset] == NULL) return false;
 
 
   // could try and do some more potential verification of native frame if we could think of some...
@@ -413,7 +413,7 @@ frame frame::sender_for_interpreter_frame(RegisterMap* map) const {
   // code, on entry will be enough.
 #ifdef COMPILER2_OR_JVMCI
   if (map->update_map()) {
-    update_map_with_saved_link(map, (intptr_t**) addr_at(java_frame_link_offset));
+    update_map_with_saved_link(map, (intptr_t**) addr_at(link_offset));
   }
 #endif // COMPILER2_OR_JVMCI
   return frame(sender_sp, unextended_sp, link(), sender_pc());

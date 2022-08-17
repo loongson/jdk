@@ -151,7 +151,7 @@ frame os::get_sender_for_C_frame(frame* fr) {
 }
 
 frame os::current_frame() {
-  intptr_t *fp = ((intptr_t **)__builtin_frame_address(0))[frame::native_frame_link_offset];
+  intptr_t *fp = ((intptr_t **)__builtin_frame_address(0))[frame::link_offset];
   frame myframe((intptr_t*)os::current_stack_pointer(),
                 (intptr_t*)fp,
                 CAST_FROM_FN_PTR(address, os::current_frame));

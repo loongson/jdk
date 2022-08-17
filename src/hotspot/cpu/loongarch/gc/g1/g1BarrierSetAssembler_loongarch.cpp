@@ -440,7 +440,7 @@ void G1BarrierSetAssembler::generate_c1_pre_barrier_runtime_stub(StubAssembler* 
 void G1BarrierSetAssembler::generate_c1_post_barrier_runtime_stub(StubAssembler* sasm) {
   __ prologue("g1_post_barrier", false);
 
-  // arg0: store_address
+  // arg0: store_address, not use?
   Address store_addr(FP, 2 * BytesPerWord);
 
   BarrierSet* bs = BarrierSet::barrier_set();

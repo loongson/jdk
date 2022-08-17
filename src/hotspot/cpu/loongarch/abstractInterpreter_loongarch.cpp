@@ -41,7 +41,7 @@ int AbstractInterpreter::size_activation(int max_stack,
   // in AbstractInterpreterGenerator::generate_method_entry.
 
   // fixed size of an interpreter frame:
-  int overhead = frame::java_frame_sender_sp_offset -
+  int overhead = frame::sender_sp_offset -
                  frame::interpreter_frame_initial_sp_offset;
   // Our locals were accounted for by the caller (or last_frame_adjust
   // on the transition) Since the callee parameters already account

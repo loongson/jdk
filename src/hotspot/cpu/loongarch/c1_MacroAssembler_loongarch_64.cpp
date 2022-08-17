@@ -306,13 +306,13 @@ void C1_MacroAssembler::verified_entry(bool breakAtEntry) {
 }
 
 void C1_MacroAssembler::load_parameter(int offset_in_words, Register reg) {
-  // rbp, + 0: link
-  //      + 1: return address
-  //      + 2: argument with offset 0
-  //      + 3: argument with offset 1
-  //      + 4: ...
+  //  FP + -2: link
+  //     + -1: return address
+  //     +  0: argument with offset 0
+  //     +  1: argument with offset 1
+  //     +  2: ...
 
-  ld_ptr(reg, Address(FP, (offset_in_words + 2) * BytesPerWord));
+  ld_ptr(reg, Address(FP, offset_in_words * BytesPerWord));
 }
 
 #ifndef PRODUCT

@@ -105,7 +105,7 @@ address TemplateInterpreterGenerator::generate_slow_signature_handler() {
   //      1 aligned slot
   // SP:  0 return address
 
-  // Do FP first so we can use A3 as temp
+  // Do FPU first so we can use A3 as temp
   __ ld_d(A3, Address(SP, 9 * wordSize)); // float/double identifiers
 
   for (int i= 0; i < Argument::n_float_register_parameters_c; i++) {
@@ -908,7 +908,7 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
 
   // initialize fixed part of activation frame
   // sender's sp in Rsender
-  int i = 0;
+  int i = 2;
   int frame_size = 10;
 #ifndef CORE
   ++frame_size;
@@ -916,7 +916,7 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
   __ addi_d(SP, SP, (-frame_size) * wordSize);
   __ st_d(RA, SP, (frame_size - 1) * wordSize);   // save return address
   __ st_d(FP, SP, (frame_size - 2) * wordSize);  // save sender's fp
-  __ addi_d(FP, SP, (frame_size - 2) * wordSize);
+  __ addi_d(FP, SP, (frame_size) * wordSize);
   __ st_d(Rsender, FP, (-++i) * wordSize);  // save sender's sp
   __ st_d(R0, FP,(-++i) * wordSize);       //save last_sp as null
   __ st_d(LVP, FP, (-++i) * wordSize);  // save locals offset
@@ -949,7 +949,7 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
     __ st_d(BCP, FP, (-++i) * wordSize);          // set bcp
   }
   __ st_d(SP, FP, (-++i) * wordSize);               // reserve word for pointer to expression stack bottom
-  assert(i + 2 == frame_size, "i + 2 should be equal to frame_size");
+  assert(i == frame_size, "i should be equal to frame_size");
 }
 
 // End of helpers
@@ -1555,8 +1555,8 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 
   // remove activation
   __ ld_d(SP, FP, frame::interpreter_frame_sender_sp_offset * wordSize); // get sender sp
-  __ ld_d(RA, FP, frame::java_frame_return_addr_offset * wordSize); // get return address
-  __ ld_d(FP, FP, frame::interpreter_frame_sender_fp_offset * wordSize); // restore sender's fp
+  __ ld_d(RA, FP, frame::return_addr_offset * wordSize); // get return address
+  __ ld_d(FP, FP, frame::link_offset * wordSize); // restore sender's fp
   __ jr(RA);
 
 #ifndef CORE
@@ -1882,7 +1882,7 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
     // deoptimization blob's unpack entry because of the presence of
     // adapter frames in C2.
     Label caller_not_deoptimized;
-    __ ld_d(A0, FP, frame::java_frame_return_addr_offset * wordSize);
+    __ ld_d(A0, FP, frame::return_addr_offset * wordSize);
     __ super_call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::interpreter_contains), A0);
     __ bne(V0, R0, caller_not_deoptimized);
 

@@ -45,18 +45,12 @@ public class LOONGARCH64Frame extends Frame {
     DEBUG = System.getProperty("sun.jvm.hotspot.runtime.loongarch64.LOONGARCH64Frame.DEBUG") != null;
   }
 
-  // Java frames
-  private static final int JAVA_FRAME_LINK_OFFSET             =  0;
-  private static final int JAVA_FRAME_RETURN_ADDR_OFFSET      =  1;
-  private static final int JAVA_FRAME_SENDER_SP_OFFSET        =  2;
-
-  // Native frames
-  private static final int NATIVE_FRAME_LINK_OFFSET           =  -2;
-  private static final int NATIVE_FRAME_RETURN_ADDR_OFFSET    =  -1;
-  private static final int NATIVE_FRAME_SENDER_SP_OFFSET      =  0;
+  private static final int LINK_OFFSET           = -2;
+  private static final int RETURN_ADDR_OFFSET    = -1;
+  private static final int SENDER_SP_OFFSET      =  0;
 
   // Interpreter frames
-  private static final int INTERPRETER_FRAME_SENDER_SP_OFFSET = -1;
+  private static final int INTERPRETER_FRAME_SENDER_SP_OFFSET = -3;
   private static final int INTERPRETER_FRAME_LAST_SP_OFFSET   = INTERPRETER_FRAME_SENDER_SP_OFFSET - 1;
   private static final int INTERPRETER_FRAME_LOCALS_OFFSET    = INTERPRETER_FRAME_LAST_SP_OFFSET - 1;
   private static final int INTERPRETER_FRAME_METHOD_OFFSET    = INTERPRETER_FRAME_LOCALS_OFFSET - 1;
@@ -69,7 +63,7 @@ public class LOONGARCH64Frame extends Frame {
   private static final int INTERPRETER_FRAME_MONITOR_BLOCK_BOTTOM_OFFSET = INTERPRETER_FRAME_INITIAL_SP_OFFSET;
 
   // Entry frames
-  private static final int ENTRY_FRAME_CALL_WRAPPER_OFFSET = -9;
+  private static final int ENTRY_FRAME_CALL_WRAPPER_OFFSET = -11;
 
   private static VMReg fp = new VMReg(22 << 1);
 
@@ -328,7 +322,7 @@ public class LOONGARCH64Frame extends Frame {
     // are no callee register to find.
 
     if (map.getUpdateMap())
-      updateMapWithSavedLink(map, addressOfStackSlot(JAVA_FRAME_LINK_OFFSET));
+      updateMapWithSavedLink(map, addressOfStackSlot(LINK_OFFSET));
 
     return new LOONGARCH64Frame(sp, unextendedSP, getLink(), getSenderPC());
   }
@@ -361,7 +355,7 @@ public class LOONGARCH64Frame extends Frame {
 
     // This is the saved value of EBP which may or may not really be an FP.
     // It is only an FP if the sender is an interpreter frame (or C1?).
-    Address savedFPAddr = senderSP.addOffsetTo(- JAVA_FRAME_SENDER_SP_OFFSET * VM.getVM().getAddressSize());
+    Address savedFPAddr = senderSP.addOffsetTo(-2 * VM.getVM().getAddressSize());
 
     if (map.getUpdateMap()) {
       // Tell GC to use argument oopmaps for some runtime stubs that need it.
@@ -393,26 +387,20 @@ public class LOONGARCH64Frame extends Frame {
   }
 
   public Address getLink() {
-    if (isJavaFrame())
-      return addressOfStackSlot(JAVA_FRAME_LINK_OFFSET).getAddressAt(0);
-    return addressOfStackSlot(NATIVE_FRAME_LINK_OFFSET).getAddressAt(0);
+    return addressOfStackSlot(LINK_OFFSET).getAddressAt(0);
   }
 
   public Address getUnextendedSP() { return raw_unextendedSP; }
 
   // Return address:
   public Address getSenderPCAddr() {
-    if (isJavaFrame())
-      return addressOfStackSlot(JAVA_FRAME_RETURN_ADDR_OFFSET);
-    return addressOfStackSlot(NATIVE_FRAME_RETURN_ADDR_OFFSET);
+    return addressOfStackSlot(RETURN_ADDR_OFFSET);
   }
 
   public Address getSenderPC()     { return getSenderPCAddr().getAddressAt(0);      }
 
   public Address getSenderSP()     {
-    if (isJavaFrame())
-      return addressOfStackSlot(JAVA_FRAME_SENDER_SP_OFFSET);
-    return addressOfStackSlot(NATIVE_FRAME_SENDER_SP_OFFSET);
+    return addressOfStackSlot(SENDER_SP_OFFSET);
   }
 
   public Address addressOfInterpreterFrameLocals() {

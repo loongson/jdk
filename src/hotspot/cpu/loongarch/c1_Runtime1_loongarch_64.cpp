@@ -391,7 +391,7 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler *sasm) {
     __ st_ptr(R0, Address(TREG, Thread::pending_exception_offset()));
 
     // load issuing PC (the return address for this stub) into A1
-    __ ld_ptr(exception_pc, Address(FP, 1 * BytesPerWord));
+    __ ld_ptr(exception_pc, Address(FP, frame::return_addr_offset * BytesPerWord));
 
     // make sure that the vm_results are cleared (may be unnecessary)
     __ st_ptr(R0, Address(TREG, JavaThread::vm_result_offset()));
@@ -440,7 +440,7 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler *sasm) {
   __ st_ptr(exception_pc, Address(TREG, JavaThread::exception_pc_offset()));
 
   // patch throwing pc into return address (has bci & oop map)
-  __ st_ptr(exception_pc, Address(FP, 1 * BytesPerWord));
+  __ st_ptr(exception_pc, Address(FP, frame::return_addr_offset * BytesPerWord));
 
   // compute the exception handler.
   // the exception oop and the throwing pc are read from the fields in JavaThread
@@ -455,7 +455,7 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler *sasm) {
   __ invalidate_registers(false, true, true, true, true, true);
 
   // patch the return address, this stub will directly return to the exception handler
-  __ st_ptr(A0, Address(FP, 1 * BytesPerWord));
+  __ st_ptr(A0, Address(FP, frame::return_addr_offset * BytesPerWord));
 
   switch (id) {
     case forward_exception_id:
@@ -675,9 +675,9 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         __ enter();
         OopMap* map = save_live_registers(sasm);
         // Retrieve bci
-        __ ld_w(bci, Address(FP, 2 * BytesPerWord));
+        __ ld_w(bci, Address(FP, 0 * BytesPerWord));
         // And a pointer to the Method*
-        __ ld_d(method, Address(FP, 3 * BytesPerWord));
+        __ ld_d(method, Address(FP, 1 * BytesPerWord));
         int call_offset = __ call_RT(noreg, noreg, CAST_FROM_FN_PTR(address, counter_overflow), bci, method);
         oop_maps = new OopMapSet();
         oop_maps->add_gc_map(call_offset, map);

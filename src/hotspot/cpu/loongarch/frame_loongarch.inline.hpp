@@ -157,14 +157,11 @@ inline bool frame::is_older(intptr_t* id) const   { assert(this->id() != NULL &&
                                                     return this->id() > id ; }
 
 inline intptr_t* frame::link() const {
-  if (is_java_frame())
-    return (intptr_t*) *(intptr_t **)addr_at(java_frame_link_offset);
-  return (intptr_t*) *(intptr_t **)addr_at(native_frame_link_offset);
+  return (intptr_t*) *(intptr_t **)addr_at(link_offset);
 }
 
 inline intptr_t* frame::link_or_null() const {
-  intptr_t** ptr = is_java_frame() ? (intptr_t **)addr_at(java_frame_link_offset)
-                                   : (intptr_t **)addr_at(native_frame_link_offset);
+  intptr_t** ptr = (intptr_t **)addr_at(link_offset);
   return os::is_readable_pointer(ptr) ? *ptr : NULL;
 }
 
@@ -205,9 +202,7 @@ inline int frame::frame_size() const {
 // Return address:
 
 inline address* frame::sender_pc_addr() const {
-  if (is_java_frame())
-    return (address*) addr_at(java_frame_return_addr_offset);
-  return (address*) addr_at(native_frame_return_addr_offset);
+  return (address*) addr_at(return_addr_offset);
 }
 
 inline address  frame::sender_pc() const {
@@ -215,9 +210,7 @@ inline address  frame::sender_pc() const {
 }
 
 inline intptr_t* frame::sender_sp() const {
-  if (is_java_frame())
-    return addr_at(java_frame_sender_sp_offset);
-  return addr_at(native_frame_sender_sp_offset);
+  return addr_at(sender_sp_offset);
 }
 
 inline intptr_t** frame::interpreter_frame_locals_addr() const {

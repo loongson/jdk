@@ -118,7 +118,7 @@ void OptoRuntime::generate_exception_blob() {
   // Save callee saved registers.  None for UseSSE=0,
   // floats-only for UseSSE=1, and doubles for UseSSE=2.
 
-  __ addi_d(FP, SP, fp_off * wordSize);
+  __ addi_d(FP, SP, framesize * wordSize);
 
   // Store exception in Thread object. We cannot pass any arguments to the
   // handle_exception call, since we do not want to make any assumption

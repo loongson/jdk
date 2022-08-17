@@ -548,7 +548,7 @@ void InterpreterMacroAssembler::dispatch_base(TosState state,
     Label L;
 
     sub_d(T2, FP, SP);
-    int min_frame_size = (frame::java_frame_link_offset -
+    int min_frame_size = (frame::sender_sp_offset -
       frame::interpreter_frame_initial_sp_offset) * wordSize;
     addi_d(T2, T2, -min_frame_size);
     bge(T2, R0, L);
@@ -810,8 +810,8 @@ void InterpreterMacroAssembler::remove_activation(
 
     bind(no_reserved_zone_enabling);
   }
-  ld_d(ret_addr, FP, frame::java_frame_return_addr_offset * wordSize);
-  ld_d(FP, FP, frame::interpreter_frame_sender_fp_offset * wordSize);
+  ld_d(ret_addr, FP, frame::return_addr_offset * wordSize);
+  ld_d(FP, FP, frame::link_offset * wordSize);
   move(SP, TSR); // set sp to sender sp
 }
 

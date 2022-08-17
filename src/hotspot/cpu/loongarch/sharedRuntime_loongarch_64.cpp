@@ -259,7 +259,7 @@ OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_
   __ st_d(RA, SP, gpr_offset(ra_off));
   map->set_callee_saved(VMRegImpl::stack2reg(gpr_offset(ra_off) / VMRegImpl::stack_slot_size + additional_frame_slots), RA->as_VMReg());
 
-  __ addi_d(FP, SP, gpr_offset(fp_off));
+  __ addi_d(FP, SP, slots_save() * VMRegImpl::stack_slot_size);
 
   return map;
 }
@@ -338,9 +338,8 @@ bool SharedRuntime::is_wide_vector(int size) {
 // the following value.
 
 static int reg2offset_in(VMReg r) {
-  // Account for saved fp and return address
   // This should really be in_preserve_stack_slots
-  return (r->reg2stack() + 2 * VMRegImpl::slots_per_word) * VMRegImpl::stack_slot_size;  // + 2 * VMRegImpl::stack_slot_size);
+  return r->reg2stack() * VMRegImpl::stack_slot_size;
 }
 
 static int reg2offset_out(VMReg r) {
@@ -1013,23 +1012,21 @@ void SharedRuntime::save_native_result(MacroAssembler *masm, BasicType ret_type,
   // We always ignore the frame_slots arg and just use the space just below frame pointer
   // which by this time is free to use
   switch (ret_type) {
+    case T_VOID:
+      break;
     case T_FLOAT:
-      __ fst_s(FSF, FP, -wordSize);
+      __ fst_s(FSF, FP, -3 * wordSize);
       break;
     case T_DOUBLE:
-      __ fst_d(FSF, FP, -wordSize );
+      __ fst_d(FSF, FP, -3 * wordSize);
       break;
-    case T_VOID:  break;
     case T_LONG:
-      __ st_d(V0, FP, -wordSize);
-      break;
     case T_OBJECT:
     case T_ARRAY:
-      __ st_d(V0, FP, -wordSize);
+      __ st_d(V0, FP, -3 * wordSize);
       break;
-    default: {
-      __ st_w(V0, FP, -wordSize);
-      }
+    default:
+      __ st_w(V0, FP, -3 * wordSize);
   }
 }
 
@@ -1037,22 +1034,21 @@ void SharedRuntime::restore_native_result(MacroAssembler *masm, BasicType ret_ty
   // We always ignore the frame_slots arg and just use the space just below frame pointer
   // which by this time is free to use
   switch (ret_type) {
+    case T_VOID:
+      break;
     case T_FLOAT:
-      __ fld_s(FSF, FP, -wordSize);
+      __ fld_s(FSF, FP, -3 * wordSize);
       break;
     case T_DOUBLE:
-      __ fld_d(FSF, FP, -wordSize );
+      __ fld_d(FSF, FP, -3 * wordSize);
       break;
     case T_LONG:
-      __ ld_d(V0, FP, -wordSize);
-      break;
-    case T_VOID:  break;
     case T_OBJECT:
     case T_ARRAY:
-      __ ld_d(V0, FP, -wordSize);
+      __ ld_d(V0, FP, -3 * wordSize);
       break;
     default: {
-      __ ld_w(V0, FP, -wordSize);
+      __ ld_w(V0, FP, -3 * wordSize);
       }
   }
 }
@@ -1448,6 +1444,8 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   //
   //
   // FP-> |                     |
+  //      | 2 slots (ra)        |
+  //      | 2 slots (fp)        |
   //      |---------------------|
   //      | 2 slots for moves   |
   //      |---------------------|
@@ -1545,7 +1543,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   // fp relative addressing.
   //FIXME actually , the fp_adjustment may not be the right, because andr(sp, sp, at) may change
   //the SP
-  int fp_adjustment = stack_size - 2*wordSize;
+  int fp_adjustment = stack_size;
 
   // Compute the fp offset for any slots used after the jni call
 
@@ -2098,7 +2096,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
   // pop our frame
   //forward_exception_entry need return address on stack
-  __ move(SP, FP);
+  __ addi_d(SP, FP, - 2 * wordSize);
   __ pop(FP);
 
   // and forward the exception
@@ -2425,7 +2423,7 @@ void SharedRuntime::generate_deopt_blob() {
   //   0x000000555bd82d24: daddi sp, sp, 0xfffffff0
   //   0x000000555bd82d28: sd fp, 0x0(sp)           ; push fp
   //   0x000000555bd82d2c: sd at, 0x8(sp)           ; push at
-  //   0x000000555bd82d30: dadd fp, sp, zero        ; fp <- sp
+  //   0x000000555bd82d30: dadd fp, sp, 16          ; set new fp
   //   0x000000555bd82d34: dsub sp, sp, t2          ; sp -= t2
   //   0x000000555bd82d38: sd zero, 0xfffffff0(fp)  ; __ sd(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);
   //   0x000000555bd82d3c: sd s4, 0xfffffff8(fp)    ; __ sd(sender_sp, FP, frame::interpreter_frame_sender_sp_offset * wordSize);
@@ -2442,7 +2440,7 @@ void SharedRuntime::generate_deopt_blob() {
   __ ld_ptr(AT, pcs, 0);           // save return address
   __ addi_d(T2, T2, -2 * wordSize);           // we'll push pc and fp, by hand
   __ push2(AT, FP);
-  __ move(FP, SP);
+  __ addi_d(FP, SP, 2 * wordSize);
   __ sub_d(SP, SP, T2);       // Prolog!
   // This value is corrected by layout_activation_impl
   __ st_d(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);
@@ -2452,12 +2450,11 @@ void SharedRuntime::generate_deopt_blob() {
   __ addi_d(sizes, sizes, wordSize);   // Bump array pointer (sizes)
   __ addi_d(pcs, pcs, wordSize);   // Bump array pointer (pcs)
   __ bne(count, R0, loop);
-  __ ld_d(AT, pcs, 0);      // frame_pcs[number_of_frames] = Interpreter::deopt_entry(vtos, 0);
+
   // Re-push self-frame
+  __ ld_d(AT, pcs, 0);      // frame_pcs[number_of_frames] = Interpreter::deopt_entry(vtos, 0);
   __ push2(AT, FP);
-  __ move(FP, SP);
-  __ st_d(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);
-  __ st_d(sender_sp, FP, frame::interpreter_frame_sender_sp_offset * wordSize);
+  __ addi_d(FP, SP, 2 * wordSize);
   __ addi_d(SP, SP, -(frame_size_in_words - 2 - additional_words) * wordSize);
 
   // Restore frame locals after moving the frame
@@ -2543,7 +2540,7 @@ void SharedRuntime::generate_uncommon_trap_blob() {
   __ st_d(RA, SP, return_off * BytesPerInt);
   __ st_d(FP, SP, fp_off * BytesPerInt);
 
-  __ addi_d(FP, SP, fp_off * BytesPerInt);
+  __ addi_d(FP, SP, framesize * BytesPerInt);
 
   // set last_Java_sp
   Label retaddr;
@@ -2593,7 +2590,11 @@ void SharedRuntime::generate_uncommon_trap_blob() {
 
   // Pop deoptimized frame
   __ ld_w(T8, unroll, Deoptimization::UnrollBlock::size_of_deoptimized_frame_offset_in_bytes());
+  __ addi_d(T8, T8, -2 * wordSize);
   __ add_d(SP, SP, T8);
+  __ ld_d(FP, SP, 0);
+  __ ld_d(RA, SP, wordSize);
+  __ addi_d(SP, SP, 2 * wordSize);
 
 #ifdef ASSERT
   // Compilers generate code that bang the stack by as much as the
@@ -2620,8 +2621,6 @@ void SharedRuntime::generate_uncommon_trap_blob() {
   __ ld_d(sizes, unroll, Deoptimization::UnrollBlock::frame_sizes_offset_in_bytes());
   __ ld_wu(count, unroll, Deoptimization::UnrollBlock::number_of_frames_offset_in_bytes());
 
-  // Pick up the initial fp we should save
-  __ ld_d(FP, unroll, Deoptimization::UnrollBlock::initial_info_offset_in_bytes());
   // Now adjust the caller's stack to make up for the extra locals
   // but record the original sp so that we can save it in the skeletal interpreter
   // frame and the stack walking of interpreter_sender will get the unextended sp
@@ -2634,10 +2633,9 @@ void SharedRuntime::generate_uncommon_trap_blob() {
   Label loop;
   __ bind(loop);
   __ ld_d(T2, sizes, 0);          // Load frame size
-  __ ld_d(AT, pcs, 0);           // save return address
+  __ ld_d(RA, pcs, 0);           // save return address
   __ addi_d(T2, T2, -2*wordSize);           // we'll push pc and fp, by hand
-  __ push2(AT, FP);
-  __ move(FP, SP);
+  __ enter();
   __ sub_d(SP, SP, T2);                   // Prolog!
   // This value is corrected by layout_activation_impl
   __ st_d(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);

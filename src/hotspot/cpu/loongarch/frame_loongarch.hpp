@@ -48,9 +48,9 @@
 //    [Method                ]                   = method()             method_offset
 //    [last sp               ]                   = last_sp()            last_sp_offset
 //    [old stack pointer     ]                     (sender_sp)          sender_sp_offset
-//    [old frame pointer     ]   <- fp           = link()
+//    [old frame pointer     ]                   = link()
 //    [return pc             ]
-//    [oop temp              ]                     (only for native calls)
+//    [oop temp              ]   <- fp             (only for native calls)
 //    [locals and parameters ]
 // High                          <- sender sp
 // ------------------------------ Asm interpreter ----------------------------------------
@@ -74,22 +74,15 @@
   enum {
     pc_return_offset                                 =  0,
 
-    // Java frames
-    java_frame_link_offset                           =  0,
-    java_frame_return_addr_offset                    =  1,
-    java_frame_sender_sp_offset                      =  2,
-
-    // Native frames
-    native_frame_link_offset                         = -2,
-    native_frame_return_addr_offset                  = -1,
-    native_frame_sender_sp_offset                    =  0,
+    link_offset                                      = -2,
+    return_addr_offset                               = -1,
+    sender_sp_offset                                 =  0,
 
     // Interpreter frames
-    interpreter_frame_result_handler_offset          =  3, // for native calls only
-    interpreter_frame_oop_temp_offset                =  2, // for native calls only
+    interpreter_frame_result_handler_offset          =  1, // for native calls only
+    interpreter_frame_oop_temp_offset                =  0, // for native calls only
 
-    interpreter_frame_sender_fp_offset               =  0,
-    interpreter_frame_sender_sp_offset               = -1,
+    interpreter_frame_sender_sp_offset               = -3,
     // outgoing sp before a call to an invoked method
     interpreter_frame_last_sp_offset                 = interpreter_frame_sender_sp_offset - 1,
     interpreter_frame_locals_offset                  = interpreter_frame_last_sp_offset - 1,
@@ -104,17 +97,13 @@
     interpreter_frame_monitor_block_bottom_offset    = interpreter_frame_initial_sp_offset,
 
     // Entry frames
-    entry_frame_call_wrapper_offset                  = -9,
-
-    // Native frames
-
-    native_frame_initial_param_offset                =  2,
+    entry_frame_call_wrapper_offset                  = -11,
 
     // we don't need a save area
     arg_reg_save_area_bytes                          =  0,
 
     // size, in words, of frame metadata (e.g. pc and link)
-    metadata_words                                   = java_frame_sender_sp_offset,
+    metadata_words                                   = sender_sp_offset,
     // in bytes
     frame_alignment                                  = 16,
     // size, in words, of maximum shift in frame position due to alignment

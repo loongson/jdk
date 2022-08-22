@@ -2134,8 +2134,7 @@ void SharedRuntime::generate_deopt_blob() {
     pad += 512; // Increase the buffer size when compiling for JVMCI
   }
 #endif
-  //CodeBuffer     buffer ("deopt_blob", 4000, 2048);
-  CodeBuffer     buffer ("deopt_blob", 8000+pad, 2048); // FIXME for debug
+  CodeBuffer     buffer ("deopt_blob", 2048+pad, 1024);
   MacroAssembler* masm  = new MacroAssembler( & buffer);
   int frame_size_in_words;
   OopMap* map = NULL;
@@ -2780,9 +2779,7 @@ RuntimeStub* SharedRuntime::generate_resolve_blob(address destination, const cha
   // allocate space for the code
   ResourceMark rm;
 
-  //CodeBuffer buffer(name, 1000, 512);
-  //FIXME. code_size
-  CodeBuffer buffer(name, 2000, 2048);
+  CodeBuffer buffer(name, 1000, 512);
   MacroAssembler* masm  = new MacroAssembler(&buffer);
 
   int frame_size_words;

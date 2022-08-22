@@ -1035,10 +1035,11 @@ void MacroAssembler::remove_frame(int framesize) {
     ld_ptr(RA, Address(SP, framesize - 1 * wordSize));
     addi_d(SP, SP, framesize);
   } else {
-    move(SCR1, FP);
-    ld_ptr(RA, Address(FP, -1 * wordSize));
-    ld_ptr(FP, Address(FP, -2 * wordSize));
-    move(SP, SCR1);
+    li(SCR1, framesize - 2 * wordSize);
+    add_d(SP, SP, SCR1);
+    ld_ptr(FP, Address(SP, 0 * wordSize));
+    ld_ptr(RA, Address(SP, 1 * wordSize));
+    addi_d(SP, SP, 2 * wordSize);
   }
 }
 

@@ -572,8 +572,6 @@ reg_class int_reg %{
   return _ANY_REG32_mask;
 %}
 
-reg_class no_Ax_int_reg( S7, S0, S1, S2, S4, S3, T8, T2, T3, T1, T6, T5, T0 );
-
 reg_class p_reg %{
   return _PTR_REG_mask;
 %}
@@ -581,40 +579,6 @@ reg_class p_reg %{
 reg_class no_CR_reg %{
   return _NO_CR_REG_mask;
 %}
-
-reg_class no_T8_p_reg(
-                 S7, S7_H,
-                 S0, S0_H,
-                 S1, S1_H,
-                 S2, S2_H,
-                 S4, S4_H,
-                 S3, S3_H,
-                 T2, T2_H,
-                 T3, T3_H,
-                 T1, T1_H,
-                 A7, A7_H,
-                 A6, A6_H,
-                 A5, A5_H,
-                 A4, A4_H,
-                 A3, A3_H,
-                 A2, A2_H,
-                 A1, A1_H,
-                 A0, A0_H,
-                 T0, T0_H
-               );
-
-reg_class no_Ax_p_reg(
-                 S7, S7_H,
-                 S0, S0_H,
-                 S1, S1_H,
-                 S2, S2_H,
-                 S4, S4_H,
-                 S3, S3_H,
-                 T2, T2_H,
-                 T3, T3_H,
-                 T1, T1_H,
-                 T0, T0_H
-               );
 
 reg_class all_reg(
                     S8, S8_H,
@@ -2401,7 +2365,7 @@ encode %{
         NULL, &miss,
         /*set_cond_codes:*/ true);
     // Refer to X86_64's RDI
-    __ move(result, 0);
+    __ move(result, R0);
     __ b(done);
 
     __ bind(miss);
@@ -3097,15 +3061,6 @@ operand mRegI() %{
   interface(REG_INTER);
 %}
 
-operand no_Ax_mRegI() %{
-  constraint(ALLOC_IN_RC(no_Ax_int_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{  %}
-  interface(REG_INTER);
-%}
-
 operand mS0RegI() %{
   constraint(ALLOC_IN_RC(s0_reg));
   match(RegI);
@@ -3503,30 +3458,11 @@ operand no_CR_mRegP() %{
   interface(REG_INTER);
 %}
 
-operand no_T8_mRegP() %{
-  constraint(ALLOC_IN_RC(no_T8_p_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{  %}
-  interface(REG_INTER);
-%}
-
-operand no_Ax_mRegP() %{
-  constraint(ALLOC_IN_RC(no_Ax_p_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{  %}
-  interface(REG_INTER);
-%}
-
 operand s1_RegP()
 %{
   constraint(ALLOC_IN_RC(s1_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3537,7 +3473,6 @@ operand s3_RegP()
   constraint(ALLOC_IN_RC(s3_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3548,7 +3483,6 @@ operand s4_RegP()
   constraint(ALLOC_IN_RC(s4_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3559,7 +3493,6 @@ operand s5_RegP()
   constraint(ALLOC_IN_RC(s5_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3570,7 +3503,6 @@ operand s6_RegP()
   constraint(ALLOC_IN_RC(s6_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3581,7 +3513,6 @@ operand s7_RegP()
   constraint(ALLOC_IN_RC(s7_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3592,7 +3523,6 @@ operand t0_RegP()
   constraint(ALLOC_IN_RC(t0_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3603,7 +3533,6 @@ operand t1_RegP()
   constraint(ALLOC_IN_RC(t1_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3614,7 +3543,6 @@ operand t2_RegP()
   constraint(ALLOC_IN_RC(t2_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3625,8 +3553,6 @@ operand t3_RegP()
   constraint(ALLOC_IN_RC(t3_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
-
   format %{ %}
   interface(REG_INTER);
 %}
@@ -3646,7 +3572,6 @@ operand a0_RegP()
   constraint(ALLOC_IN_RC(a0_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3657,7 +3582,6 @@ operand a1_RegP()
   constraint(ALLOC_IN_RC(a1_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3668,7 +3592,6 @@ operand a2_RegP()
   constraint(ALLOC_IN_RC(a2_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3679,7 +3602,6 @@ operand a3_RegP()
   constraint(ALLOC_IN_RC(a3_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3690,7 +3612,6 @@ operand a4_RegP()
   constraint(ALLOC_IN_RC(a4_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3702,7 +3623,6 @@ operand a5_RegP()
   constraint(ALLOC_IN_RC(a5_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3713,7 +3633,6 @@ operand a6_RegP()
   constraint(ALLOC_IN_RC(a6_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3724,7 +3643,6 @@ operand a7_RegP()
   constraint(ALLOC_IN_RC(a7_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3735,7 +3653,6 @@ operand v0_RegP()
   constraint(ALLOC_IN_RC(v0_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -3746,7 +3663,6 @@ operand v1_RegP()
   constraint(ALLOC_IN_RC(v1_long_reg));
   match(RegP);
   match(mRegP);
-  match(no_T8_mRegP);
 
   format %{ %}
   interface(REG_INTER);
@@ -8514,10 +8430,10 @@ instruct clear_array_imm_lasx(immL_gt_15 cnt, t3_RegP base, Universe dummy, mReg
   ins_pipe(pipe_slow);
 %}
 
-instruct string_compareL(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2, no_Ax_mRegI result, t8RegL tmp1, t3RegL tmp2) %{
+instruct string_compareL(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2, mRegI result, mRegL tmp1, mRegL tmp2) %{
   predicate(((StrCompNode*)n)->encoding() == StrIntrinsicNode::LL);
   match(Set result (StrComp (Binary str1 cnt1) (Binary str2 cnt2)));
-  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2, KILL tmp1, KILL tmp2);
+  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2, TEMP tmp1,TEMP tmp2, TEMP_DEF result);
 
   format %{ "String Compare byte[] $str1[len: $cnt1], $str2[len: $cnt2] tmp1:$tmp1, tmp2:$tmp2 -> $result @ string_compareL" %}
   ins_encode %{
@@ -8529,10 +8445,10 @@ instruct string_compareL(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2
   ins_pipe( pipe_slow );
 %}
 
-instruct string_compareU(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2, no_Ax_mRegI result, t8RegL tmp1, t3RegL tmp2) %{
+instruct string_compareU(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2, mRegI result, mRegL tmp1, mRegL tmp2) %{
   predicate(((StrCompNode*)n)->encoding() == StrIntrinsicNode::UU);
   match(Set result (StrComp (Binary str1 cnt1) (Binary str2 cnt2)));
-  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2, KILL tmp1, KILL tmp2);
+  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2, TEMP tmp1, TEMP tmp2, TEMP_DEF result);
 
   format %{ "String Compare char[] $str1[len: $cnt1], $str2[len: $cnt2] tmp1:$tmp1, tmp2:$tmp2 -> $result @ string_compareU" %}
   ins_encode %{
@@ -8544,10 +8460,10 @@ instruct string_compareU(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2
   ins_pipe( pipe_slow );
 %}
 
-instruct string_compareLU(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2, no_Ax_mRegI result, t8RegL tmp1, t3RegL tmp2) %{
+instruct string_compareLU(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2, mRegI result, mRegL tmp1, mRegL tmp2) %{
   predicate(((StrCompNode*)n)->encoding() == StrIntrinsicNode::LU);
   match(Set result (StrComp (Binary str1 cnt1) (Binary str2 cnt2)));
-  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2, KILL tmp1, KILL tmp2);
+  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2, TEMP tmp1, TEMP tmp2, TEMP_DEF result);
 
   format %{ "String Compare byte[] $str1[len: $cnt1], $str2[len: $cnt2] tmp1:$tmp1, tmp2:$tmp2 -> $result @ string_compareLU" %}
   ins_encode %{
@@ -8559,10 +8475,10 @@ instruct string_compareLU(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt
   ins_pipe( pipe_slow );
 %}
 
-instruct string_compareUL(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2, no_Ax_mRegI result, t8RegL tmp1, t3RegL tmp2) %{
+instruct string_compareUL(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2, mRegI result, mRegL tmp1, mRegL tmp2) %{
   predicate(((StrCompNode*)n)->encoding() == StrIntrinsicNode::UL);
   match(Set result (StrComp (Binary str1 cnt1) (Binary str2 cnt2)));
-  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2, KILL tmp1, KILL tmp2);
+  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2, TEMP tmp1, TEMP tmp2, TEMP_DEF result);
 
   format %{ "String Compare byte[] $str1[len: $cnt1], $str2[len: $cnt2] tmp1:$tmp1 tmp2:$tmp2 -> $result @ string_compareUL" %}
   ins_encode %{
@@ -8674,7 +8590,7 @@ instruct string_indexof_conUL(a4_RegP str1, mA5RegI cnt1, a6_RegP str2, immI_1 i
   ins_pipe(pipe_slow);
 %}
 
-instruct string_indexof_char(a4_RegP str1, mA5RegI cnt1, mA6RegI ch, no_Ax_mRegI result, mRegL tmp1, mRegL tmp2, mRegL tmp3) %{
+instruct string_indexof_char(a4_RegP str1, mA5RegI cnt1, mA6RegI ch, mRegI result, mRegL tmp1, mRegL tmp2, mRegL tmp3) %{
   predicate(((StrIndexOfCharNode*)n)->encoding() == StrIntrinsicNode::U);
   match(Set result (StrIndexOfChar (Binary str1 cnt1) ch));
   effect(USE_KILL str1, USE_KILL cnt1, USE_KILL ch, TEMP_DEF result, TEMP tmp1, TEMP tmp2, TEMP tmp3);
@@ -8690,7 +8606,7 @@ instruct string_indexof_char(a4_RegP str1, mA5RegI cnt1, mA6RegI ch, no_Ax_mRegI
   ins_pipe( pipe_slow );
 %}
 
-instruct stringL_indexof_char(a4_RegP str1, mA5RegI cnt1, mA6RegI ch, no_Ax_mRegI result, mRegL tmp1, mRegL tmp2, mRegL tmp3) %{
+instruct stringL_indexof_char(a4_RegP str1, mA5RegI cnt1, mA6RegI ch, mRegI result, mRegL tmp1, mRegL tmp2, mRegL tmp3) %{
   predicate(((StrIndexOfCharNode*)n)->encoding() == StrIntrinsicNode::L);
   match(Set result (StrIndexOfChar (Binary str1 cnt1) ch));
   effect(USE_KILL str1, USE_KILL cnt1, USE_KILL ch, TEMP_DEF result, TEMP tmp1, TEMP tmp2, TEMP tmp3);
@@ -8706,7 +8622,7 @@ instruct stringL_indexof_char(a4_RegP str1, mA5RegI cnt1, mA6RegI ch, no_Ax_mReg
   ins_pipe( pipe_slow );
 %}
 
-instruct count_positives(a4_RegP src, mA5RegI len, no_Ax_mRegI result, mRegL tmp1) %{
+instruct count_positives(a4_RegP src, mA5RegI len, mRegI result, mRegL tmp1) %{
   match(Set result (CountPositives src len));
   effect(USE src, USE len, TEMP_DEF result, TEMP tmp1);
   format %{ "count positives byte[] src:$src, len:$len -> $result TEMP($tmp1) @ count_positives" %}
@@ -8719,7 +8635,7 @@ instruct count_positives(a4_RegP src, mA5RegI len, no_Ax_mRegI result, mRegL tmp
   ins_pipe( pipe_slow );
 %}
 
-instruct count_positives_v(a4_RegP src, mA5RegI len, no_Ax_mRegI result, mRegL tmp1) %{
+instruct count_positives_v(a4_RegP src, mA5RegI len, mRegI result, mRegL tmp1) %{
   predicate(UseLSX);
   match(Set result (CountPositives src len));
   effect(USE src, USE len, TEMP_DEF result, TEMP tmp1);
@@ -8734,7 +8650,7 @@ instruct count_positives_v(a4_RegP src, mA5RegI len, no_Ax_mRegI result, mRegL t
 %}
 
 // fast char[] to byte[] compression
-instruct string_compress(a4_RegP src, a5_RegP dst, mA6RegI len, no_Ax_mRegI result,
+instruct string_compress(a4_RegP src, a5_RegP dst, mA6RegI len, mRegI result,
                          mRegL tmp1, mRegL tmp2, mRegL tmp3)
 %{
   match(Set result (StrCompressedCopy src (Binary dst len)));
@@ -8766,7 +8682,7 @@ instruct string_inflate(Universe dummy, a4_RegP src, a5_RegP dst, mA6RegI len,
 %}
 
 // intrinsic optimization
-instruct string_equals(a4_RegP str1, a5_RegP str2, mA6RegI cnt, no_Ax_mRegI result, mRegL tmp1, mRegL tmp2) %{
+instruct string_equals(a4_RegP str1, a5_RegP str2, mA6RegI cnt, mRegI result, mRegL tmp1, mRegL tmp2) %{
   match(Set result (StrEquals (Binary str1 str2) cnt));
   effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt, TEMP_DEF result, TEMP tmp1, TEMP tmp2);
 
@@ -8780,7 +8696,7 @@ instruct string_equals(a4_RegP str1, a5_RegP str2, mA6RegI cnt, no_Ax_mRegI resu
   ins_pipe( pipe_slow );
 %}
 
-instruct array_equalsB(a4_RegP ary1, a5_RegP ary2, no_Ax_mRegI result, mRegL tmp0, mRegL tmp1, mRegL tmp2) %{
+instruct array_equalsB(a4_RegP ary1, a5_RegP ary2, mRegI result, mRegL tmp0, mRegL tmp1, mRegL tmp2) %{
   predicate(((AryEqNode*)n)->encoding() == StrIntrinsicNode::LL);
   match(Set result (AryEq ary1 ary2));
   effect(USE_KILL ary1, USE_KILL ary2, TEMP_DEF result, TEMP tmp0, TEMP tmp1, TEMP tmp2);
@@ -8795,7 +8711,7 @@ instruct array_equalsB(a4_RegP ary1, a5_RegP ary2, no_Ax_mRegI result, mRegL tmp
   ins_pipe( pipe_slow );
 %}
 
-instruct array_equalsC(a4_RegP ary1, a5_RegP ary2, no_Ax_mRegI result, mRegL tmp0, mRegL tmp1, mRegL tmp2) %{
+instruct array_equalsC(a4_RegP ary1, a5_RegP ary2, mRegI result, mRegL tmp0, mRegL tmp1, mRegL tmp2) %{
   predicate(((AryEqNode*)n)->encoding() == StrIntrinsicNode::UU);
   match(Set result (AryEq ary1 ary2));
   effect(USE_KILL ary1, USE_KILL ary2, TEMP_DEF result, TEMP tmp0, TEMP tmp1, TEMP tmp2);
@@ -8811,7 +8727,7 @@ instruct array_equalsC(a4_RegP ary1, a5_RegP ary2, no_Ax_mRegI result, mRegL tmp
 %}
 
 // encode char[] to byte[] in ISO_8859_1
-instruct encode_iso_array(a4_RegP src, a5_RegP dst, mA6RegI len, no_Ax_mRegI result,
+instruct encode_iso_array(a4_RegP src, a5_RegP dst, mA6RegI len, mRegI result,
                           mRegL tmp1, mRegL tmp2, mRegL tmp3)
 %{
   predicate(!((EncodeISOArrayNode*)n)->is_ascii());
@@ -8830,7 +8746,7 @@ instruct encode_iso_array(a4_RegP src, a5_RegP dst, mA6RegI len, no_Ax_mRegI res
 %}
 
 // encode char[] to byte[] in ASCII
-instruct encode_ascii_array(a4_RegP src, a5_RegP dst, mA6RegI len, no_Ax_mRegI result,
+instruct encode_ascii_array(a4_RegP src, a5_RegP dst, mA6RegI len, mRegI result,
                             mRegL tmp1, mRegL tmp2, mRegL tmp3)
 %{
   predicate(((EncodeISOArrayNode*)n)->is_ascii());
@@ -10847,24 +10763,17 @@ instruct Ret() %{
 // "restore" before this instruction (in Epilogue), we need to materialize it
 // in %i0.
 //FIXME
-instruct tailjmpInd(no_Ax_mRegP jump_target, mRegP ex_oop) %{
+instruct tailjmpInd(mRegP jump_target, a0_RegP ex_oop, mA1RegI exception_pc) %{
   match( TailJump jump_target ex_oop );
   ins_cost(200);
   format %{ "Jmp     $jump_target  ; ex_oop = $ex_oop #@tailjmpInd" %}
   ins_encode %{
     Register target = $jump_target$$Register;
 
-    // V0, V1 are indicated in:
+    // A0, A1 are indicated in:
     //     [stubGenerator_loongarch.cpp] generate_forward_exception()
     //     [runtime_loongarch.cpp] OptoRuntime::generate_exception_blob()
-    //
-    Register oop  = $ex_oop$$Register;
-    Register exception_oop = V0;
-    Register exception_pc = V1;
-
-    __ move(exception_pc, RA);
-    __ move(exception_oop, oop);
-
+    __ move($exception_pc$$Register, RA);
     __ jr(target);
   %}
   ins_pipe( pipe_jump );
@@ -11388,11 +11297,11 @@ instruct leaPIdxScale(mRegP dst, mRegP reg, mRegLorI2L lreg, immI_0_3 scale)
 // array for an instance of the superklass.  Set a hidden internal cache on a
 // hit (cache is checked with exposed code in gen_subtype_check()).  Return
 // NZ for a miss or zero for a hit.  The encoding ALSO sets flags.
-instruct partialSubtypeCheck( mRegP result, no_T8_mRegP sub, no_T8_mRegP super, mRegI tmp2,  mT8RegI tmp ) %{
+instruct partialSubtypeCheck( mRegP result, mRegP sub, mRegP super, mRegI tmp2,  mRegI tmp ) %{
   match(Set result (PartialSubtypeCheck sub super));
-  effect(KILL tmp, TEMP tmp2);
+  effect(TEMP tmp, TEMP tmp2);
   ins_cost(1100);  // slightly larger than the next version
-  format %{ "partialSubtypeCheck result=$result, sub=$sub, super=$super, tmp=$tmp " %}
+  format %{ "partialSubtypeCheck result=$result, sub=$sub, super=$super, tmp=$tmp, tmp2=$tmp2" %}
 
   ins_encode( enc_PartialSubtypeCheck(result, sub, super, tmp, tmp2) );
   ins_pipe( pipe_slow );

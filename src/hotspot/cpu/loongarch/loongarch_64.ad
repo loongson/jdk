@@ -578,6 +578,10 @@ reg_class p_reg %{
   return _PTR_REG_mask;
 %}
 
+reg_class no_CR_reg %{
+  return _NO_CR_REG_mask;
+%}
+
 reg_class no_T8_p_reg(
                  S7, S7_H,
                  S0, S0_H,
@@ -814,6 +818,7 @@ source_hpp %{
 extern RegMask _ANY_REG32_mask;
 extern RegMask _ANY_REG_mask;
 extern RegMask _PTR_REG_mask;
+extern RegMask _NO_CR_REG_mask;
 
 class CallStubImpl {
 
@@ -909,6 +914,7 @@ source %{
 RegMask _ANY_REG32_mask;
 RegMask _ANY_REG_mask;
 RegMask _PTR_REG_mask;
+RegMask _NO_CR_REG_mask;
 
 void reg_mask_init() {
   _ANY_REG32_mask = _ALL_REG32_mask;
@@ -933,6 +939,9 @@ void reg_mask_init() {
     _ANY_REG_mask.SUBTRACT(_T4_LONG_REG_mask);
     _PTR_REG_mask.SUBTRACT(_T4_LONG_REG_mask);
   }
+
+  _NO_CR_REG_mask = _PTR_REG_mask;
+  _NO_CR_REG_mask.SUBTRACT(_T0_LONG_REG_mask);
 }
 
 void PhaseOutput::pd_perform_mach_node_analysis() {
@@ -3480,6 +3489,15 @@ operand mRegP() %{
   constraint(ALLOC_IN_RC(p_reg));
   match(RegP);
   match(a0_RegP);
+
+  format %{  %}
+  interface(REG_INTER);
+%}
+
+operand no_CR_mRegP() %{
+  constraint(ALLOC_IN_RC(no_CR_reg));
+  match(RegP);
+  match(mRegP);
 
   format %{  %}
   interface(REG_INTER);
@@ -11268,9 +11286,9 @@ instruct storeSSD(stackSlotD dst, regD src)
   ins_pipe(fpu_storeF);
 %}
 
-instruct cmpFastLock(FlagsReg cr, mRegP object, mRegP box, mRegL tmp1, mRegL tmp2) %{
+instruct cmpFastLock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2) %{
   match(Set cr (FastLock object box));
-  effect(TEMP_DEF cr, TEMP tmp1, TEMP tmp2);
+  effect(TEMP tmp1, TEMP tmp2);
 
   format %{ "FASTLOCK $cr <-- $object, $box, $tmp1, $tmp2 #@ cmpFastLock" %}
 
@@ -11281,9 +11299,9 @@ instruct cmpFastLock(FlagsReg cr, mRegP object, mRegP box, mRegL tmp1, mRegL tmp
   ins_pipe( pipe_slow );
 %}
 
-instruct cmpFastUnlock(FlagsReg cr, mRegP object, mRegP box, mRegL tmp1, mRegL tmp2) %{
+instruct cmpFastUnlock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2) %{
   match(Set cr (FastUnlock object box));
-  effect(TEMP_DEF cr, TEMP tmp1, TEMP tmp2);
+  effect(TEMP tmp1, TEMP tmp2);
 
   format %{ "FASTUNLOCK $cr <-- $object, $box, $tmp1, $tmp2 #@ cmpFastUnlock" %}
 

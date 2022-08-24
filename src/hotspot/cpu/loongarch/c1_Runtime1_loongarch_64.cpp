@@ -290,10 +290,12 @@ static OopMap* save_live_registers(StubAssembler* sasm,
                                    bool save_fpu_registers = true) {
   __ block_comment("save_live_registers");
 
-  // integer registers except zr & ra & tp & sp
+  // integer registers except zr & ra & tp & sp & rx. 4 is due to alignment.
   __ addi_d(SP, SP, -(32 - 4 + 32) * wordSize);
 
-  for (int i = 4; i < 32; i++)
+  for (int i = 4; i < 21; i++)
+    __ st_d(as_Register(i), Address(SP, (32 + i - 4) * wordSize));
+  for (int i = 22; i < 32; i++)
     __ st_d(as_Register(i), Address(SP, (32 + i - 4) * wordSize));
 
   if (save_fpu_registers) {
@@ -310,7 +312,9 @@ static void restore_live_registers(StubAssembler* sasm, bool restore_fpu_registe
       __ fld_d(as_FloatRegister(i), Address(SP, i * wordSize));
   }
 
-  for (int i = 4; i < 32; i++)
+  for (int i = 4; i < 21; i++)
+    __ ld_d(as_Register(i), Address(SP, (32 + i - 4) * wordSize));
+  for (int i = 22; i < 32; i++)
     __ ld_d(as_Register(i), Address(SP, (32 + i - 4) * wordSize));
 
   __ addi_d(SP, SP, (32 - 4 + 32) * wordSize);
@@ -322,7 +326,9 @@ static void restore_live_registers_except_a0(StubAssembler* sasm, bool restore_f
       __ fld_d(as_FloatRegister(i), Address(SP, i * wordSize));
   }
 
-  for (int i = 5; i < 32; i++)
+  for (int i = 5; i < 21; i++)
+    __ ld_d(as_Register(i), Address(SP, (32 + i - 4) * wordSize));
+  for (int i = 22; i < 32; i++)
     __ ld_d(as_Register(i), Address(SP, (32 + i - 4) * wordSize));
 
   __ addi_d(SP, SP, (32 - 4 + 32) * wordSize);

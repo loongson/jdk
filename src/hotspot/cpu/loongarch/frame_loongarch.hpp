@@ -26,8 +26,6 @@
 #ifndef CPU_LOONGARCH_FRAME_LOONGARCH_HPP
 #define CPU_LOONGARCH_FRAME_LOONGARCH_HPP
 
-#include "runtime/synchronizer.hpp"
-
 // A frame represents a physical stack frame (an activation).  Frames can be
 // C or Java frames, and the Java frames can be interpreted or compiled.
 // In contrast, vframes represent source-level activations, so that one physical frame

@@ -482,7 +482,7 @@ BasicType frame::interpreter_frame_result(oop* oop_result, jvalue* value_result)
     // then ST0 is saved. See the note in generate_native_result
     tos_addr = (intptr_t*)sp();
     if (type == T_FLOAT || type == T_DOUBLE) {
-      tos_addr += 2;
+      tos_addr += 2 * Interpreter::stackElementWords;
     }
   } else {
     tos_addr = (intptr_t*)interpreter_frame_tos_address();

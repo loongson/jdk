@@ -29,6 +29,27 @@
 #include "oops/klass.inline.hpp"
 #include "runtime/frame.inline.hpp"
 
+int AbstractInterpreter::BasicType_as_index(BasicType type) {
+  int i = 0;
+  switch (type) {
+    case T_BOOLEAN: i = 0; break;
+    case T_CHAR   : i = 1; break;
+    case T_BYTE   : i = 2; break;
+    case T_SHORT  : i = 3; break;
+    case T_INT    : i = 4; break;
+    case T_LONG   :
+    case T_VOID   :
+    case T_FLOAT  :
+    case T_DOUBLE : i = 5; break;
+    case T_OBJECT :
+    case T_ARRAY  : i = 6; break;
+    default       : ShouldNotReachHere();
+  }
+  assert(0 <= i && i < AbstractInterpreter::number_of_result_handlers,
+         "index out of bounds");
+  return i;
+}
+
 // How much stack a method activation needs in words.
 int AbstractInterpreter::size_top_interpreter_activation(Method* method) {
   const int entry_size = frame::interpreter_frame_monitor_size();

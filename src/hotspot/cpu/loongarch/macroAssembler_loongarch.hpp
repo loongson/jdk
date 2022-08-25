@@ -701,6 +701,21 @@ class MacroAssembler: public Assembler {
 
 #undef VIRTUAL
 
+  void cast_primitive_type(BasicType type, Register reg) {
+    switch (type) {
+      case T_BOOLEAN: c2bool(reg);                 break;
+      case T_CHAR   : bstrpick_d(reg, reg, 15, 0); break;
+      case T_BYTE   : sign_extend_byte (reg);      break;
+      case T_SHORT  : sign_extend_short(reg);      break;
+      case T_INT    : add_w(reg, reg, R0);         break;
+      case T_LONG   : /* nothing to do */          break;
+      case T_VOID   : /* nothing to do */          break;
+      case T_FLOAT  : /* nothing to do */          break;
+      case T_DOUBLE : /* nothing to do */          break;
+      default: ShouldNotReachHere();
+    }
+  }
+
 private:
   void push(unsigned int bitset);
   void pop(unsigned int bitset);

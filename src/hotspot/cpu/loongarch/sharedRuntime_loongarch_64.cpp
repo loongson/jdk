@@ -1012,21 +1012,16 @@ void SharedRuntime::save_native_result(MacroAssembler *masm, BasicType ret_type,
   // We always ignore the frame_slots arg and just use the space just below frame pointer
   // which by this time is free to use
   switch (ret_type) {
-    case T_VOID:
-      break;
     case T_FLOAT:
       __ fst_s(FSF, FP, -3 * wordSize);
       break;
     case T_DOUBLE:
       __ fst_d(FSF, FP, -3 * wordSize);
       break;
-    case T_LONG:
-    case T_OBJECT:
-    case T_ARRAY:
+    case T_VOID:  break;
+    default: {
       __ st_d(V0, FP, -3 * wordSize);
-      break;
-    default:
-      __ st_w(V0, FP, -3 * wordSize);
+    }
   }
 }
 
@@ -1034,22 +1029,16 @@ void SharedRuntime::restore_native_result(MacroAssembler *masm, BasicType ret_ty
   // We always ignore the frame_slots arg and just use the space just below frame pointer
   // which by this time is free to use
   switch (ret_type) {
-    case T_VOID:
-      break;
     case T_FLOAT:
       __ fld_s(FSF, FP, -3 * wordSize);
       break;
     case T_DOUBLE:
       __ fld_d(FSF, FP, -3 * wordSize);
       break;
-    case T_LONG:
-    case T_OBJECT:
-    case T_ARRAY:
-      __ ld_d(V0, FP, -3 * wordSize);
-      break;
+    case T_VOID:  break;
     default: {
-      __ ld_w(V0, FP, -3 * wordSize);
-      }
+      __ ld_d(V0, FP, -3 * wordSize);
+    }
   }
 }
 
@@ -1783,22 +1772,8 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   // relative addressing.
 
   // Unpack native results.
-  switch (ret_type) {
-  case T_BOOLEAN: __ c2bool(V0);                break;
-  case T_CHAR   : __ bstrpick_d(V0, V0, 15, 0); break;
-  case T_BYTE   : __ sign_extend_byte (V0);     break;
-  case T_SHORT  : __ sign_extend_short(V0);     break;
-  case T_INT    : // nothing to do         break;
-  case T_DOUBLE :
-  case T_FLOAT  :
-  // Result is in st0 we'll save as needed
-  break;
-  case T_ARRAY:                 // Really a handle
-  case T_OBJECT:                // Really a handle
-  break; // can't de-handlize until after safepoint check
-  case T_VOID: break;
-  case T_LONG: break;
-  default       : ShouldNotReachHere();
+  if (ret_type != T_OBJECT && ret_type != T_ARRAY) {
+    __ cast_primitive_type(ret_type, V0);
   }
 
   Label after_transition;

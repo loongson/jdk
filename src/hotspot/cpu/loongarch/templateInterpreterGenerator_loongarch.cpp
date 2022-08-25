@@ -655,48 +655,18 @@ address TemplateInterpreterGenerator::generate_deopt_entry_for(TosState state,
   return entry;
 }
 
-int AbstractInterpreter::BasicType_as_index(BasicType type) {
-  int i = 0;
-  switch (type) {
-    case T_BOOLEAN: i = 0; break;
-    case T_CHAR   : i = 1; break;
-    case T_BYTE   : i = 2; break;
-    case T_SHORT  : i = 3; break;
-    case T_INT    : // fall through
-    case T_LONG   : // fall through
-    case T_VOID   : i = 4; break;
-    case T_FLOAT  : i = 5; break;
-    case T_DOUBLE : i = 6; break;
-    case T_OBJECT : // fall through
-    case T_ARRAY  : i = 7; break;
-    default       : ShouldNotReachHere();
-  }
-  assert(0 <= i && i < AbstractInterpreter::number_of_result_handlers,
-         "index out of bounds");
-  return i;
-}
-
-
-address TemplateInterpreterGenerator::generate_result_handler_for(
-        BasicType type) {
+address TemplateInterpreterGenerator::generate_result_handler_for(BasicType type) {
   address entry = __ pc();
-  switch (type) {
-    case T_BOOLEAN: __ c2bool(V0);                break;
-    case T_CHAR   : __ bstrpick_d(V0, V0, 15, 0); break;
-    case T_BYTE   : __ sign_extend_byte (V0);     break;
-    case T_SHORT  : __ sign_extend_short(V0);     break;
-    case T_INT    : /* nothing to do */           break;
-    case T_FLOAT  : /* nothing to do */           break;
-    case T_DOUBLE : /* nothing to do */           break;
-    case T_OBJECT :
-    {
-      __ ld_d(V0, FP, frame::interpreter_frame_oop_temp_offset * wordSize);
-      __ verify_oop(V0);         // and verify it
-    }
-    break;
-    default       : ShouldNotReachHere();
+  if (type == T_OBJECT) {
+    // retrieve result from frame
+    __ ld_d(V0, FP, frame::interpreter_frame_oop_temp_offset * wordSize);
+    // and verify it
+    __ verify_oop(V0);
+  } else {
+    __ cast_primitive_type(type, V0);
   }
-  __ jr(RA);                                  // return from result handler
+
+  __ jr(RA); // return from result handler
   return entry;
 }
 

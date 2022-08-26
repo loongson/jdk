@@ -94,12 +94,6 @@ void C2_MacroAssembler::fast_lock(Register oop, Register box, Register flag,
 
   // Handle existing monitor.
   bind(object_has_monitor);
-  // The object's monitor m is unlocked iff m->owner == NULL,
-  // otherwise m->owner may contain a thread or a stack address.
-  //
-  // Try to CAS m->owner from NULL to current thread.
-  addi_d(tmp, disp_hdr, ObjectMonitor::owner_offset_in_bytes() - markWord::monitor_value);
-  cmpxchg(Address(tmp, 0), R0, TREG, flag, false, false);
 
   // Store a non-null value into the box to avoid looking like a re-entrant
   // lock. The fast-path monitor unlock code checks for
@@ -108,9 +102,17 @@ void C2_MacroAssembler::fast_lock(Register oop, Register box, Register flag,
   li(AT, (int32_t)intptr_t(markWord::unused_mark().value()));
   st_d(AT, box, BasicLock::displaced_header_offset_in_bytes());
 
+  // The object's monitor m is unlocked if m->owner == NULL,
+  // otherwise m->owner may contain a thread or a stack address.
+  //
+  // Try to CAS m->owner from NULL to current thread.
+  move(AT, R0);
+  addi_d(tmp, disp_hdr, ObjectMonitor::owner_offset_in_bytes() - markWord::monitor_value);
+  cmpxchg(Address(tmp, 0), AT, TREG, flag, true, false);
+
   bnez(flag, cont); // CAS success means locking succeeded
 
-  bne(flag, TREG, cont); // Check for recursive locking
+  bne(AT, TREG, cont); // Check for recursive locking
 
   // Recursive lock case
   li(flag, 1);

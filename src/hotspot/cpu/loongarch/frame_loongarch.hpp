@@ -97,6 +97,9 @@
     interpreter_frame_monitor_block_bottom_offset    = interpreter_frame_initial_sp_offset,
 
     // Entry frames
+    // n.b. these values are determined by the layout defined in
+    // stubGenerator for the Java call stub
+    entry_frame_after_call_words                     =  25,
     entry_frame_call_wrapper_offset                  = -11,
 
     // we don't need a save area

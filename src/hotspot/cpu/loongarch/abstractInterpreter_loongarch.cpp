@@ -29,6 +29,23 @@
 #include "oops/klass.inline.hpp"
 #include "runtime/frame.inline.hpp"
 
+// How much stack a method activation needs in words.
+int AbstractInterpreter::size_top_interpreter_activation(Method* method) {
+  const int entry_size = frame::interpreter_frame_monitor_size();
+
+  // total overhead size: entry_size + (saved fp thru expr stack
+  // bottom).  be sure to change this if you add/subtract anything
+  // to/from the overhead area
+  const int overhead_size =
+    -(frame::interpreter_frame_initial_sp_offset) + entry_size;
+
+  const int stub_code = frame::entry_frame_after_call_words;
+  assert(method != NULL, "invalid method");
+  const int method_stack = (method->max_locals() + method->max_stack()) *
+                           Interpreter::stackElementWords;
+  return (overhead_size + method_stack + stub_code);
+}
+
 // asm based interpreter deoptimization helpers
 int AbstractInterpreter::size_activation(int max_stack,
                                          int temps,
@@ -53,22 +70,6 @@ int AbstractInterpreter::size_activation(int max_stack,
          temps* Interpreter::stackElementWords + extra_args;
 
   return size;
-}
-
-// How much stack a method activation needs in words.
-int AbstractInterpreter::size_top_interpreter_activation(Method* method) {
-
-  const int entry_size    = frame::interpreter_frame_monitor_size();
-
-  // total overhead size: entry_size + (saved ebp thru expr stack bottom).
-  // be sure to change this if you add/subtract anything to/from the overhead area
-  const int overhead_size = -(frame::interpreter_frame_initial_sp_offset) + entry_size;
-
-  const int stub_code = 6;  // see generate_call_stub
-  // return overhead_size + method->max_locals() + method->max_stack() + stub_code;
-  const int method_stack = (method->max_locals() + method->max_stack()) *
-          Interpreter::stackElementWords;
-  return overhead_size + method_stack + stub_code;
 }
 
 void AbstractInterpreter::layout_activation(Method* method,

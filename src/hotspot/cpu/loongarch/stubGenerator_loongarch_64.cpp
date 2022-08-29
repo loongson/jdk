@@ -121,7 +121,7 @@ class StubGenerator: public StubCodeGenerator {
   //    [ argument word n-1    ] <--- sp
   //      ...
   //    [ argument word 0      ]
-  //-24 [                      ]
+  //-24 [                      ] <--- sp_after_call
   //-23 [ F31                  ]
   //      ...
   //-16 [ F24                  ]
@@ -170,21 +170,25 @@ class StubGenerator: public StubCodeGenerator {
     F29_off            = -21,
     F30_off            = -22,
     F31_off            = -23,
-    total_off          = -24,
+    // padding for SP 16-byte alignment
+    sp_after_call_off  = -24,
   };
 
   address generate_call_stub(address& return_address) {
-    assert((int)frame::entry_frame_call_wrapper_offset == (int)call_wrapper_off, "adjust this code");
-    StubCodeMark mark(this, "StubRoutines", "call_stub");
-    address start = __ pc();
+    assert((int)frame::entry_frame_after_call_words == -(int)sp_after_call_off + 1 &&
+           (int)frame::entry_frame_call_wrapper_offset == (int)call_wrapper_off,
+           "adjust this code");
 
-    // same as in generate_catch_exception()!
+    StubCodeMark mark(this, "StubRoutines", "call_stub");
 
     // stub code
-    // save ra and fp
+
+    address start = __ pc();
+
+    // set up frame and move sp to end of save area
     __ enter();
-    // I think 14 is the max gap between argument and callee saved register
-    __ addi_d(SP, SP, total_off * wordSize);
+    __ addi_d(SP, FP, sp_after_call_off * wordSize);
+
     __ st_d(BCP, FP, BCP_off * wordSize);
     __ st_d(LVP, FP, LVP_off * wordSize);
     __ st_d(TSR, FP, TSR_off * wordSize);

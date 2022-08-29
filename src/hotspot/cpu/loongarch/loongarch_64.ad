@@ -406,51 +406,51 @@ register %{
 //S6 is used for get_thread(S6)
 //S5 is used for heapbase of compressed oop
 alloc_class chunk0(
-                     S7, S7_H,
-                     S0, S0_H,
-                     S1, S1_H,
-                     S2, S2_H,
-                     S4, S4_H,
-                     S5, S5_H,
-                     S6, S6_H,
-                     S3, S3_H,
+                     // volatiles
+                     T0, T0_H,
+                     T1, T1_H,
                      T2, T2_H,
                      T3, T3_H,
-                     T8, T8_H,
                      T4, T4_H,
-                     T1, T1_H, // inline_cache_reg
+                     T5, T5_H,
                      T6, T6_H,
+                     T8, T8_H,
+
+                     // args
                      A7, A7_H,
                      A6, A6_H,
                      A5, A5_H,
                      A4, A4_H,
-                     T5, T5_H,
                      A3, A3_H,
                      A2, A2_H,
                      A1, A1_H,
                      A0, A0_H,
-                     T0, T0_H,
+
+                     // non-volatiles
+                     S0, S0_H,
+                     S1, S1_H,
+                     S2, S2_H,
+                     S3, S3_H,
+                     S4, S4_H,
+                     S5, S5_H,
+                     S6, S6_H,
+                     S7, S7_H,
                      S8, S8_H
+
+                     // non-allocatable registers
                      RA, RA_H,
                      SP, SP_H, // stack_pointer
                      FP, FP_H, // frame_pointer
-
-                     // non-allocatable registers
-                     T7, T7_H,
+                     T7, T7_H, // rscratch
                      TP, TP_H,
                      RX, RX_H,
                      R0, R0_H,
                  );
 
 // F23 is scratch reg
-alloc_class chunk1(  F0, F0_H, F0_J, F0_K, F0_L, F0_M, F0_N, F0_O,
-                     F1, F1_H, F1_J, F1_K, F1_L, F1_M, F1_N, F1_O,
-                     F2, F2_H, F2_J, F2_K, F2_L, F2_M, F2_N, F2_O,
-                     F3, F3_H, F3_J, F3_K, F3_L, F3_M, F3_N, F3_O,
-                     F4, F4_H, F4_J, F4_K, F4_L, F4_M, F4_N, F4_O,
-                     F5, F5_H, F5_J, F5_K, F5_L, F5_M, F5_N, F5_O,
-                     F6, F6_H, F6_J, F6_K, F6_L, F6_M, F6_N, F6_O,
-                     F7, F7_H, F7_J, F7_K, F7_L, F7_M, F7_N, F7_O,
+alloc_class chunk1(
+
+                     // no save
                      F8, F8_H, F8_J, F8_K, F8_L, F8_M, F8_N, F8_O,
                      F9, F9_H, F9_J, F9_K, F9_L, F9_M, F9_N, F9_O,
                      F10, F10_H, F10_J, F10_K, F10_L, F10_M, F10_N, F10_O,
@@ -466,6 +466,18 @@ alloc_class chunk1(  F0, F0_H, F0_J, F0_K, F0_L, F0_M, F0_N, F0_O,
                      F20, F20_H, F20_J, F20_K, F20_L, F20_M, F20_N, F20_O,
                      F21, F21_H, F21_J, F21_K, F21_L, F21_M, F21_N, F21_O,
                      F22, F22_H, F22_J, F22_K, F22_L, F22_M, F22_N, F22_O,
+
+                     // arg registers
+                     F0, F0_H, F0_J, F0_K, F0_L, F0_M, F0_N, F0_O,
+                     F1, F1_H, F1_J, F1_K, F1_L, F1_M, F1_N, F1_O,
+                     F2, F2_H, F2_J, F2_K, F2_L, F2_M, F2_N, F2_O,
+                     F3, F3_H, F3_J, F3_K, F3_L, F3_M, F3_N, F3_O,
+                     F4, F4_H, F4_J, F4_K, F4_L, F4_M, F4_N, F4_O,
+                     F5, F5_H, F5_J, F5_K, F5_L, F5_M, F5_N, F5_O,
+                     F6, F6_H, F6_J, F6_K, F6_L, F6_M, F6_N, F6_O,
+                     F7, F7_H, F7_J, F7_K, F7_L, F7_M, F7_N, F7_O,
+
+                     // non-volatiles
                      F24, F24_H, F24_J, F24_K, F24_L, F24_M, F24_N, F24_O,
                      F25, F25_H, F25_J, F25_K, F25_L, F25_M, F25_N, F25_O,
                      F26, F26_H, F26_J, F26_K, F26_L, F26_M, F26_N, F26_O,

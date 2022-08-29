@@ -146,6 +146,8 @@ public:
   void vector_compare(FloatRegister dst, FloatRegister src1, FloatRegister src2, BasicType type, int cond, int vector_size);
 
 private:
+  // Return true if the phase output is in the scratch emit size mode.
+  virtual bool in_scratch_emit_size() override;
 
   template <typename T>
   void loadstore_t(T reg, int base, int index, int scale, int disp, int type) {

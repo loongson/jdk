@@ -123,6 +123,11 @@ class MacroAssembler: public Assembler {
   // They _shadow_ the declarations in AbstractAssembler, which are undefined.
   static void pd_patch_instruction(address branch, address target, const char* file = NULL, int line = 0);
 
+  // Return whether code is emitted to a scratch blob.
+  virtual bool in_scratch_emit_size() {
+    return false;
+  }
+
   address emit_trampoline_stub(int insts_call_instruction_offset, address target);
 
   // Support for inc/dec with optimal instruction selection depending on value

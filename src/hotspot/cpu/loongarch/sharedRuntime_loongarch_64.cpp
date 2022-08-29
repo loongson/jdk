@@ -2394,26 +2394,6 @@ void SharedRuntime::generate_deopt_blob() {
   __ ld_w(AT, unroll, Deoptimization::UnrollBlock::caller_adjustment_offset_in_bytes());
   __ sub_d(SP, SP, AT);
 
-  // Push interpreter frames in a loop
-  //
-  //Loop:
-  //   0x000000555bd82d18: lw t2, 0x0(t1)           ; lw sizes[i]  <--- error lw->ld
-  //   0x000000555bd82d1c: ld at, 0x0(t0)           ; ld pcs[i]
-  //   0x000000555bd82d20: daddi t2, t2, 0xfffffff0 ; t2 -= 16
-  //   0x000000555bd82d24: daddi sp, sp, 0xfffffff0
-  //   0x000000555bd82d28: sd fp, 0x0(sp)           ; push fp
-  //   0x000000555bd82d2c: sd at, 0x8(sp)           ; push at
-  //   0x000000555bd82d30: dadd fp, sp, 16          ; set new fp
-  //   0x000000555bd82d34: dsub sp, sp, t2          ; sp -= t2
-  //   0x000000555bd82d38: sd zero, 0xfffffff0(fp)  ; __ sd(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);
-  //   0x000000555bd82d3c: sd s4, 0xfffffff8(fp)    ; __ sd(sender_sp, FP, frame::interpreter_frame_sender_sp_offset * wordSize);
-  //   0x000000555bd82d40: dadd s4, sp, zero        ; move(sender_sp, SP);
-  //   0x000000555bd82d44: daddi t3, t3, 0xffffffff ; count --
-  //   0x000000555bd82d48: daddi t1, t1, 0x4        ; sizes += 4
-  //   0x000000555bd82d4c: bne t3, zero, 0x000000555bd82d18
-  //   0x000000555bd82d50: daddi t0, t0, 0x4        ; <--- error    t0 += 8
-  //
-  // pcs[0] = frame_pcs[0] = deopt_sender.raw_pc(); regex.split
   Label loop;
   __ bind(loop);
   __ ld_d(T2, sizes, 0);    // Load frame size

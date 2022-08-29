@@ -8895,7 +8895,7 @@ instruct addI_salI_Reg_Reg_immI_1_4(mRegI dst, mRegI src1, mRegI src2, immI_1_4 
 instruct addP_reg_reg(mRegP dst, mRegP src1, mRegLorI2L src2) %{
   match(Set dst (AddP src1 src2));
 
-  format %{ "dadd    $dst, $src1, $src2 #@addP_reg_reg" %}
+  format %{ "ADD    $dst, $src1, $src2 #@addP_reg_reg" %}
 
   ins_encode %{
     Register  dst = $dst$$Register;
@@ -8910,7 +8910,7 @@ instruct addP_reg_reg(mRegP dst, mRegP src1, mRegLorI2L src2) %{
 instruct addP_reg_imm12(mRegP dst, mRegP src1,  immL12 src2) %{
   match(Set dst (AddP src1 src2));
 
-  format %{ "daddi   $dst, $src1, $src2 #@addP_reg_imm12" %}
+  format %{ "ADD   $dst, $src1, $src2 #@addP_reg_imm12" %}
   ins_encode %{
     Register src1 = $src1$$Register;
     long     src2 = $src2$$constant;
@@ -10920,7 +10920,7 @@ instruct CallLeafNoFPDirect(method meth) %{
 instruct prefetchAlloc(memory mem) %{
   match(PrefetchAllocation mem);
   ins_cost(125);
-  format %{ "pref $mem\t# Prefetch allocation @ prefetchAlloc" %}
+  format %{ "preld $mem\t# Prefetch allocation @ prefetchAlloc" %}
   ins_encode %{
     int  base = $mem$$base;
     int  index = $mem$$index;
@@ -11238,7 +11238,7 @@ instruct loadSSF(regF dst, stackSlotF src)
   match(Set dst src);
 
   ins_cost(125);
-  format %{ "lwc1   $dst, $src\t# float stk @ loadSSF" %}
+  format %{ "fld_s   $dst, $src\t# float stk @ loadSSF" %}
   ins_encode %{
     guarantee( Assembler::is_simm($src$$disp, 12), "disp too long (loadSSF) !");
     __ fld_s($dst$$FloatRegister, SP, $src$$disp);
@@ -11251,7 +11251,7 @@ instruct storeSSF(stackSlotF dst, regF src)
   match(Set dst src);
 
   ins_cost(100);
-  format %{ "swc1    $dst, $src\t# float stk @ storeSSF" %}
+  format %{ "fst_s    $dst, $src\t# float stk @ storeSSF" %}
   ins_encode %{
     guarantee( Assembler::is_simm($dst$$disp, 12), "disp too long (storeSSF) !");
     __ fst_s($src$$FloatRegister, SP, $dst$$disp);
@@ -11265,7 +11265,7 @@ instruct loadSSD(regD dst, stackSlotD src)
   match(Set dst src);
 
   ins_cost(125);
-  format %{ "ldc1   $dst, $src\t# double stk @ loadSSD" %}
+  format %{ "fld_d   $dst, $src\t# double stk @ loadSSD" %}
   ins_encode %{
     guarantee( Assembler::is_simm($src$$disp, 12), "disp too long (loadSSD) !");
     __ fld_d($dst$$FloatRegister, SP, $src$$disp);

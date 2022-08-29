@@ -325,20 +325,6 @@ class NativeMovConstRegPatching: public NativeMovConstReg {
   }
 };
 
-// An interface for accessing/manipulating native moves of the form:
-//       lui   AT, split_high(offset)
-//       addiu AT, split_low(offset)
-//       add   reg, reg, AT
-//       lb/lbu/sb/lh/lhu/sh/lw/sw/lwc1/swc1 dest, reg, 0
-//       [lw/sw/lwc1/swc1                    dest, reg, 4]
-//     or
-//       lb/lbu/sb/lh/lhu/sh/lw/sw/lwc1/swc1 dest, reg, offset
-//       [lw/sw/lwc1/swc1                    dest, reg, offset+4]
-//
-// Warning: These routines must be able to handle any instruction sequences
-// that are generated as a result of the load/store byte,word,long
-// macros.
-
 class NativeMovRegMem: public NativeInstruction {
  public:
   enum loongarch_specific_constants {

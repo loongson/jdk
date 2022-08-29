@@ -599,7 +599,7 @@ class MacroAssembler: public Assembler {
   Address argument_address(RegisterOrConstant arg_slot, int extra_slot_offset = 0);
 
 
-// LA added:
+  // LA added:
   void jr  (Register reg)        { jirl(R0, reg, 0); }
   void jalr(Register reg)        { jirl(RA, reg, 0); }
   void nop ()                    { andi(R0, R0, 0); }

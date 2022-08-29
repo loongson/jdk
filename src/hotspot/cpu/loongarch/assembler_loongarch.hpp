@@ -1609,7 +1609,6 @@ public:
   static int get_vec_imm(float x);
   static int get_vec_imm(double x);
 
-  // LoongArch lui is sign extended, so if you wan't to use imm, you have to use the follow
   static int split_low16(int x) {
     return (x & 0xffff);
   }

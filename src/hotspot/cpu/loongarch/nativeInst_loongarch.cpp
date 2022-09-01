@@ -119,7 +119,7 @@ address NativeCall::destination() const {
   // Trampoline stubs are located behind the main code.
   if (destination > addr) {
     // Filter out recursive method invocation (call to verified/unverified entry point).
-    CodeBlob* cb = CodeCache::find_blob_unsafe(addr);   // Else we get assertion if nmethod is zombie.
+    CodeBlob* cb = CodeCache::find_blob(addr);
     assert(cb && cb->is_nmethod(), "sanity");
     nmethod *nm = (nmethod *)cb;
     NativeInstruction* ni = nativeInstruction_at(destination);
@@ -374,7 +374,7 @@ void NativeMovConstReg::set_data(intptr_t x, intptr_t o) {
 
   // Find and replace the oop/metadata corresponding to this
   // instruction in oops section.
-  CodeBlob* blob = CodeCache::find_blob_unsafe(instruction_address());
+  CodeBlob* blob = CodeCache::find_blob(instruction_address());
   nmethod* nm = blob->as_nmethod_or_null();
   if (nm != NULL) {
     o = o ? o : x;
@@ -417,7 +417,7 @@ void NativeMovRegMem::print() {
   guarantee(0, "LA not implemented yet");
 }
 
-bool NativeInstruction::is_sigill_zombie_not_entrant() {
+bool NativeInstruction::is_sigill_not_entrant() {
   return uint_at(0) == NativeIllegalInstruction::instruction_code;
 }
 
@@ -496,7 +496,7 @@ void NativeJump::patch_verified_entry(address entry, address verified_entry, add
     masm.b(dest);
   } else {
     // We use an illegal instruction for marking a method as
-    // not_entrant or zombie
+    // not_entrant.
     NativeIllegalInstruction::insert(verified_entry);
   }
   ICache::invalidate_range(verified_entry, 1 * BytesPerInstWord);

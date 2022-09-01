@@ -218,7 +218,7 @@ bool PosixSignals::pd_hotspot_signal_handler(int sig, siginfo_t* info,
 #endif
 
       // Handle signal from NativeJump::patch_verified_entry().
-      if (sig == SIGILL & nativeInstruction_at(pc)->is_sigill_zombie_not_entrant()) {
+      if (sig == SIGILL & nativeInstruction_at(pc)->is_sigill_not_entrant()) {
 #ifdef PRINT_SIGNAL_HANDLE
         tty->print_cr("verified entry = %lx, sig=%d", nativeInstruction_at(pc), sig);
 #endif
@@ -232,7 +232,7 @@ bool PosixSignals::pd_hotspot_signal_handler(int sig, siginfo_t* info,
         // BugId 4454115: A read from a MappedByteBuffer can fault
         // here if the underlying file has been truncated.
         // Do not crash the VM in such a case.
-        CodeBlob* cb = CodeCache::find_blob_unsafe(pc);
+        CodeBlob* cb = CodeCache::find_blob(pc);
         CompiledMethod* nm = (cb != NULL) ? cb->as_compiled_method_or_null() : NULL;
 #ifdef PRINT_SIGNAL_HANDLE
         tty->print("cb = %lx, nm = %lx\n", cb, nm);

@@ -2452,21 +2452,15 @@ Address MacroAssembler::argument_address(RegisterOrConstant arg_slot,
   int offset1 = Interpreter::expr_offset_in_bytes(extra_slot_offset+1);
   assert(offset1 - offset == stackElementSize, "correct arithmetic");
 #endif
-  Register             scale_reg    = NOREG;
+  Register             scale_reg    = noreg;
   Address::ScaleFactor scale_factor = Address::no_scale;
   if (arg_slot.is_constant()) {
     offset += arg_slot.as_constant() * stackElementSize;
   } else {
     scale_reg    = arg_slot.as_register();
-    scale_factor = Address::times_8;
+    scale_factor = Address::times(stackElementSize);
   }
-  // We don't push RA on stack in prepare_invoke.
-  //  offset += wordSize;           // return PC is on stack
-  if(scale_reg==NOREG) return Address(SP, offset);
-  else {
-  alsl_d(scale_reg, scale_reg, SP, scale_factor - 1);
-  return Address(scale_reg, offset);
-  }
+  return Address(SP, scale_reg, scale_factor, offset);
 }
 
 SkipIfEqual::~SkipIfEqual() {

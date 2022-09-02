@@ -173,14 +173,10 @@ void MethodHandles::jump_to_lambda_form(MacroAssembler* _masm,
     __ load_sized_value(temp2,
                         Address(temp2, ConstMethod::size_of_parameters_offset()),
                         sizeof(u2), false);
-    // assert(sizeof(u2) == sizeof(Method::_size_of_parameters), "");
     Label L;
-    Address recv_addr = __ argument_address(temp2, -1);
-    __ ld_d(AT, recv_addr);
+    __ ld_d(AT, __ argument_address(temp2, -1));
     __ beq(recv, AT, L);
-
-    recv_addr = __ argument_address(temp2, -1);
-    __ ld_d(V0, recv_addr);
+    __ ld_d(V0, __ argument_address(temp2, -1));
     __ STOP("receiver not on stack");
     __ BIND(L);
   }

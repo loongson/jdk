@@ -581,6 +581,8 @@ class MacroAssembler: public Assembler {
   void pop(RegSet regs) { if (regs.bits()) pop(regs.bits()); }
   void push_fpu(FloatRegSet regs) { if (regs.bits()) push_fpu(regs.bits()); }
   void pop_fpu(FloatRegSet regs) { if (regs.bits()) pop_fpu(regs.bits()); }
+  void push_vp(FloatRegSet regs) { if (regs.bits()) push_vp(regs.bits()); }
+  void pop_vp(FloatRegSet regs) { if (regs.bits()) pop_vp(regs.bits()); }
 
   void li(Register rd, jlong value);
   void li(Register rd, address addr) { li(rd, (long)addr); }
@@ -699,6 +701,8 @@ private:
   void pop(unsigned int bitset);
   void push_fpu(unsigned int bitset);
   void pop_fpu(unsigned int bitset);
+  void push_vp(unsigned int bitset);
+  void pop_vp(unsigned int bitset);
 
   // Check the current thread doesn't need a cross modify fence.
   void verify_cross_modify_fence_not_required() PRODUCT_RETURN;

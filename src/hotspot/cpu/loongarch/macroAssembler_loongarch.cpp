@@ -1710,35 +1710,98 @@ void MacroAssembler::pop(unsigned int bitset) {
 }
 
 void MacroAssembler::push_fpu(unsigned int bitset) {
-  unsigned char regs[31];
+  unsigned char regs[32];
   int count = 0;
 
-  bitset >>= 1;
-  for (int reg = 0; reg < 31; reg++) {
+  if (bitset == 0)
+    return;
+
+  for (int reg = 0; reg <= 31; reg++) {
     if (1 & bitset)
       regs[count++] = reg;
     bitset >>= 1;
   }
 
   addi_d(SP, SP, -align_up(count, 2) * wordSize);
-  for (int i = 0; i < count; i ++)
+  for (int i = 0; i < count; i++)
     fst_d(as_FloatRegister(regs[i]), SP, i * wordSize);
 }
 
 void MacroAssembler::pop_fpu(unsigned int bitset) {
-  unsigned char regs[31];
+  unsigned char regs[32];
   int count = 0;
 
-  bitset >>= 1;
-  for (int reg = 0; reg < 31; reg++) {
+  if (bitset == 0)
+    return;
+
+  for (int reg = 0; reg <= 31; reg++) {
     if (1 & bitset)
       regs[count++] = reg;
     bitset >>= 1;
   }
 
-  for (int i = 0; i < count; i ++)
+  for (int i = 0; i < count; i++)
     fld_d(as_FloatRegister(regs[i]), SP, i * wordSize);
   addi_d(SP, SP, align_up(count, 2) * wordSize);
+}
+
+static int vpr_offset(int off) {
+  int slots_per_vpr = 0;
+
+  if (UseLASX)
+    slots_per_vpr = FloatRegisterImpl::slots_per_lasx_register;
+  else if (UseLSX)
+    slots_per_vpr = FloatRegisterImpl::slots_per_lsx_register;
+
+  return off * slots_per_vpr * VMRegImpl::stack_slot_size;
+}
+
+void MacroAssembler::push_vp(unsigned int bitset) {
+  unsigned char regs[32];
+  int count = 0;
+
+  if (bitset == 0)
+    return;
+
+  for (int reg = 0; reg <= 31; reg++) {
+    if (1 & bitset)
+      regs[count++] = reg;
+    bitset >>= 1;
+  }
+
+  addi_d(SP, SP, vpr_offset(-align_up(count, 2)));
+
+  for (int i = 0; i < count; i++) {
+    int off = vpr_offset(i);
+    if (UseLASX)
+      xvst(as_FloatRegister(regs[i]), SP, off);
+    else if (UseLSX)
+      vst(as_FloatRegister(regs[i]), SP, off);
+  }
+}
+
+void MacroAssembler::pop_vp(unsigned int bitset) {
+  unsigned char regs[32];
+  int count = 0;
+
+  if (bitset == 0)
+    return;
+
+  for (int reg = 0; reg <= 31; reg++) {
+    if (1 & bitset)
+      regs[count++] = reg;
+    bitset >>= 1;
+  }
+
+  for (int i = 0; i < count; i++) {
+    int off = vpr_offset(i);
+    if (UseLASX)
+      xvld(as_FloatRegister(regs[i]), SP, off);
+    else if (UseLSX)
+      vld(as_FloatRegister(regs[i]), SP, off);
+  }
+
+  addi_d(SP, SP, vpr_offset(align_up(count, 2)));
 }
 
 void MacroAssembler::load_method_holder(Register holder, Register method) {

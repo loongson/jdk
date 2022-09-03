@@ -327,6 +327,8 @@ private:
   MacroAssembler* const _masm;
   RegSet                _gp_regs;
   FloatRegSet           _fp_regs;
+  FloatRegSet           _lsx_vp_regs;
+  FloatRegSet           _lasx_vp_regs;
 
 public:
   void initialize(ZLoadBarrierStubC2* stub) {
@@ -339,7 +341,12 @@ public:
         if (vm_reg->is_Register()) {
           _gp_regs += RegSet::of(vm_reg->as_Register());
         } else if (vm_reg->is_FloatRegister()) {
-          _fp_regs += FloatRegSet::of(vm_reg->as_FloatRegister());
+          if (UseLASX && vm_reg->next(7))
+            _lasx_vp_regs += FloatRegSet::of(vm_reg->as_FloatRegister());
+          else if (UseLSX && vm_reg->next(3))
+            _lsx_vp_regs += FloatRegSet::of(vm_reg->as_FloatRegister());
+          else
+            _fp_regs += FloatRegSet::of(vm_reg->as_FloatRegister());
         } else {
           fatal("Unknown register type");
         }
@@ -347,13 +354,15 @@ public:
     }
 
     // Remove C-ABI SOE registers, scratch regs and _ref register that will be updated
-    _gp_regs -= RegSet::range(r23, r30) + RegSet::of(r3, r16, r19, stub->ref());
+    _gp_regs -= RegSet::range(S0, S7) + RegSet::of(SP, SCR1, SCR2, stub->ref());
   }
 
   ZSaveLiveRegisters(MacroAssembler* masm, ZLoadBarrierStubC2* stub) :
       _masm(masm),
       _gp_regs(),
-      _fp_regs() {
+      _fp_regs(),
+      _lsx_vp_regs(),
+      _lasx_vp_regs() {
 
     // Figure out what registers to save/restore
     initialize(stub);
@@ -361,10 +370,14 @@ public:
     // Save registers
     __ push(_gp_regs);
     __ push_fpu(_fp_regs);
+    __ push_vp(_lsx_vp_regs  /* UseLSX  */);
+    __ push_vp(_lasx_vp_regs /* UseLASX */);
   }
 
   ~ZSaveLiveRegisters() {
     // Restore registers
+    __ pop_vp(_lasx_vp_regs /* UseLASX */);
+    __ pop_vp(_lsx_vp_regs  /* UseLSX  */);
     __ pop_fpu(_fp_regs);
     __ pop(_gp_regs);
   }

@@ -403,6 +403,13 @@ void VM_Version::get_processor_features() {
   if (FLAG_IS_DEFAULT(UseMontgomerySquareIntrinsic)) {
     UseMontgomerySquareIntrinsic = true;
   }
+
+  if (UseFPUForSpilling && !FLAG_IS_DEFAULT(UseFPUForSpilling)) {
+    if (UseCompressedOops || UseCompressedClassPointers) {
+      warning("UseFPUForSpilling not supported when UseCompressedOops or UseCompressedClassPointers is on");
+      UseFPUForSpilling = false;
+    }
+  }
 #endif
 
   // This machine allows unaligned memory accesses

@@ -38,24 +38,6 @@
 
 #define __ _masm->
 
-#define A0 RA0
-#define A1 RA1
-#define A2 RA2
-#define A3 RA3
-#define A4 RA4
-#define A5 RA5
-#define A6 RA6
-#define A7 RA7
-#define T0 RT0
-#define T1 RT1
-#define T2 RT2
-#define T3 RT3
-#define T4 RT4
-#define T5 RT5
-#define T6 RT6
-#define T7 RT7
-#define T8 RT8
-
 // Implementation of SignatureHandlerGenerator
 InterpreterRuntime::SignatureHandlerGenerator::SignatureHandlerGenerator(
       const methodHandle& method, CodeBuffer* buffer) : NativeSignatureIterator(method) {
@@ -91,7 +73,7 @@ void InterpreterRuntime::SignatureHandlerGenerator::generate(uint64_t fingerprin
 
 void InterpreterRuntime::SignatureHandlerGenerator::pass_int() {
   if (_num_int_args < Argument::n_int_register_parameters_c - 1) {
-    __ ld_w(as_Register(++_num_int_args + RA0->encoding()), from(), Interpreter::local_offset_in_bytes(offset()));
+    __ ld_w(as_Register(++_num_int_args + A0->encoding()), from(), Interpreter::local_offset_in_bytes(offset()));
   } else {
     __ ld_w(AT, from(), Interpreter::local_offset_in_bytes(offset()));
     __ st_w(AT, to(), _stack_offset);
@@ -102,7 +84,7 @@ void InterpreterRuntime::SignatureHandlerGenerator::pass_int() {
 // the jvm specifies that long type takes 2 stack spaces, so in do_long(), _offset += 2.
 void InterpreterRuntime::SignatureHandlerGenerator::pass_long() {
   if (_num_int_args < Argument::n_int_register_parameters_c - 1) {
-    __ ld_d(as_Register(++_num_int_args + RA0->encoding()), from(), Interpreter::local_offset_in_bytes(offset() + 1));
+    __ ld_d(as_Register(++_num_int_args + A0->encoding()), from(), Interpreter::local_offset_in_bytes(offset() + 1));
   } else {
     __ ld_d(AT, from(), Interpreter::local_offset_in_bytes(offset() + 1));
     __ st_d(AT, to(), _stack_offset);
@@ -112,7 +94,7 @@ void InterpreterRuntime::SignatureHandlerGenerator::pass_long() {
 
 void InterpreterRuntime::SignatureHandlerGenerator::pass_object() {
   if (_num_int_args < Argument::n_int_register_parameters_c - 1) {
-    Register reg = as_Register(++_num_int_args + RA0->encoding());
+    Register reg = as_Register(++_num_int_args + A0->encoding());
     if (_num_int_args == 1) {
       assert(offset() == 0, "argument register 1 can only be (non-null) receiver");
       __ addi_d(reg, from(), Interpreter::local_offset_in_bytes(offset()));
@@ -134,7 +116,7 @@ void InterpreterRuntime::SignatureHandlerGenerator::pass_float() {
   if (_num_fp_args < Argument::n_float_register_parameters_c) {
     __ fld_s(as_FloatRegister(_num_fp_args++), from(), Interpreter::local_offset_in_bytes(offset()));
   } else if (_num_int_args < Argument::n_int_register_parameters_c - 1) {
-    __ ld_w(as_Register(++_num_int_args + RA0->encoding()), from(), Interpreter::local_offset_in_bytes(offset()));
+    __ ld_w(as_Register(++_num_int_args + A0->encoding()), from(), Interpreter::local_offset_in_bytes(offset()));
   } else {
     __ ld_w(AT, from(), Interpreter::local_offset_in_bytes(offset()));
     __ st_w(AT, to(), _stack_offset);
@@ -147,7 +129,7 @@ void InterpreterRuntime::SignatureHandlerGenerator::pass_double() {
   if (_num_fp_args < Argument::n_float_register_parameters_c) {
     __ fld_d(as_FloatRegister(_num_fp_args++), from(), Interpreter::local_offset_in_bytes(offset() + 1));
   } else if (_num_int_args < Argument::n_int_register_parameters_c - 1) {
-    __ ld_d(as_Register(++_num_int_args + RA0->encoding()), from(), Interpreter::local_offset_in_bytes(offset() + 1));
+    __ ld_d(as_Register(++_num_int_args + A0->encoding()), from(), Interpreter::local_offset_in_bytes(offset() + 1));
   } else {
     __ ld_d(AT, from(), Interpreter::local_offset_in_bytes(offset() + 1));
     __ st_d(AT, to(), _stack_offset);

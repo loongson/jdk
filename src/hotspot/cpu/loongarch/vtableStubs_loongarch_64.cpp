@@ -37,29 +37,10 @@
 #include "opto/runtime.hpp"
 #endif
 
-
 // machine-dependent part of VtableStubs: create VtableStub of correct size and
 // initialize its code
 
 #define __ masm->
-
-#define A0 RA0
-#define A1 RA1
-#define A2 RA2
-#define A3 RA3
-#define A4 RA4
-#define A5 RA5
-#define A6 RA6
-#define A7 RA7
-#define T0 RT0
-#define T1 RT1
-#define T2 RT2
-#define T3 RT3
-#define T4 RT4
-#define T5 RT5
-#define T6 RT6
-#define T7 RT7
-#define T8 RT8
 
 #ifndef PRODUCT
 extern "C" void bad_compiled_vtable_index(JavaThread* thread, oop receiver, int index);

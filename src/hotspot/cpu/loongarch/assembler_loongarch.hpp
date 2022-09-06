@@ -29,8 +29,90 @@
 #include "asm/register.hpp"
 #include "runtime/vm_version.hpp"
 
-// Note: A register location is represented via a Register, not
-//       via an address for efficiency & simplicity reasons.
+// Calling convention
+class Argument {
+ public:
+  enum {
+    n_int_register_parameters_c   = 8, // A0, ... A7      (c_rarg0, c_rarg1, ...)
+    n_float_register_parameters_c = 8, // FA0, ... FA7    (c_farg0, c_farg1, ...)
+
+    n_int_register_parameters_j   = 9, // T0, A0, ... A7  (j_rarg0, j_rarg1, ...)
+    n_float_register_parameters_j = 8  // FA0, ... FA7    (j_farg0, j_farg1, ...)
+  };
+};
+
+constexpr Register c_rarg0        = A0;
+constexpr Register c_rarg1        = A1;
+constexpr Register c_rarg2        = A2;
+constexpr Register c_rarg3        = A3;
+constexpr Register c_rarg4        = A4;
+constexpr Register c_rarg5        = A5;
+constexpr Register c_rarg6        = A6;
+constexpr Register c_rarg7        = A7;
+
+constexpr FloatRegister c_farg0   = FA0;
+constexpr FloatRegister c_farg1   = FA1;
+constexpr FloatRegister c_farg2   = FA2;
+constexpr FloatRegister c_farg3   = FA3;
+constexpr FloatRegister c_farg4   = FA4;
+constexpr FloatRegister c_farg5   = FA5;
+constexpr FloatRegister c_farg6   = FA6;
+constexpr FloatRegister c_farg7   = FA7;
+
+constexpr Register j_rarg0        = T0;
+constexpr Register j_rarg1        = A0;
+constexpr Register j_rarg2        = A1;
+constexpr Register j_rarg3        = A2;
+constexpr Register j_rarg4        = A3;
+constexpr Register j_rarg5        = A4;
+constexpr Register j_rarg6        = A5;
+constexpr Register j_rarg7        = A6;
+constexpr Register j_rarg8        = A7;
+
+constexpr FloatRegister j_farg0   = FA0;
+constexpr FloatRegister j_farg1   = FA1;
+constexpr FloatRegister j_farg2   = FA2;
+constexpr FloatRegister j_farg3   = FA3;
+constexpr FloatRegister j_farg4   = FA4;
+constexpr FloatRegister j_farg5   = FA5;
+constexpr FloatRegister j_farg6   = FA6;
+constexpr FloatRegister j_farg7   = FA7;
+
+constexpr Register Rnext          = S1;
+constexpr Register Rmethod        = S3;
+constexpr Register Rsender        = S4;
+
+constexpr Register V0             = A0;
+constexpr Register V1             = A1;
+
+// bytecode pointer register
+constexpr Register BCP            = S0;
+// local variable pointer register
+constexpr Register LVP            = S7;
+// temporary callee saved register
+constexpr Register TSR            = S2;
+
+constexpr Register TREG           = S6;
+
+constexpr Register S5_heapbase    = S5;
+
+constexpr Register FSR            = V0;
+constexpr Register SSR            = T6;
+constexpr FloatRegister FSF       = FA0;
+
+constexpr Register RECEIVER       = T0;
+constexpr Register IC_Klass       = T1;
+
+constexpr Register SHIFT_count    = T3;
+
+// ---------- Scratch Register ----------
+constexpr Register AT             = T7;
+constexpr FloatRegister fscratch  = F23;
+
+constexpr Register SCR1           = T7;
+// SCR2 is allocable in C2 Compiler
+constexpr Register SCR2           = T4;
+
 
 class ArrayAddress;
 
@@ -115,55 +197,6 @@ class Address {
   friend class MacroAssembler;
   friend class LIR_Assembler; // base/index/scale/disp
 };
-
-// Calling convention
-class Argument {
- public:
-  enum {
-    n_int_register_parameters_c   = 8, // A0, ... A7      (c_rarg0, c_rarg1, ...)
-    n_float_register_parameters_c = 8, // FA0, ... FA7    (c_farg0, c_farg1, ...)
-
-    n_int_register_parameters_j   = 9, // T0, A0, ... A7  (j_rarg0, j_rarg1, ...)
-    n_float_register_parameters_j = 8  // FA0, ... FA7    (j_farg0, j_farg1, ...)
-  };
-};
-
-REGISTER_DECLARATION(Register, c_rarg0, RA0);
-REGISTER_DECLARATION(Register, c_rarg1, RA1);
-REGISTER_DECLARATION(Register, c_rarg2, RA2);
-REGISTER_DECLARATION(Register, c_rarg3, RA3);
-REGISTER_DECLARATION(Register, c_rarg4, RA4);
-REGISTER_DECLARATION(Register, c_rarg5, RA5);
-REGISTER_DECLARATION(Register, c_rarg6, RA6);
-REGISTER_DECLARATION(Register, c_rarg7, RA7);
-
-REGISTER_DECLARATION(FloatRegister, c_farg0, FA0);
-REGISTER_DECLARATION(FloatRegister, c_farg1, FA1);
-REGISTER_DECLARATION(FloatRegister, c_farg2, FA2);
-REGISTER_DECLARATION(FloatRegister, c_farg3, FA3);
-REGISTER_DECLARATION(FloatRegister, c_farg4, FA4);
-REGISTER_DECLARATION(FloatRegister, c_farg5, FA5);
-REGISTER_DECLARATION(FloatRegister, c_farg6, FA6);
-REGISTER_DECLARATION(FloatRegister, c_farg7, FA7);
-
-REGISTER_DECLARATION(Register, j_rarg0, RT0);
-REGISTER_DECLARATION(Register, j_rarg1, RA0);
-REGISTER_DECLARATION(Register, j_rarg2, RA1);
-REGISTER_DECLARATION(Register, j_rarg3, RA2);
-REGISTER_DECLARATION(Register, j_rarg4, RA3);
-REGISTER_DECLARATION(Register, j_rarg5, RA4);
-REGISTER_DECLARATION(Register, j_rarg6, RA5);
-REGISTER_DECLARATION(Register, j_rarg7, RA6);
-REGISTER_DECLARATION(Register, j_rarg8, RA7);
-
-REGISTER_DECLARATION(FloatRegister, j_farg0, FA0);
-REGISTER_DECLARATION(FloatRegister, j_farg1, FA1);
-REGISTER_DECLARATION(FloatRegister, j_farg2, FA2);
-REGISTER_DECLARATION(FloatRegister, j_farg3, FA3);
-REGISTER_DECLARATION(FloatRegister, j_farg4, FA4);
-REGISTER_DECLARATION(FloatRegister, j_farg5, FA5);
-REGISTER_DECLARATION(FloatRegister, j_farg6, FA6);
-REGISTER_DECLARATION(FloatRegister, j_farg7, FA7);
 
 //
 // AddressLiteral has been split out from Address because operands of this type

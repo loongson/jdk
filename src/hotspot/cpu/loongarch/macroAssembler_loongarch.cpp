@@ -59,24 +59,6 @@
 #include "gc/z/zThreadLocalData.hpp"
 #endif
 
-#define A0 RA0
-#define A1 RA1
-#define A2 RA2
-#define A3 RA3
-#define A4 RA4
-#define A5 RA5
-#define A6 RA6
-#define A7 RA7
-#define T0 RT0
-#define T1 RT1
-#define T2 RT2
-#define T3 RT3
-#define T4 RT4
-#define T5 RT5
-#define T6 RT6
-#define T7 RT7
-#define T8 RT8
-
 // Implementation of MacroAssembler
 
 void MacroAssembler::pd_patch_instruction(address branch, address target, const char* file, int line) {
@@ -1659,9 +1641,9 @@ static int vpr_offset(int off) {
   int slots_per_vpr = 0;
 
   if (UseLASX)
-    slots_per_vpr = FloatRegisterImpl::slots_per_lasx_register;
+    slots_per_vpr = FloatRegister::slots_per_lasx_register;
   else if (UseLSX)
-    slots_per_vpr = FloatRegisterImpl::slots_per_lsx_register;
+    slots_per_vpr = FloatRegister::slots_per_lsx_register;
 
   return off * slots_per_vpr * VMRegImpl::stack_slot_size;
 }

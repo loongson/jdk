@@ -49,27 +49,7 @@
 #include "jvmci/jvmciJavaClasses.hpp"
 #endif
 
-#include <alloca.h>
-
 #define __ masm->
-
-#define A0 RA0
-#define A1 RA1
-#define A2 RA2
-#define A3 RA3
-#define A4 RA4
-#define A5 RA5
-#define A6 RA6
-#define A7 RA7
-#define T0 RT0
-#define T1 RT1
-#define T2 RT2
-#define T3 RT3
-#define T4 RT4
-#define T5 RT5
-#define T6 RT6
-#define T7 RT7
-#define T8 RT8
 
 const int StackAlignmentInSlots = StackAlignmentInBytes / VMRegImpl::stack_slot_size;
 
@@ -151,34 +131,34 @@ class RegisterSaver {
     int slots = gpr_size * VMRegImpl::slots_per_word;
 
     if (_save_vectors && UseLASX)
-      slots += FloatRegisterImpl::slots_per_lasx_register * fpr_size;
+      slots += FloatRegister::slots_per_lasx_register * fpr_size;
     else if (_save_vectors && UseLSX)
-      slots += FloatRegisterImpl::slots_per_lsx_register * fpr_size;
+      slots += FloatRegister::slots_per_lsx_register * fpr_size;
     else
-      slots += FloatRegisterImpl::save_slots_per_register * fpr_size;
+      slots += FloatRegister::save_slots_per_register * fpr_size;
 
     return slots;
   }
 
   int gpr_offset(int off) {
-      int slots_per_fpr = FloatRegisterImpl::save_slots_per_register;
+      int slots_per_fpr = FloatRegister::save_slots_per_register;
       int slots_per_gpr = VMRegImpl::slots_per_word;
 
       if (_save_vectors && UseLASX)
-        slots_per_fpr = FloatRegisterImpl::slots_per_lasx_register;
+        slots_per_fpr = FloatRegister::slots_per_lasx_register;
       else if (_save_vectors && UseLSX)
-        slots_per_fpr = FloatRegisterImpl::slots_per_lsx_register;
+        slots_per_fpr = FloatRegister::slots_per_lsx_register;
 
       return (fpr_size * slots_per_fpr + (off - a0_off) * slots_per_gpr) * VMRegImpl::stack_slot_size;
   }
 
   int fpr_offset(int off) {
-      int slots_per_fpr = FloatRegisterImpl::save_slots_per_register;
+      int slots_per_fpr = FloatRegister::save_slots_per_register;
 
       if (_save_vectors && UseLASX)
-        slots_per_fpr = FloatRegisterImpl::slots_per_lasx_register;
+        slots_per_fpr = FloatRegister::slots_per_lasx_register;
       else if (_save_vectors && UseLSX)
-        slots_per_fpr = FloatRegisterImpl::slots_per_lsx_register;
+        slots_per_fpr = FloatRegister::slots_per_lsx_register;
 
       return off * slots_per_fpr * VMRegImpl::stack_slot_size;
   }
@@ -354,7 +334,7 @@ static int reg2offset_out(VMReg r) {
 // as framesizes are fixed.
 // VMRegImpl::stack0 refers to the first slot 0(sp).
 // and VMRegImpl::stack0+1 refers to the memory word 4-byes higher.  Register
-// up to RegisterImpl::number_of_registers) are the 32-bit
+// up to Register::number_of_registers) are the 32-bit
 // integer registers.
 
 // Note: the INPUTS in sig_bt are in units of Java argument words, which are
@@ -1565,12 +1545,12 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   OopMap* map = new OopMap(stack_slots * 2, 0 /* arg_slots*/);
 
 #ifdef ASSERT
-  bool reg_destroyed[RegisterImpl::number_of_registers];
-  bool freg_destroyed[FloatRegisterImpl::number_of_registers];
-  for ( int r = 0 ; r < RegisterImpl::number_of_registers ; r++ ) {
+  bool reg_destroyed[Register::number_of_registers];
+  bool freg_destroyed[FloatRegister::number_of_registers];
+  for ( int r = 0 ; r < Register::number_of_registers ; r++ ) {
     reg_destroyed[r] = false;
   }
-  for ( int f = 0 ; f < FloatRegisterImpl::number_of_registers ; f++ ) {
+  for ( int f = 0 ; f < FloatRegister::number_of_registers ; f++ ) {
     freg_destroyed[f] = false;
   }
 

@@ -26,16 +26,14 @@
 #include "precompiled.hpp"
 #include "register_loongarch.hpp"
 
-REGISTER_IMPL_DEFINITION(Register, RegisterImpl, RegisterImpl::number_of_registers);
-REGISTER_IMPL_DEFINITION(FloatRegister, FloatRegisterImpl, FloatRegisterImpl::number_of_registers);
-REGISTER_IMPL_DEFINITION(ConditionalFlagRegister, ConditionalFlagRegisterImpl, ConditionalFlagRegisterImpl::number_of_registers);
+Register::RegisterImpl \
+  all_RegisterImpls [Register::number_of_registers + 1];
+FloatRegister::FloatRegisterImpl \
+  all_FloatRegisterImpls [FloatRegister::number_of_registers + 1];
+ConditionalFlagRegister::ConditionalFlagRegisterImpl \
+  all_ConditionalFlagRegisterImpls[ConditionalFlagRegister::number_of_registers + 1];
 
-const int ConcreteRegisterImpl::max_gpr = RegisterImpl::number_of_registers * RegisterImpl::max_slots_per_register;
-const int ConcreteRegisterImpl::max_fpr = ConcreteRegisterImpl::max_gpr +
-                                                                  FloatRegisterImpl::number_of_registers * FloatRegisterImpl::max_slots_per_register;
-
-
-const char* RegisterImpl::name() const {
+const char* Register::RegisterImpl::name() const {
   static const char *const names[number_of_registers] = {
     "zero", "ra", "tp", "sp", "a0/v0", "a1/v1", "a2", "a3",
     "a4", "a5", "a6", "a7", "t0", "t1", "t2", "t3",
@@ -45,7 +43,7 @@ const char* RegisterImpl::name() const {
   return is_valid() ? names[encoding()] : "noreg";
 }
 
-const char* FloatRegisterImpl::name() const {
+const char* FloatRegister::FloatRegisterImpl::name() const {
   static const char *const names[number_of_registers] = {
     "f0",  "f1",   "f2",  "f3",   "f4",  "f5",   "f6",  "f7",
     "f8",  "f9",  "f10", "f11",  "f12", "f13",  "f14", "f15",
@@ -55,7 +53,7 @@ const char* FloatRegisterImpl::name() const {
   return is_valid() ? names[encoding()] : "fnoreg";
 }
 
-const char* ConditionalFlagRegisterImpl::name() const {
+const char* ConditionalFlagRegister::ConditionalFlagRegisterImpl::name() const {
   static const char *const names[number_of_registers] = {
     "fcc0",  "fcc1",   "fcc2",  "fcc3",   "fcc4",  "fcc5",   "fcc6",  "fcc7",
   };

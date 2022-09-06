@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2021, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,7 @@ void ICacheStubGenerator::generate_icache_flush(ICache::flush_icache_stub_t* flu
   address start = __ pc();
 
   __ ibar(0);
-  __ ori(V0, RA2, 0);
+  __ ori(V0, A2, 0);
   __ jr(RA);
 
   *flush_icache_stub = (ICache::flush_icache_stub_t)start;

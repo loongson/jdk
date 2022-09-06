@@ -35,9 +35,6 @@
 #include "runtime/sharedRuntime.hpp"
 #include "vmreg_loongarch.inline.hpp"
 
-#define A0 RA0
-#define A3 RA3
-
 #define __ ce->masm()->
 
 void C1SafepointPollStub::emit_code(LIR_Assembler* ce) {

@@ -41,24 +41,6 @@
 #include "runtime/safepointMechanism.hpp"
 #include "runtime/sharedRuntime.hpp"
 
-#define A0 RA0
-#define A1 RA1
-#define A2 RA2
-#define A3 RA3
-#define A4 RA4
-#define A5 RA5
-#define A6 RA6
-#define A7 RA7
-#define T0 RT0
-#define T1 RT1
-#define T2 RT2
-#define T3 RT3
-#define T4 RT4
-#define T5 RT5
-#define T6 RT6
-#define T7 RT7
-#define T8 RT8
-
 // Implementation of InterpreterMacroAssembler
 
 void InterpreterMacroAssembler::get_2_byte_integer_at_bcp(Register reg, Register tmp, int offset) {
@@ -613,11 +595,11 @@ void InterpreterMacroAssembler::dispatch_only(TosState state, bool generate_poll
 }
 
 void InterpreterMacroAssembler::dispatch_only_normal(TosState state) {
-  dispatch_base(state, Interpreter::normal_table(state));
+  dispatch_base(state, Interpreter::normal_table(state), true, false);
 }
 
 void InterpreterMacroAssembler::dispatch_only_noverify(TosState state) {
-  dispatch_base(state, Interpreter::normal_table(state), false);
+  dispatch_base(state, Interpreter::normal_table(state), false, false);
 }
 
 

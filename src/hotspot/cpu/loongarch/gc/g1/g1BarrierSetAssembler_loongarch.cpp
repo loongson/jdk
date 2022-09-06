@@ -42,15 +42,6 @@
 
 #define __ masm->
 
-#define A0 RA0
-#define A1 RA1
-#define A2 RA2
-#define A3 RA3
-#define A4 RA4
-#define A5 RA5
-#define A6 RA6
-#define A7 RA7
-
 void G1BarrierSetAssembler::gen_write_ref_array_pre_barrier(MacroAssembler* masm, DecoratorSet decorators,
                                                             Register addr, Register count, RegSet saved_regs) {
   bool dest_uninitialized = (decorators & IS_DEST_UNINITIALIZED) != 0;
@@ -300,7 +291,7 @@ void G1BarrierSetAssembler::oop_store_at(MacroAssembler* masm, DecoratorSet deco
   bool needs_pre_barrier = as_normal;
   bool needs_post_barrier = val != noreg && in_heap;
 
-  Register tmp3 = RT3;
+  Register tmp3 = T3;
   // flatten object address if needed
   // We do it regardless of precise because we need the registers
   if (dst.index() == noreg && dst.disp() == 0) {

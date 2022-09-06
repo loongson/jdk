@@ -52,10 +52,6 @@
 #undef __
 #define __ masm->
 
-#define A0 RA0
-#define A1 RA1
-#define T4 RT4
-
 void ZBarrierSetAssembler::load_at(MacroAssembler* masm,
                                    DecoratorSet decorators,
                                    BasicType type,

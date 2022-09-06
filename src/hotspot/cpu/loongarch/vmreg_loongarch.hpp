@@ -32,7 +32,7 @@ inline bool is_Register() {
 
 inline Register as_Register() {
   assert( is_Register(), "must be");
-  return ::as_Register(value() / RegisterImpl::max_slots_per_register);
+  return ::as_Register(value() / Register::max_slots_per_register);
 }
 
 inline bool is_FloatRegister() {
@@ -42,14 +42,14 @@ inline bool is_FloatRegister() {
 inline FloatRegister as_FloatRegister() {
   assert( is_FloatRegister() && is_even(value()), "must be" );
   return ::as_FloatRegister((value() - ConcreteRegisterImpl::max_gpr) /
-                            FloatRegisterImpl::max_slots_per_register);
+                            FloatRegister::max_slots_per_register);
 }
 
 inline   bool is_concrete() {
   assert(is_reg(), "must be");
   if (is_FloatRegister()) {
     int base = value() - ConcreteRegisterImpl::max_gpr;
-    return base % FloatRegisterImpl::max_slots_per_register == 0;
+    return base % FloatRegister::max_slots_per_register == 0;
   } else {
     return is_even(value());
   }

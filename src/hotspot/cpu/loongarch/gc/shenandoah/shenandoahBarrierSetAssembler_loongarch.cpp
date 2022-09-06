@@ -44,10 +44,6 @@
 
 #define __ masm->
 
-#define A0 RA0
-#define A1 RA1
-#define A3 RA3
-
 void ShenandoahBarrierSetAssembler::arraycopy_prologue(MacroAssembler* masm, DecoratorSet decorators, bool is_oop,
                                                        Register src, Register dst, Register count, RegSet saved_regs) {
   if (is_oop) {

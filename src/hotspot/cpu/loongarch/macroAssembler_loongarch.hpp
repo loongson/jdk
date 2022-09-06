@@ -396,13 +396,13 @@ class MacroAssembler: public Assembler {
     // stack grows down, caller passes positive offset
     assert(offset > 0, "must bang with negative offset");
     if (offset <= 2048) {
-      st_w(RA0, SP, -offset);
+      st_w(A0, SP, -offset);
     } else if (offset <= 32768 && !(offset & 3)) {
-      stptr_w(RA0, SP, -offset);
+      stptr_w(A0, SP, -offset);
     } else {
       li(AT, offset);
       sub_d(AT, SP, AT);
-      st_w(RA0, AT, 0);
+      st_w(A0, AT, 0);
     }
   }
 

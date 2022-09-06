@@ -53,24 +53,6 @@
 
 #define __ _masm->
 
-#define A0 RA0
-#define A1 RA1
-#define A2 RA2
-#define A3 RA3
-#define A4 RA4
-#define A5 RA5
-#define A6 RA6
-#define A7 RA7
-#define T0 RT0
-#define T1 RT1
-#define T2 RT2
-#define T3 RT3
-#define T4 RT4
-#define T5 RT5
-#define T6 RT6
-#define T7 RT7
-#define T8 RT8
-
 #define TIMES_OOP (UseCompressedOops ? Address::times_4 : Address::times_8)
 
 //#ifdef PRODUCT
@@ -278,7 +260,7 @@ class StubGenerator: public StubCodeGenerator {
     // store result depending on type (everything that is not
     // T_OBJECT, T_LONG, T_FLOAT or T_DOUBLE is treated as T_INT)
     // n.b. this assumes Java returns an integral result in V0
-    // and a floating result in FV0
+    // and a floating result in FA0
     __ ld_d(T0, FP, result_off * wordSize);
     __ ld_d(T2, FP, result_type_off * wordSize);
 
@@ -329,11 +311,11 @@ class StubGenerator: public StubCodeGenerator {
     __ b(exit);
 
     __ bind(is_float);
-    __ fst_s(FV0, T0, 0);
+    __ fst_s(FA0, T0, 0);
     __ b(exit);
 
     __ bind(is_double);
-    __ fst_d(FV0, T0, 0);
+    __ fst_d(FA0, T0, 0);
     __ b(exit);
 
     StubRoutines::la::set_call_stub_compiled_return(__ pc());
@@ -4687,46 +4669,40 @@ class StubGenerator: public StubCodeGenerator {
 
       // Register allocation
 
-      Register reg = A0;
-      Pa_base = reg;      // Argument registers:
+      RegSetIterator<Register> regs = (RegSet::range(A0, T8) \
+                                      + RegSet::range(S0, S3)).begin();
+
+      Pa_base = *regs;    // Argument registers:
       if (squaring)
         Pb_base = Pa_base;
       else
-        Pb_base = ++reg;
-      Pn_base = ++reg;
-      Rlen = ++reg;
-      inv = ++reg;
+        Pb_base = *++regs;
+      Pn_base = *++regs;
+      Rlen = *++regs;
+      inv = *++regs;
       Rlen2 = inv;        // Reuse inv
-      Pm_base = ++reg;
+      Pm_base = *++regs;
 
                           // Working registers:
-      Ra = ++reg;         // The current digit of a, b, n, and m.
-      Rb = ++reg;
-      Rm = ++reg;
-      Rn = ++reg;
+      Ra = *++regs;       // The current digit of a, b, n, and m.
+      Rb = *++regs;
+      Rm = *++regs;
+      Rn = *++regs;
 
-      Iam = ++reg;        // Index to the current/next digit of a, b, n, and m.
-      Ibn = ++reg;
+      Iam = *++regs;      // Index to the current/next digit of a, b, n, and m.
+      Ibn = *++regs;
 
-      t0 = ++reg;         // Three registers which form a
-      t1 = ++reg;         // triple-precision accumuator.
-      t2 = ++reg;
+      t0 = *++regs;       // Three registers which form a
+      t1 = *++regs;       // triple-precision accumuator.
+      t2 = *++regs;
 
-      Ri = ++reg;         // Inner and outer loop indexes.
-      Rj = ++reg;
+      Ri = *++regs;       // Inner and outer loop indexes.
+      Rj = *++regs;
 
-      if (squaring) {
-        Rhi_ab = ++reg;   // Product registers: low and high parts
-        reg = S0;
-        Rlo_ab = ++reg;   // of a*b and m*n.
-      } else {
-        reg = S0;
-        Rhi_ab = reg;     // Product registers: low and high parts
-        Rlo_ab = ++reg;   // of a*b and m*n.
-      }
-
-      Rhi_mn = ++reg;
-      Rlo_mn = ++reg;
+      Rhi_ab = *++regs;   // Product registers: low and high parts
+      Rlo_ab = *++regs;   // of a*b and m*n.
+      Rhi_mn = *++regs;
+      Rlo_mn = *++regs;
     }
 
   private:
@@ -4991,7 +4967,8 @@ class StubGenerator: public StubCodeGenerator {
     //    Preserves len
     //    Leaves s pointing to the address which was in d at start
     void reverse(Register d, Register s, Register len, Register tmp1, Register tmp2) {
-      assert(tmp1 < S0 && tmp2 < S0, "register corruption");
+      assert(tmp1->encoding() < S0->encoding(), "register corruption");
+      assert(tmp2->encoding() < S0->encoding(), "register corruption");
 
       alsl_d(s, len, s, LogBytesPerWord - 1);
       move(tmp1, len);

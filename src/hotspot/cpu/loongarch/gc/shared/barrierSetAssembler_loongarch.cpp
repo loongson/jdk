@@ -329,11 +329,11 @@ void BarrierSetAssembler::c2i_entry_barrier(MacroAssembler* masm) {
   __ bnez(SCR1, method_live);
 
   // Is it a weak but alive CLD?
-  __ push2(RT2, RT8);
-  __ ld_d(RT8, Address(SCR2, ClassLoaderData::holder_offset()));
-  __ resolve_weak_handle(RT8, RT2); // Assembler occupies SCR1.
-  __ move(SCR1, RT8);
-  __ pop2(RT2, RT8);
+  __ push2(T2, T8);
+  __ ld_d(T8, Address(SCR2, ClassLoaderData::holder_offset()));
+  __ resolve_weak_handle(T8, T2); // Assembler occupies SCR1.
+  __ move(SCR1, T8);
+  __ pop2(T2, T8);
   __ bnez(SCR1, method_live);
 
   __ bind(bad_call);

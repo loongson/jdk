@@ -1997,7 +1997,7 @@ address TemplateInterpreterGenerator::generate_earlyret_entry_for(TosState state
   __ empty_expression_stack();
   __ load_earlyret_value(state);
 
-  __ ld_ptr(T4, TREG, in_bytes(JavaThread::jvmti_thread_state_offset()));
+  __ ld_d(T4, Address(TREG, JavaThread::jvmti_thread_state_offset()));
   const Address cond_addr(T4, in_bytes(JvmtiThreadState::earlyret_state_offset()));
 
   // Clear the earlyret state

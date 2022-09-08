@@ -58,7 +58,7 @@ int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr
   verify_oop(obj);
 
   // save object being locked into the BasicObjectLock
-  st_ptr(obj, Address(disp_hdr, BasicObjectLock::obj_offset_in_bytes()));
+  st_d(obj, Address(disp_hdr, BasicObjectLock::obj_offset_in_bytes()));
 
   null_check_offset = offset();
 
@@ -71,11 +71,11 @@ int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr
   }
 
   // Load object header
-  ld_ptr(hdr, Address(obj, hdr_offset));
+  ld_d(hdr, Address(obj, hdr_offset));
   // and mark it as unlocked
   ori(hdr, hdr, markWord::unlocked_value);
   // save unlocked object header into the displaced header location on the stack
-  st_ptr(hdr, Address(disp_hdr, 0));
+  st_d(hdr, Address(disp_hdr, 0));
   // test if object header is still the same (i.e. unlocked), and if so, store the
   // displaced header address in the object header - if it is not the same, get the
   // object header instead
@@ -100,7 +100,7 @@ int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr
   andr(hdr, hdr, SCR1);
   // for recursive locking, the result is zero => save it in the displaced header
   // location (NULL in the displaced hdr location indicates recursive locking)
-  st_ptr(hdr, Address(disp_hdr, 0));
+  st_d(hdr, Address(disp_hdr, 0));
   // otherwise we don't care about the result and handle locking via runtime call
   bnez(hdr, slow_case);
   // done
@@ -116,12 +116,12 @@ void C1_MacroAssembler::unlock_object(Register hdr, Register obj, Register disp_
   Label done;
 
   // load displaced header
-  ld_ptr(hdr, Address(disp_hdr, 0));
+  ld_d(hdr, Address(disp_hdr, 0));
   // if the loaded hdr is NULL we had recursive locking
   // if we had recursive locking, we are done
   beqz(hdr, done);
   // load object
-  ld_ptr(obj, Address(disp_hdr, BasicObjectLock::obj_offset_in_bytes()));
+  ld_d(obj, Address(disp_hdr, BasicObjectLock::obj_offset_in_bytes()));
   verify_oop(obj);
   // test if object header is pointing to the displaced header, and if so, restore
   // the displaced header in the object - if the object header is not pointing to
@@ -155,13 +155,13 @@ void C1_MacroAssembler::initialize_header(Register obj, Register klass, Register
   assert_different_registers(obj, klass, len);
   // This assumes that all prototype bits fit in an int32_t
   li(t1, (int32_t)(intptr_t)markWord::prototype().value());
-  st_ptr(t1, Address(obj, oopDesc::mark_offset_in_bytes()));
+  st_d(t1, Address(obj, oopDesc::mark_offset_in_bytes()));
 
   if (UseCompressedClassPointers) { // Take care not to kill klass
     encode_klass_not_null(t1, klass);
     st_w(t1, Address(obj, oopDesc::klass_offset_in_bytes()));
   } else {
-    st_ptr(klass, Address(obj, oopDesc::klass_offset_in_bytes()));
+    st_d(klass, Address(obj, oopDesc::klass_offset_in_bytes()));
   }
 
   if (len->is_valid()) {
@@ -312,7 +312,7 @@ void C1_MacroAssembler::load_parameter(int offset_in_words, Register reg) {
   //     +  1: argument with offset 1
   //     +  2: ...
 
-  ld_ptr(reg, Address(FP, offset_in_words * BytesPerWord));
+  ld_d(reg, Address(FP, offset_in_words * BytesPerWord));
 }
 
 #ifndef PRODUCT

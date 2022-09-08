@@ -416,15 +416,15 @@ void G1BarrierSetAssembler::generate_c1_pre_barrier_runtime_stub(StubAssembler* 
   Label runtime;
 
   // Can we store original value in the thread's buffer?
-  __ ld_ptr(tmp, queue_index);
+  __ ld_d(tmp, queue_index);
   __ beqz(tmp, runtime);
 
   __ addi_d(tmp, tmp, -wordSize);
-  __ st_ptr(tmp, queue_index);
-  __ ld_ptr(SCR1, buffer);
+  __ st_d(tmp, queue_index);
+  __ ld_d(SCR1, buffer);
   __ add_d(tmp, tmp, SCR1);
   __ load_parameter(0, SCR1);
-  __ st_ptr(SCR1, Address(tmp, 0));
+  __ st_d(SCR1, Address(tmp, 0));
   __ b(done);
 
   __ bind(runtime);
@@ -483,15 +483,15 @@ void G1BarrierSetAssembler::generate_c1_post_barrier_runtime_stub(StubAssembler*
   Register card_addr = card_offset;
   __ add_d(card_addr, byte_map_base, card_addr);
 
-  __ ld_ptr(SCR1, queue_index);
+  __ ld_d(SCR1, queue_index);
   __ beqz(SCR1, runtime);
   __ addi_d(SCR1, SCR1, -wordSize);
-  __ st_ptr(SCR1, queue_index);
+  __ st_d(SCR1, queue_index);
 
   // Reuse RA to hold buffer_addr
   const Register buffer_addr = RA;
 
-  __ ld_ptr(buffer_addr, buffer);
+  __ ld_d(buffer_addr, buffer);
   __ stx_d(card_addr, buffer_addr, SCR1);
   __ b(done);
 

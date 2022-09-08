@@ -56,13 +56,12 @@ void BarrierSetAssembler::load_at(MacroAssembler* masm, DecoratorSet decorators,
         } else {
           __ decode_heap_oop(dst);
         }
-      } else
-      {
-        __ ld_ptr(dst, src);
+      } else {
+        __ ld_d(dst, src);
       }
     } else {
       assert(in_native, "why else?");
-      __ ld_ptr(dst, src);
+      __ ld_d(dst, src);
     }
     break;
   }
@@ -72,7 +71,7 @@ void BarrierSetAssembler::load_at(MacroAssembler* masm, DecoratorSet decorators,
   case T_SHORT:   __ ld_h    (dst, src);    break;
   case T_INT:     __ ld_w    (dst, src);    break;
   case T_LONG:    __ ld_d    (dst, src);    break;
-  case T_ADDRESS: __ ld_ptr(dst, src);    break;
+  case T_ADDRESS: __ ld_d    (dst, src);    break;
   case T_FLOAT:
     assert(dst == noreg, "only to ftos");
     __ fld_s(FSF, src);
@@ -111,15 +110,14 @@ void BarrierSetAssembler::store_at(MacroAssembler* masm, DecoratorSet decorators
             __ encode_heap_oop(val);
           }
           __ st_w(val, dst);
-        } else
-        {
-          __ st_ptr(val, dst);
+        } else {
+          __ st_d(val, dst);
         }
       }
     } else {
       assert(in_native, "why else?");
       assert(val != noreg, "not supported");
-      __ st_ptr(val, dst);
+      __ st_d(val, dst);
     }
     break;
   }
@@ -151,7 +149,7 @@ void BarrierSetAssembler::store_at(MacroAssembler* masm, DecoratorSet decorators
     __ fst_d(FSF, dst);
     break;
   case T_ADDRESS:
-    __ st_ptr(val, dst);
+    __ st_d(val, dst);
     break;
   default: Unimplemented();
   }
@@ -170,7 +168,7 @@ void BarrierSetAssembler::obj_equals(MacroAssembler* masm,
 void BarrierSetAssembler::try_resolve_jobject_in_native(MacroAssembler* masm, Register jni_env,
                                                         Register obj, Register tmp, Label& slowpath) {
   __ clear_jweak_tag(obj);
-  __ ld_ptr(obj, Address(obj, 0));
+  __ ld_d(obj, Address(obj, 0));
 }
 
 // Defines obj, preserves var_size_in_bytes, okay for t2 == var_size_in_bytes.
@@ -186,17 +184,17 @@ void BarrierSetAssembler::tlab_allocate(MacroAssembler* masm, Register obj,
 
   // verify_tlab();
 
-  __ ld_ptr(obj, Address(TREG, JavaThread::tlab_top_offset()));
+  __ ld_d(obj, Address(TREG, JavaThread::tlab_top_offset()));
   if (var_size_in_bytes == noreg) {
     __ lea(end, Address(obj, con_size_in_bytes));
   } else {
     __ lea(end, Address(obj, var_size_in_bytes, Address::no_scale, 0));
   }
-  __ ld_ptr(SCR1, Address(TREG, JavaThread::tlab_end_offset()));
+  __ ld_d(SCR1, Address(TREG, JavaThread::tlab_end_offset()));
   __ blt_far(SCR1, end, slow_case, false);
 
   // update the tlab top pointer
-  __ st_ptr(end, Address(TREG, JavaThread::tlab_top_offset()));
+  __ st_d(end, Address(TREG, JavaThread::tlab_top_offset()));
 
   // recover var_size_in_bytes if necessary
   if (var_size_in_bytes == end) {
@@ -211,12 +209,12 @@ void BarrierSetAssembler::incr_allocated_bytes(MacroAssembler* masm,
                                                Register t1) {
   assert(t1->is_valid(), "need temp reg");
 
-  __ ld_ptr(t1, Address(TREG, in_bytes(JavaThread::allocated_bytes_offset())));
+  __ ld_d(t1, Address(TREG, JavaThread::allocated_bytes_offset()));
   if (var_size_in_bytes->is_valid())
     __ add_d(t1, t1, var_size_in_bytes);
   else
     __ addi_d(t1, t1, con_size_in_bytes);
-  __ st_ptr(t1, Address(TREG, in_bytes(JavaThread::allocated_bytes_offset())));
+  __ st_d(t1, Address(TREG, JavaThread::allocated_bytes_offset()));
 }
 
 void BarrierSetAssembler::nmethod_entry_barrier(MacroAssembler* masm) {
@@ -266,7 +264,7 @@ void BarrierSetAssembler::c2i_entry_barrier(MacroAssembler* masm) {
 
   // Is it a weak but alive CLD?
   __ push2(RT2, RT8);
-  __ ld_ptr(RT8, Address(SCR2, ClassLoaderData::holder_offset()));
+  __ ld_d(RT8, Address(SCR2, ClassLoaderData::holder_offset()));
   __ resolve_weak_handle(RT8, RT2); // Assembler occupies SCR1.
   __ move(SCR1, RT8);
   __ pop2(RT2, RT8);

@@ -37,7 +37,7 @@ static void z_load_barrier(MacroAssembler& _masm, const MachNode* node, Address 
     return;
   }
   ZLoadBarrierStubC2* const stub = ZLoadBarrierStubC2::create(node, ref_addr, ref, tmp, barrier_data);
-  __ ld_ptr(tmp, Address(TREG, ZThreadLocalData::address_bad_mask_offset()));
+  __ ld_d(tmp, Address(TREG, ZThreadLocalData::address_bad_mask_offset()));
   __ andr(tmp, tmp, ref);
   __ bnez(tmp, *stub->entry());
   __ bind(*stub->continuation());
@@ -66,7 +66,7 @@ static void z_compare_and_swap(MacroAssembler& _masm, const MachNode* node,
     __ move(res, AT);
 
     Label good;
-    __ ld_ptr(AT, Address(TREG, ZThreadLocalData::address_bad_mask_offset()));
+    __ ld_d(AT, Address(TREG, ZThreadLocalData::address_bad_mask_offset()));
     __ andr(AT, AT, tmp);
     __ beqz(AT, good);
     z_load_barrier_slow_path(_masm, node, addr, tmp, res /* used as tmp */);
@@ -86,7 +86,7 @@ static void z_compare_and_exchange(MacroAssembler& _masm, const MachNode* node,
              weak && node->barrier_data() == ZLoadBarrierElided /* weak */, true /* exchange */);
   if (node->barrier_data() != ZLoadBarrierElided) {
     Label good;
-    __ ld_ptr(tmp, Address(TREG, ZThreadLocalData::address_bad_mask_offset()));
+    __ ld_d(tmp, Address(TREG, ZThreadLocalData::address_bad_mask_offset()));
     __ andr(tmp, tmp, res);
     __ beqz(tmp, good);
     z_load_barrier_slow_path(_masm, node, addr, res /* ref */, tmp);
@@ -111,7 +111,7 @@ instruct zLoadP(mRegP dst, memory mem, mRegP tmp)
   ins_encode %{
     Address ref_addr = Address(as_Register($mem$$base), as_Register($mem$$index), Address::no_scale, $mem$$disp);
     __ block_comment("zLoadP");
-    __ ld_ptr($dst$$Register, ref_addr);
+    __ ld_d($dst$$Register, ref_addr);
     z_load_barrier(_masm, this, ref_addr, $dst$$Register, $tmp$$Register, barrier_data());
   %}
 

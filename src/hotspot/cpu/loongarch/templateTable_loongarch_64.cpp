@@ -488,7 +488,7 @@ void TemplateTable::fast_aldc(bool wide) {
     // but it's harmless to retry.
     Label notNull;
     __ li(rarg, (long)Universe::the_null_sentinel_addr());
-    __ ld_ptr(tmp, Address(rarg));
+    __ ld_d(tmp, Address(rarg));
     __ resolve_oop_handle(tmp, T4);
     __ bne(tmp, result, notNull);
     __ xorr(result, result, result);  // NULL object reference

@@ -440,7 +440,7 @@ int SharedRuntime::java_calling_convention(const BasicType *sig_bt,
 // Patch the callers callsite with entry to compiled code if it exists.
 static void patch_callers_callsite(MacroAssembler *masm) {
   Label L;
-  __ ld_ptr(AT, Rmethod, in_bytes(Method::code_offset()));
+  __ ld_d(AT, Address(Rmethod, Method::code_offset()));
   __ beq(AT, R0, L);
 
   // Schedule the branch target address early.
@@ -533,19 +533,19 @@ static void gen_c2i_adapter(MacroAssembler *masm,
       // memory to memory use fpu stack top
       int ld_off = r_1->reg2stack() * VMRegImpl::stack_slot_size + extraspace;
       if (!r_2->is_valid()) {
-        __ ld_ptr(AT, Address(SP, ld_off));
-        __ st_ptr(AT, Address(SP, st_off));
+        __ ld_d(AT, Address(SP, ld_off));
+        __ st_d(AT, Address(SP, st_off));
 
       } else {
 
 
         int next_off = st_off - Interpreter::stackElementSize;
-        __ ld_ptr(AT, Address(SP, ld_off));
-        __ st_ptr(AT, Address(SP, st_off));
+        __ ld_d(AT, Address(SP, ld_off));
+        __ st_d(AT, Address(SP, st_off));
 
         // Ref to is_Register condition
         if(sig_bt[i] == T_LONG || sig_bt[i] == T_DOUBLE)
-          __ st_ptr(AT, SP, st_off - 8);
+          __ st_d(AT, SP, st_off - 8);
       }
     } else if (r_1->is_Register()) {
       Register r = r_1->as_Register();
@@ -618,7 +618,7 @@ static void gen_c2i_adapter(MacroAssembler *masm,
   }
 
   // Schedule the branch target address early.
-  __ ld_ptr(AT, Rmethod, in_bytes(Method::interpreter_entry_offset()) );
+  __ ld_d(AT, Address(Rmethod, Method::interpreter_entry_offset()));
   // And repush original return address
   __ move(RA, T5);
   __ jr (AT);
@@ -838,13 +838,13 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
     //add for compressedoops
     __ load_klass(temp, receiver);
 
-    __ ld_ptr(AT, holder, CompiledICHolder::holder_klass_offset());
-    __ ld_ptr(Rmethod, holder, CompiledICHolder::holder_metadata_offset());
+    __ ld_d(AT, holder, CompiledICHolder::holder_klass_offset());
+    __ ld_d(Rmethod, holder, CompiledICHolder::holder_metadata_offset());
     __ bne(AT, temp, missed);
     // Method might have been compiled since the call site was patched to
     // interpreted if that is the case treat it as a miss so we can get
     // the call site corrected.
-    __ ld_ptr(AT, Rmethod, in_bytes(Method::code_offset()));
+    __ ld_d(AT, Address(Rmethod, Method::code_offset()));
     __ beq(AT, R0, skip_fixup);
     __ bind(missed);
 
@@ -1501,7 +1501,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
   // Generate a new frame for the wrapper.
   // do LA need this ?
-  __ st_ptr(SP, TREG, in_bytes(JavaThread::last_Java_sp_offset()));
+  __ st_d(SP, Address(TREG, JavaThread::last_Java_sp_offset()));
   assert(StackAlignmentInBytes == 16, "must be");
   __ bstrins_d(SP, R0, 3, 0);
 
@@ -2213,8 +2213,8 @@ void SharedRuntime::generate_deopt_blob() {
   // respectively.  Set them in TLS and fall thru to the
   // unpack_with_exception_in_tls entry point.
 
-  __ st_ptr(V1, TREG, in_bytes(JavaThread::exception_pc_offset()));
-  __ st_ptr(V0, TREG, in_bytes(JavaThread::exception_oop_offset()));
+  __ st_d(V1, Address(TREG, JavaThread::exception_pc_offset()));
+  __ st_d(V0, Address(TREG, JavaThread::exception_oop_offset()));
   int exception_in_tls_offset = __ pc() - start;
   // new implementation because exception oop is now passed in JavaThread
 
@@ -2236,17 +2236,17 @@ void SharedRuntime::generate_deopt_blob() {
   // load throwing pc from JavaThread and patch it as the return address
   // of the current frame. Then clear the field in JavaThread
 
-  __ ld_ptr(V1, TREG, in_bytes(JavaThread::exception_pc_offset()));
-  __ st_ptr(V1, SP, reg_save.ra_offset()); //save ra
-  __ st_ptr(R0, TREG, in_bytes(JavaThread::exception_pc_offset()));
+  __ ld_d(V1, Address(TREG, JavaThread::exception_pc_offset()));
+  __ st_d(V1, SP, reg_save.ra_offset()); //save ra
+  __ st_d(R0, Address(TREG, JavaThread::exception_pc_offset()));
 
 #ifdef ASSERT
   // verify that there is really an exception oop in JavaThread
-  __ ld_ptr(AT, TREG, in_bytes(JavaThread::exception_oop_offset()));
+  __ ld_d(AT, TREG, in_bytes(JavaThread::exception_oop_offset()));
   __ verify_oop(AT);
   // verify that there is no pending exception
   Label no_pending_exception;
-  __ ld_ptr(AT, TREG, in_bytes(Thread::pending_exception_offset()));
+  __ ld_d(AT, TREG, in_bytes(Thread::pending_exception_offset()));
   __ beq(AT, R0, no_pending_exception);
   __ stop("must not have pending exception here");
   __ bind(no_pending_exception);
@@ -2297,16 +2297,16 @@ void SharedRuntime::generate_deopt_blob() {
   Label noException;
   __ li(AT, Deoptimization::Unpack_exception);
   __ bne(AT, reason, noException);// Was exception pending?
-  __ ld_ptr(V0, TREG, in_bytes(JavaThread::exception_oop_offset()));
-  __ ld_ptr(V1, TREG, in_bytes(JavaThread::exception_pc_offset()));
-  __ st_ptr(R0, TREG, in_bytes(JavaThread::exception_pc_offset()));
-  __ st_ptr(R0, TREG, in_bytes(JavaThread::exception_oop_offset()));
+  __ ld_d(V0, Address(TREG, JavaThread::exception_oop_offset()));
+  __ ld_d(V1, Address(TREG, JavaThread::exception_pc_offset()));
+  __ st_d(R0, Address(TREG, JavaThread::exception_pc_offset()));
+  __ st_d(R0, Address(TREG, JavaThread::exception_oop_offset()));
 
   __ verify_oop(V0);
 
   // Overwrite the result registers with the exception results.
-  __ st_ptr(V0, SP, reg_save.v0_offset());
-  __ st_ptr(V1, SP, reg_save.v1_offset());
+  __ st_d(V0, SP, reg_save.v0_offset());
+  __ st_d(V1, SP, reg_save.v1_offset());
 
   __ bind(noException);
 
@@ -2343,10 +2343,10 @@ void SharedRuntime::generate_deopt_blob() {
   // sp should be pointing at the return address to the caller (3)
 
   // Load array of frame pcs into pcs
-  __ ld_ptr(pcs, unroll, Deoptimization::UnrollBlock::frame_pcs_offset_in_bytes());
+  __ ld_d(pcs, unroll, Deoptimization::UnrollBlock::frame_pcs_offset_in_bytes());
   __ addi_d(SP, SP, wordSize);  // trash the old pc
   // Load array of frame sizes into T6
-  __ ld_ptr(sizes, unroll, Deoptimization::UnrollBlock::frame_sizes_offset_in_bytes());
+  __ ld_d(sizes, unroll, Deoptimization::UnrollBlock::frame_sizes_offset_in_bytes());
 
 #ifdef ASSERT
   // Compilers generate code that bang the stack by as much as the
@@ -2371,7 +2371,7 @@ void SharedRuntime::generate_deopt_blob() {
   Label loop;
   __ bind(loop);
   __ ld_d(T2, sizes, 0);    // Load frame size
-  __ ld_ptr(AT, pcs, 0);           // save return address
+  __ ld_d(AT, pcs, 0);           // save return address
   __ addi_d(T2, T2, -2 * wordSize);           // we'll push pc and fp, by hand
   __ push2(AT, FP);
   __ addi_d(FP, SP, 2 * wordSize);
@@ -2503,7 +2503,7 @@ void SharedRuntime::generate_uncommon_trap_blob() {
 
 #ifdef ASSERT
   { Label L;
-    __ ld_ptr(AT, unroll, Deoptimization::UnrollBlock::unpack_kind_offset_in_bytes());
+    __ ld_d(AT, unroll, Deoptimization::UnrollBlock::unpack_kind_offset_in_bytes());
     __ li(T4, Deoptimization::Unpack_uncommon_trap);
     __ beq(AT, T4, L);
     __ stop("SharedRuntime::generate_deopt_blob: expected Unpack_uncommon_trap");
@@ -2666,8 +2666,8 @@ SafepointBlob* SharedRuntime::generate_handler_blob(address call_ptr, int poll_t
     // Additionally, TSR is a callee-saved register so we can look at
     // it later to determine if someone changed the return address for
     // us!
-    __ ld_ptr(TSR, TREG, in_bytes(JavaThread::saved_exception_pc_offset()));
-    __ st_ptr(TSR, SP, reg_save.ra_offset());
+    __ ld_d(TSR, Address(TREG, JavaThread::saved_exception_pc_offset()));
+    __ st_d(TSR, SP, reg_save.ra_offset());
   }
 
   // Do the call
@@ -2687,7 +2687,7 @@ SafepointBlob* SharedRuntime::generate_handler_blob(address call_ptr, int poll_t
   // Clear last_Java_sp again
   __ reset_last_Java_frame(false);
 
-  __ ld_ptr(AT, TREG, in_bytes(Thread::pending_exception_offset()));
+  __ ld_d(AT, Address(TREG, Thread::pending_exception_offset()));
   __ beq(AT, R0, noException);
 
   // Exception pending
@@ -2704,7 +2704,7 @@ SafepointBlob* SharedRuntime::generate_handler_blob(address call_ptr, int poll_t
   Label no_adjust, bail;
   if (!cause_return) {
     // If our stashed return pc was modified by the runtime we avoid touching it
-    __ ld_ptr(AT, SP, reg_save.ra_offset());
+    __ ld_d(AT, SP, reg_save.ra_offset());
     __ bne(AT, TSR, no_adjust);
 
 #ifdef ASSERT
@@ -2721,7 +2721,7 @@ SafepointBlob* SharedRuntime::generate_handler_blob(address call_ptr, int poll_t
 #endif
     // Adjust return pc forward to step over the safepoint poll instruction
      __ addi_d(RA, TSR, 4);    // NativeInstruction::instruction_size=4
-     __ st_ptr(RA, SP, reg_save.ra_offset());
+     __ st_d(RA, SP, reg_save.ra_offset());
   }
 
   __ bind(no_adjust);
@@ -2785,17 +2785,17 @@ RuntimeStub* SharedRuntime::generate_resolve_blob(address destination, const cha
   // registers that the compiler might be keeping live across a safepoint.
   oop_maps->add_gc_map(__ pc() - start, map);
   // V0 contains the address we are going to jump to assuming no exception got installed
-  __ ld_ptr(SP, TREG, in_bytes(JavaThread::last_Java_sp_offset()));
+  __ ld_d(SP, Address(TREG, JavaThread::last_Java_sp_offset()));
   // clear last_Java_sp
   __ reset_last_Java_frame(true);
   // check for pending exceptions
   Label pending;
-  __ ld_ptr(AT, TREG, in_bytes(Thread::pending_exception_offset()));
+  __ ld_d(AT, Address(TREG, Thread::pending_exception_offset()));
   __ bne(AT, R0, pending);
   // get the returned Method*
   __ get_vm_result_2(Rmethod, TREG);
-  __ st_ptr(Rmethod, SP, reg_save.s3_offset());
-  __ st_ptr(V0, SP, reg_save.t5_offset());
+  __ st_d(Rmethod, SP, reg_save.s3_offset());
+  __ st_d(V0, SP, reg_save.t5_offset());
   reg_save.restore_live_registers(masm);
 
   // We are back the original state on entry and ready to go the callee method.
@@ -2810,8 +2810,8 @@ RuntimeStub* SharedRuntime::generate_resolve_blob(address destination, const cha
   //forward_exception_entry need return address on the stack
   __ push(RA);
 
-  __ st_ptr(R0, TREG, in_bytes(JavaThread::vm_result_offset()));
-  __ ld_ptr(V0, TREG, in_bytes(Thread::pending_exception_offset()));
+  __ st_d(R0, Address(TREG, JavaThread::vm_result_offset()));
+  __ ld_d(V0, Address(TREG, Thread::pending_exception_offset()));
   __ jmp(StubRoutines::forward_exception_entry(), relocInfo::runtime_call_type);
   //
   // make sure all code is generated

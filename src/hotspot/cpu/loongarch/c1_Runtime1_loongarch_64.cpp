@@ -100,15 +100,15 @@ int StubAssembler::call_RT(Register oop_result1, Register metadata_result, addre
   // check for pending exceptions
   { Label L;
     // check for pending exceptions (java_thread is set upon return)
-    ld_ptr(SCR1, Address(TREG, in_bytes(Thread::pending_exception_offset())));
+    ld_d(SCR1, Address(TREG, Thread::pending_exception_offset()));
     beqz(SCR1, L);
     // exception pending => remove activation and forward to exception handler
     // make sure that the vm_results are cleared
     if (oop_result1->is_valid()) {
-      st_ptr(R0, Address(TREG, JavaThread::vm_result_offset()));
+      st_d(R0, Address(TREG, JavaThread::vm_result_offset()));
     }
     if (metadata_result->is_valid()) {
-      st_ptr(R0, Address(TREG, JavaThread::vm_result_2_offset()));
+      st_d(R0, Address(TREG, JavaThread::vm_result_2_offset()));
     }
     if (frame_size() == no_frame_size) {
       leave();
@@ -161,12 +161,12 @@ int StubAssembler::call_RT(Register oop_result1, Register metadata_result,
       arg2 == A1 || arg2 == A3 ||
       arg3 == A1 || arg3 == A2) {
     addi_d(SP, SP, -4 * wordSize);
-    st_ptr(arg1, Address(SP, 0 * wordSize));
-    st_ptr(arg2, Address(SP, 1 * wordSize));
-    st_ptr(arg3, Address(SP, 2 * wordSize));
-    ld_ptr(arg1, Address(SP, 0 * wordSize));
-    ld_ptr(arg2, Address(SP, 1 * wordSize));
-    ld_ptr(arg3, Address(SP, 2 * wordSize));
+    st_d(arg1, Address(SP, 0 * wordSize));
+    st_d(arg2, Address(SP, 1 * wordSize));
+    st_d(arg3, Address(SP, 2 * wordSize));
+    ld_d(arg1, Address(SP, 0 * wordSize));
+    ld_d(arg2, Address(SP, 1 * wordSize));
+    ld_d(arg3, Address(SP, 2 * wordSize));
     addi_d(SP, SP, 4 * wordSize);
   } else {
     move(A1, arg1);
@@ -294,7 +294,7 @@ static OopMap* save_live_registers(StubAssembler* sasm,
   __ addi_d(SP, SP, -(32 - 4 + 32) * wordSize);
 
   for (int i = 4; i < 32; i++)
-    __ st_ptr(as_Register(i), Address(SP, (32 + i - 4) * wordSize));
+    __ st_d(as_Register(i), Address(SP, (32 + i - 4) * wordSize));
 
   if (save_fpu_registers) {
     for (int i = 0; i < 32; i++)
@@ -311,7 +311,7 @@ static void restore_live_registers(StubAssembler* sasm, bool restore_fpu_registe
   }
 
   for (int i = 4; i < 32; i++)
-    __ ld_ptr(as_Register(i), Address(SP, (32 + i - 4) * wordSize));
+    __ ld_d(as_Register(i), Address(SP, (32 + i - 4) * wordSize));
 
   __ addi_d(SP, SP, (32 - 4 + 32) * wordSize);
 }
@@ -323,7 +323,7 @@ static void restore_live_registers_except_a0(StubAssembler* sasm, bool restore_f
   }
 
   for (int i = 5; i < 32; i++)
-    __ ld_ptr(as_Register(i), Address(SP, (32 + i - 4) * wordSize));
+    __ ld_d(as_Register(i), Address(SP, (32 + i - 4) * wordSize));
 
   __ addi_d(SP, SP, (32 - 4 + 32) * wordSize);
 }
@@ -387,15 +387,15 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler *sasm) {
     oop_map = generate_oop_map(sasm, 1 /*thread*/);
 
     // load and clear pending exception oop into A0
-    __ ld_ptr(exception_oop, Address(TREG, Thread::pending_exception_offset()));
-    __ st_ptr(R0, Address(TREG, Thread::pending_exception_offset()));
+    __ ld_d(exception_oop, Address(TREG, Thread::pending_exception_offset()));
+    __ st_d(R0, Address(TREG, Thread::pending_exception_offset()));
 
     // load issuing PC (the return address for this stub) into A1
-    __ ld_ptr(exception_pc, Address(FP, frame::return_addr_offset * BytesPerWord));
+    __ ld_d(exception_pc, Address(FP, frame::return_addr_offset * BytesPerWord));
 
     // make sure that the vm_results are cleared (may be unnecessary)
-    __ st_ptr(R0, Address(TREG, JavaThread::vm_result_offset()));
-    __ st_ptr(R0, Address(TREG, JavaThread::vm_result_2_offset()));
+    __ st_d(R0, Address(TREG, JavaThread::vm_result_offset()));
+    __ st_d(R0, Address(TREG, JavaThread::vm_result_2_offset()));
     break;
   case handle_exception_nofpu_id:
   case handle_exception_id:
@@ -422,13 +422,13 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler *sasm) {
   // check that fields in JavaThread for exception oop and issuing pc are
   // empty before writing to them
   Label oop_empty;
-  __ ld_ptr(SCR1, Address(TREG, JavaThread::exception_oop_offset()));
+  __ ld_d(SCR1, Address(TREG, JavaThread::exception_oop_offset()));
   __ beqz(SCR1, oop_empty);
   __ stop("exception oop already set");
   __ bind(oop_empty);
 
   Label pc_empty;
-  __ ld_ptr(SCR1, Address(TREG, JavaThread::exception_pc_offset()));
+  __ ld_d(SCR1, Address(TREG, JavaThread::exception_pc_offset()));
   __ beqz(SCR1, pc_empty);
   __ stop("exception pc already set");
   __ bind(pc_empty);
@@ -436,11 +436,11 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler *sasm) {
 
   // save exception oop and issuing pc into JavaThread
   // (exception handler will load it from here)
-  __ st_ptr(exception_oop, Address(TREG, JavaThread::exception_oop_offset()));
-  __ st_ptr(exception_pc, Address(TREG, JavaThread::exception_pc_offset()));
+  __ st_d(exception_oop, Address(TREG, JavaThread::exception_oop_offset()));
+  __ st_d(exception_pc, Address(TREG, JavaThread::exception_pc_offset()));
 
   // patch throwing pc into return address (has bci & oop map)
-  __ st_ptr(exception_pc, Address(FP, frame::return_addr_offset * BytesPerWord));
+  __ st_d(exception_pc, Address(FP, frame::return_addr_offset * BytesPerWord));
 
   // compute the exception handler.
   // the exception oop and the throwing pc are read from the fields in JavaThread
@@ -455,7 +455,7 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler *sasm) {
   __ invalidate_registers(false, true, true, true, true, true);
 
   // patch the return address, this stub will directly return to the exception handler
-  __ st_ptr(A0, Address(FP, frame::return_addr_offset * BytesPerWord));
+  __ st_d(A0, Address(FP, frame::return_addr_offset * BytesPerWord));
 
   switch (id) {
     case forward_exception_id:
@@ -487,13 +487,13 @@ void Runtime1::generate_unwind_exception(StubAssembler *sasm) {
 #ifdef ASSERT
   // check that fields in JavaThread for exception oop and issuing pc are empty
   Label oop_empty;
-  __ ld_ptr(SCR1, Address(TREG, JavaThread::exception_oop_offset()));
+  __ ld_d(SCR1, Address(TREG, JavaThread::exception_oop_offset()));
   __ beqz(SCR1, oop_empty);
   __ stop("exception oop must be empty");
   __ bind(oop_empty);
 
   Label pc_empty;
-  __ ld_ptr(SCR1, Address(TREG, JavaThread::exception_pc_offset()));
+  __ ld_d(SCR1, Address(TREG, JavaThread::exception_pc_offset()));
   __ beqz(SCR1, pc_empty);
   __ stop("exception pc must be empty");
   __ bind(pc_empty);
@@ -503,8 +503,8 @@ void Runtime1::generate_unwind_exception(StubAssembler *sasm) {
   // exception_handler_for_return_address will destroy it.  We also
   // save exception_oop
   __ addi_d(SP, SP, -2 * wordSize);
-  __ st_ptr(RA, Address(SP, 0 * wordSize));
-  __ st_ptr(exception_oop, Address(SP, 1 * wordSize));
+  __ st_d(RA, Address(SP, 0 * wordSize));
+  __ st_d(exception_oop, Address(SP, 1 * wordSize));
 
   // search the exception handler address of the caller (using the return address)
   __ call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::exception_handler_for_return_address), TREG, RA);
@@ -519,8 +519,8 @@ void Runtime1::generate_unwind_exception(StubAssembler *sasm) {
 
   // get throwing pc (= return address).
   // RA has been destroyed by the call
-  __ ld_ptr(RA, Address(SP, 0 * wordSize));
-  __ ld_ptr(exception_oop, Address(SP, 1 * wordSize));
+  __ ld_d(RA, Address(SP, 0 * wordSize));
+  __ ld_d(exception_oop, Address(SP, 1 * wordSize));
   __ addi_d(SP, SP, 2 * wordSize);
   __ move(A1, RA);
 
@@ -571,13 +571,13 @@ OopMapSet* Runtime1::generate_patching(StubAssembler* sasm, address target) {
 #ifdef ASSERT
   // check that fields in JavaThread for exception oop and issuing pc are empty
   Label oop_empty;
-  __ ld_ptr(SCR1, Address(TREG, Thread::pending_exception_offset()));
+  __ ld_d(SCR1, Address(TREG, Thread::pending_exception_offset()));
   __ beqz(SCR1, oop_empty);
   __ stop("exception oop must be empty");
   __ bind(oop_empty);
 
   Label pc_empty;
-  __ ld_ptr(SCR1, Address(TREG, JavaThread::exception_pc_offset()));
+  __ ld_d(SCR1, Address(TREG, JavaThread::exception_pc_offset()));
   __ beqz(SCR1, pc_empty);
   __ stop("exception pc must be empty");
   __ bind(pc_empty);
@@ -828,34 +828,34 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
 
         __ set_info("slow_subtype_check", dont_gc_arguments);
         __ addi_d(SP, SP, -4 * wordSize);
-        __ st_ptr(A0, Address(SP, a0_off * VMRegImpl::stack_slot_size));
-        __ st_ptr(A2, Address(SP, a2_off * VMRegImpl::stack_slot_size));
-        __ st_ptr(A4, Address(SP, a4_off * VMRegImpl::stack_slot_size));
-        __ st_ptr(A5, Address(SP, a5_off * VMRegImpl::stack_slot_size));
+        __ st_d(A0, Address(SP, a0_off * VMRegImpl::stack_slot_size));
+        __ st_d(A2, Address(SP, a2_off * VMRegImpl::stack_slot_size));
+        __ st_d(A4, Address(SP, a4_off * VMRegImpl::stack_slot_size));
+        __ st_d(A5, Address(SP, a5_off * VMRegImpl::stack_slot_size));
 
         // This is called by pushing args and not with C abi
-        __ ld_ptr(A4, Address(SP, klass_off * VMRegImpl::stack_slot_size)); // subclass
-        __ ld_ptr(A0, Address(SP, sup_k_off * VMRegImpl::stack_slot_size)); // superclass
+        __ ld_d(A4, Address(SP, klass_off * VMRegImpl::stack_slot_size)); // subclass
+        __ ld_d(A0, Address(SP, sup_k_off * VMRegImpl::stack_slot_size)); // superclass
 
         Label miss;
         __ check_klass_subtype_slow_path<false>(A4, A0, A2, A5, NULL, &miss);
 
         // fallthrough on success:
         __ li(SCR1, 1);
-        __ st_ptr(SCR1, Address(SP, result_off * VMRegImpl::stack_slot_size)); // result
-        __ ld_ptr(A0, Address(SP, a0_off * VMRegImpl::stack_slot_size));
-        __ ld_ptr(A2, Address(SP, a2_off * VMRegImpl::stack_slot_size));
-        __ ld_ptr(A4, Address(SP, a4_off * VMRegImpl::stack_slot_size));
-        __ ld_ptr(A5, Address(SP, a5_off * VMRegImpl::stack_slot_size));
+        __ st_d(SCR1, Address(SP, result_off * VMRegImpl::stack_slot_size)); // result
+        __ ld_d(A0, Address(SP, a0_off * VMRegImpl::stack_slot_size));
+        __ ld_d(A2, Address(SP, a2_off * VMRegImpl::stack_slot_size));
+        __ ld_d(A4, Address(SP, a4_off * VMRegImpl::stack_slot_size));
+        __ ld_d(A5, Address(SP, a5_off * VMRegImpl::stack_slot_size));
         __ addi_d(SP, SP, 4 * wordSize);
         __ jr(RA);
 
         __ bind(miss);
-        __ st_ptr(R0, Address(SP, result_off * VMRegImpl::stack_slot_size)); // result
-        __ ld_ptr(A0, Address(SP, a0_off * VMRegImpl::stack_slot_size));
-        __ ld_ptr(A2, Address(SP, a2_off * VMRegImpl::stack_slot_size));
-        __ ld_ptr(A4, Address(SP, a4_off * VMRegImpl::stack_slot_size));
-        __ ld_ptr(A5, Address(SP, a5_off * VMRegImpl::stack_slot_size));
+        __ st_d(R0, Address(SP, result_off * VMRegImpl::stack_slot_size)); // result
+        __ ld_d(A0, Address(SP, a0_off * VMRegImpl::stack_slot_size));
+        __ ld_d(A2, Address(SP, a2_off * VMRegImpl::stack_slot_size));
+        __ ld_d(A4, Address(SP, a4_off * VMRegImpl::stack_slot_size));
+        __ ld_d(A5, Address(SP, a5_off * VMRegImpl::stack_slot_size));
         __ addi_d(SP, SP, 4 * wordSize);
         __ jr(RA);
       }

@@ -521,27 +521,6 @@ class MacroAssembler: public Assembler {
   void load_sized_value(Register dst, Address src, size_t size_in_bytes, bool is_signed, Register dst2 = noreg);
   void store_sized_value(Address dst, Register src, size_t size_in_bytes, Register src2 = noreg);
 
-  // ld_ptr will perform lw for 32 bit VMs and ld for 64 bit VMs
-  inline void ld_ptr(Register rt, Address a) {
-    ld_d(rt, a);
-  }
-
-  inline void ld_ptr(Register rt, Register base, int offset16) {
-    ld_d(rt, base, offset16);
-  }
-
-  // st_ptr will perform sw for 32 bit VMs and sd for 64 bit VMs
-  inline void st_ptr(Register rt, Address a) {
-    st_d(rt, a);
-  }
-
-  inline void st_ptr(Register rt, Register base, int offset16) {
-    st_d(rt, base, offset16);
-  }
-
-  void ld_ptr(Register rt, Register base, Register offset);
-  void st_ptr(Register rt, Register base, Register offset);
-
   // swap the two byte of the low 16-bit halfword
   void bswap_h(Register dst, Register src);
   void bswap_hu(Register dst, Register src);

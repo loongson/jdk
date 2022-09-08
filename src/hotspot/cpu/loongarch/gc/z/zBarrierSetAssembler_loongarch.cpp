@@ -84,10 +84,10 @@ void ZBarrierSetAssembler::load_at(MacroAssembler* masm,
   __ lea(scratch, src);
 
   // Load oop at address
-  __ ld_ptr(dst, scratch, 0);
+  __ ld_d(dst, scratch, 0);
 
   // Test address bad mask
-  __ ld_ptr(SCR1, address_bad_mask_from_thread(TREG));
+  __ ld_d(SCR1, address_bad_mask_from_thread(TREG));
   __ andr(SCR1, dst, SCR1);
   __ beqz(SCR1, done);
 
@@ -137,7 +137,7 @@ void ZBarrierSetAssembler::store_at(MacroAssembler* masm,
 
       // tmp1 and tmp2 are often set to noreg.
 
-      __ ld_ptr(AT, address_bad_mask_from_thread(TREG));
+      __ ld_d(AT, address_bad_mask_from_thread(TREG));
       __ andr(AT, val, AT);
       __ beqz(AT, done);
       __ stop("Verify oop store failed");

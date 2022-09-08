@@ -44,7 +44,7 @@ void C1SafepointPollStub::emit_code(LIR_Assembler* ce) {
   __ bind(_entry);
   InternalAddress safepoint_pc(ce->masm()->pc() - ce->masm()->offset() + safepoint_offset());
   __ lea(SCR2, safepoint_pc);
-  __ st_ptr(SCR2, TREG, in_bytes(JavaThread::saved_exception_pc_offset()));
+  __ st_d(SCR2, Address(TREG, JavaThread::saved_exception_pc_offset()));
 
   assert(SharedRuntime::polling_page_return_handler_blob() != NULL,
          "polling page return stub not created yet");

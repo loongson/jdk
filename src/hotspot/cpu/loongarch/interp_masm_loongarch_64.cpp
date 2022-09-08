@@ -176,19 +176,19 @@ void InterpreterMacroAssembler::check_and_handle_popframe(Register java_thread) 
 
 
 void InterpreterMacroAssembler::load_earlyret_value(TosState state) {
-  ld_ptr(T8, TREG, in_bytes(JavaThread::jvmti_thread_state_offset()));
+  ld_d(T8, Address(TREG, JavaThread::jvmti_thread_state_offset()));
   const Address tos_addr (T8, in_bytes(JvmtiThreadState::earlyret_tos_offset()));
   const Address oop_addr (T8, in_bytes(JvmtiThreadState::earlyret_oop_offset()));
   const Address val_addr (T8, in_bytes(JvmtiThreadState::earlyret_value_offset()));
   //V0, oop_addr,V1,val_addr
   switch (state) {
     case atos:
-      ld_ptr(V0, oop_addr);
-      st_ptr(R0, oop_addr);
+      ld_d(V0, oop_addr);
+      st_d(R0, oop_addr);
       verify_oop(V0);
       break;
     case ltos:
-      ld_ptr(V0, val_addr);               // fall through
+      ld_d(V0, val_addr);               // fall through
       break;
     case btos:                                     // fall through
     case ztos:                                     // fall through
@@ -218,7 +218,7 @@ void InterpreterMacroAssembler::check_and_handle_earlyret(Register java_thread) 
     assert(java_thread != AT, "check");
 
     Label L;
-    ld_ptr(AT, java_thread, in_bytes(JavaThread::jvmti_thread_state_offset()));
+    ld_d(AT, Address(java_thread, JavaThread::jvmti_thread_state_offset()));
     beqz(AT, L);
 
     // Initiate earlyret handling only if it is not already being processed.
@@ -230,7 +230,7 @@ void InterpreterMacroAssembler::check_and_handle_earlyret(Register java_thread) 
 
     // Call Interpreter::remove_activation_early_entry() to get the address of the
     // same-named entrypoint in the generated interpreter code.
-    ld_ptr(A0, java_thread, in_bytes(JavaThread::jvmti_thread_state_offset()));
+    ld_d(A0, Address(java_thread, JavaThread::jvmti_thread_state_offset()));
     ld_w(A0, A0, in_bytes(JvmtiThreadState::earlyret_tos_offset()));
     call_VM_leaf(CAST_FROM_FN_PTR(address, Interpreter::remove_activation_early_entry), A0);
     jr(A0);
@@ -362,7 +362,7 @@ void InterpreterMacroAssembler::load_resolved_klass_at_index(Register cpool,
   alsl_d(AT, index, cpool, Address::times_ptr - 1);
   ld_h(index, AT, sizeof(ConstantPool));
   Register resolved_klasses = cpool;
-  ld_ptr(resolved_klasses, Address(cpool, ConstantPool::resolved_klasses_offset_in_bytes()));
+  ld_d(resolved_klasses, Address(cpool, ConstantPool::resolved_klasses_offset_in_bytes()));
   alsl_d(AT, index, resolved_klasses, Address::times_ptr - 1);
   ld_d(klass, AT, Array<Klass*>::base_offset_in_bytes());
 }

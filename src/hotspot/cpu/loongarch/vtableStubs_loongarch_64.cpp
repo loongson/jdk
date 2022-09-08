@@ -160,7 +160,7 @@ VtableStub* VtableStubs::create_vtable_stub(int vtable_index) {
   // Rmethod: Method*
   // T4: entry
   address ame_addr = __ pc();
-  __ ld_ptr(T4, method,in_bytes(Method::from_compiled_offset()));
+  __ ld_d(T4, Address(method, Method::from_compiled_offset()));
   __ jr(T4);
   masm->flush();
   slop_bytes += index_dependent_slop; // add'l slop for size variance due to large itable offsets
@@ -218,8 +218,8 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
 
   Label L_no_such_interface;
 
-  __ ld_ptr(resolved_klass_reg, icholder_reg, CompiledICHolder::holder_klass_offset());
-  __ ld_ptr(holder_klass_reg,   icholder_reg, CompiledICHolder::holder_metadata_offset());
+  __ ld_d(resolved_klass_reg, icholder_reg, CompiledICHolder::holder_klass_offset());
+  __ ld_d(holder_klass_reg,   icholder_reg, CompiledICHolder::holder_metadata_offset());
 
   // get receiver klass (also an implicit null-check)
   address npe_addr = __ pc();
@@ -238,7 +238,7 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
   {
     Label hit, entry;
 
-    __ ld_ptr(AT, t3, itableOffsetEntry::interface_offset_in_bytes());
+    __ ld_d(AT, t3, itableOffsetEntry::interface_offset_in_bytes());
     __ beq(AT, resolved_klass_reg, hit);
 
     __ bind(entry);
@@ -248,7 +248,7 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
     __ beqz(AT, L_no_such_interface);
 
     __ addi_d(t3, t3, itableOffsetEntry::size() * wordSize);
-    __ ld_ptr(AT, t3, itableOffsetEntry::interface_offset_in_bytes());
+    __ ld_d(AT, t3, itableOffsetEntry::interface_offset_in_bytes());
     __ bne(AT, resolved_klass_reg, entry);
 
     __ bind(hit);
@@ -257,7 +257,7 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
   {
     Label hit, entry;
 
-    __ ld_ptr(AT, t2, itableOffsetEntry::interface_offset_in_bytes());
+    __ ld_d(AT, t2, itableOffsetEntry::interface_offset_in_bytes());
     __ beq(AT, holder_klass_reg, hit);
 
     __ bind(entry);
@@ -267,7 +267,7 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
     __ beqz(AT, L_no_such_interface);
 
     __ addi_d(t2, t2, itableOffsetEntry::size() * wordSize);
-    __ ld_ptr(AT, t2, itableOffsetEntry::interface_offset_in_bytes());
+    __ ld_d(AT, t2, itableOffsetEntry::interface_offset_in_bytes());
     __ bne(AT, holder_klass_reg, entry);
 
     __ bind(hit);
@@ -306,7 +306,7 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
   // T0: receiver
   // T4: entry point
   address ame_addr = __ pc();
-  __ ld_ptr(T4, method, in_bytes(Method::from_compiled_offset()));
+  __ ld_d(T4, Address(method, Method::from_compiled_offset()));
   __ jr(T4);
 
   __ bind(L_no_such_interface);

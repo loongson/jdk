@@ -79,50 +79,6 @@
 
 // Implementation of MacroAssembler
 
-intptr_t MacroAssembler::i[32] = {0};
-float MacroAssembler::f[32] = {0.0};
-
-void MacroAssembler::print(outputStream *s) {
-  unsigned int k;
-  for(k=0; k<sizeof(i)/sizeof(i[0]); k++) {
-    s->print_cr("i%d = 0x%.16lx", k, i[k]);
-  }
-  s->cr();
-
-  for(k=0; k<sizeof(f)/sizeof(f[0]); k++) {
-    s->print_cr("f%d = %f", k, f[k]);
-  }
-  s->cr();
-}
-
-int MacroAssembler::i_offset(unsigned int k) { return (intptr_t)&((MacroAssembler*)0)->i[k]; }
-int MacroAssembler::f_offset(unsigned int k) { return (intptr_t)&((MacroAssembler*)0)->f[k]; }
-
-void MacroAssembler::save_registers(MacroAssembler *masm) {
-#define __ masm->
-  for(int k=0; k<32; k++) {
-    __ st_w (as_Register(k), A0, i_offset(k));
-  }
-
-  for(int k=0; k<32; k++) {
-    __ fst_s (as_FloatRegister(k), A0, f_offset(k));
-  }
-#undef __
-}
-
-void MacroAssembler::restore_registers(MacroAssembler *masm) {
-#define __ masm->
-  for(int k=0; k<32; k++) {
-    __ ld_w (as_Register(k), A0, i_offset(k));
-  }
-
-  for(int k=0; k<32; k++) {
-    __ fld_s (as_FloatRegister(k), A0, f_offset(k));
-  }
-#undef __
-}
-
-
 void MacroAssembler::pd_patch_instruction(address branch, address target, const char* file, int line) {
   jint& stub_inst = *(jint*)branch;
   jint *pc = (jint *)branch;
@@ -960,11 +916,10 @@ void MacroAssembler::super_call_VM_leaf(address entry_point,
   MacroAssembler::call_VM_leaf_base(entry_point, 3);
 }
 
-void MacroAssembler::check_and_handle_earlyret(Register java_thread) {
-}
+// these are no-ops overridden by InterpreterMacroAssembler
+void MacroAssembler::check_and_handle_earlyret(Register java_thread) {}
 
-void MacroAssembler::check_and_handle_popframe(Register java_thread) {
-}
+void MacroAssembler::check_and_handle_popframe(Register java_thread) {}
 
 void MacroAssembler::null_check(Register reg, int offset) {
   if (needs_explicit_null_check(offset)) {
@@ -1470,14 +1425,6 @@ void MacroAssembler::verify_tlab(Register t1, Register t2) {
 #endif
 }
 
-RegisterOrConstant MacroAssembler::delayed_value_impl(intptr_t* delayed_value_addr,
-                                                      Register tmp,
-                                                      int offset) {
-  //TODO: LA
-  guarantee(0, "LA not implemented yet");
-  return RegisterOrConstant(tmp);
-}
-
 void MacroAssembler::bswap_h(Register dst, Register src) {
   revb_2h(dst, src);
   ext_w_h(dst, dst);  // sign extension of the lower 16 bits
@@ -1611,25 +1558,8 @@ void MacroAssembler::cmpxchg32(Address addr, Register oldval, Register newval, R
     b(*fail);
 }
 
-// be sure the three register is different
-void MacroAssembler::rem_s(FloatRegister fd, FloatRegister fs, FloatRegister ft, FloatRegister tmp) {
-  //TODO: LA
-  guarantee(0, "LA not implemented yet");
-}
-
-// be sure the three register is different
-void MacroAssembler::rem_d(FloatRegister fd, FloatRegister fs, FloatRegister ft, FloatRegister tmp) {
-  //TODO: LA
-  guarantee(0, "LA not implemented yet");
-}
-
 void MacroAssembler::align(int modulus) {
   while (offset() % modulus != 0) nop();
-}
-
-
-void MacroAssembler::verify_FPU(int stack_depth, const char* s) {
-  //Unimplemented();
 }
 
 static RegSet caller_saved_regset = RegSet::range(A0, A7) + RegSet::range(T0, T8) + RegSet::of(FP, RA) - RegSet::of(SCR1, SCR2);

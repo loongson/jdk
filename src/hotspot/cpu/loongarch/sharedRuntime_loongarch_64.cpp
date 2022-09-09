@@ -1941,9 +1941,6 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
   // no exception, we're almost done
 
-  // check that only result value is on FPU stack
-  __ verify_FPU(ret_type == T_FLOAT || ret_type == T_DOUBLE ? 1 : 0, "native_wrapper normal exit");
-
   // Return
   __ leave();
 

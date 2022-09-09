@@ -98,16 +98,6 @@ class MacroAssembler: public Assembler {
   Address as_Address(AddressLiteral adr);
   Address as_Address(ArrayAddress adr);
 
-  static intptr_t  i[32];
-  static float  f[32];
-  static void print(outputStream *s);
-
-  static int i_offset(unsigned int k);
-  static int f_offset(unsigned int k);
-
-  static void save_registers(MacroAssembler *masm);
-  static void restore_registers(MacroAssembler *masm);
-
   // Support for NULL-checks
   //
   // Generates code that causes a NULL OS exception if the content of reg is NULL.
@@ -130,14 +120,8 @@ class MacroAssembler: public Assembler {
 
   address emit_trampoline_stub(int insts_call_instruction_offset, address target);
 
-  // Support for inc/dec with optimal instruction selection depending on value
-  // void incrementl(Register reg, int value = 1);
-  // void decrementl(Register reg, int value = 1);
-
-
   // Alignment
   void align(int modulus);
-
 
   // Stack frame creation/removal
   void enter();
@@ -295,8 +279,6 @@ class MacroAssembler: public Assembler {
   // Sign extension
   void sign_extend_short(Register reg) { ext_w_h(reg, reg); }
   void sign_extend_byte(Register reg)  { ext_w_b(reg, reg); }
-  void rem_s(FloatRegister fd, FloatRegister fs, FloatRegister ft, FloatRegister tmp);
-  void rem_d(FloatRegister fd, FloatRegister fs, FloatRegister ft, FloatRegister tmp);
 
   // allocation
   void tlab_allocate(
@@ -394,9 +376,6 @@ class MacroAssembler: public Assembler {
 #define verify_method_ptr(reg) _verify_method_ptr(reg, "broken method " #reg, __FILE__, __LINE__)
 #define verify_klass_ptr(reg) _verify_method_ptr(reg, "broken klass " #reg, __FILE__, __LINE__)
 
-  // only if +VerifyFPU
-  void verify_FPU(int stack_depth, const char* s = "illegal FPU state");
-
   // prints msg, dumps registers and stops execution
   void stop(const char* msg);
 
@@ -411,8 +390,6 @@ class MacroAssembler: public Assembler {
   void unimplemented(const char* what = "");
 
   void should_not_reach_here()                   { stop("should not reach here"); }
-
-  void print_CPU_state();
 
   // Stack overflow checking
   void bang_stack_with_offset(int offset) {
@@ -436,13 +413,8 @@ class MacroAssembler: public Assembler {
   // Check for reserved stack access in method being exited (for JIT)
   void reserved_stack_check();
 
-  virtual RegisterOrConstant delayed_value_impl(intptr_t* delayed_value_addr,
-                                                Register tmp,
-                                                int offset);
-
   void safepoint_poll(Label& slow_path, Register thread_reg, bool at_return, bool acquire, bool in_nmethod);
 
-  //void verify_tlab();
   void verify_tlab(Register t1, Register t2);
 
   // the follow two might use AT register, be sure you have no meanful data in AT before you call them
@@ -537,8 +509,6 @@ class MacroAssembler: public Assembler {
   void cmpxchg32(Address addr, Register oldval, Register newval, Register tmp,
                  bool sign, bool retold, bool barrier, Label& succ, Label* fail = nullptr);
 
-  void extend_sign(Register rh, Register rl) { /*stop("extend_sign");*/ guarantee(0, "LA not implemented yet");}
-  void neg(Register reg) { /*dsubu(reg, R0, reg);*/ guarantee(0, "LA not implemented yet");}
   void push (Register reg)      { addi_d(SP, SP, -8); st_d  (reg, SP, 0); }
   void push (FloatRegister reg) { addi_d(SP, SP, -8); fst_d (reg, SP, 0); }
   void pop  (Register reg)      { ld_d  (reg, SP, 0);  addi_d(SP, SP, 8); }

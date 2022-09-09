@@ -24,8 +24,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2021. These
- * modifications are Copyright (c) 2021, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2022. These
+ * modifications are Copyright (c) 2021, 2022, Loongson Technology, and are made
  * available on the same license terms set forth above.
  *
  */
@@ -543,8 +543,8 @@ JNIEXPORT jlongArray JNICALL Java_sun_jvm_hotspot_debugger_linux_LinuxDebuggerLo
   {
     int i;
     for (i = 0; i < 31; i++)
-      regs[i] = gregs.gpr[i];
-    regs[REG_INDEX(PC)] = gregs.pc;
+      regs[i] = gregs.regs[i];
+    regs[REG_INDEX(PC)] = gregs.csr_era;
   }
 #endif /* loongarch64 */
 

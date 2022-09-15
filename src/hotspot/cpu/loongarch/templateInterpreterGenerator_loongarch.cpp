@@ -873,10 +873,8 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
   // initialize fixed part of activation frame
   // sender's sp in Rsender
   int i = 2;
-  int frame_size = 10;
-#ifndef CORE
-  ++frame_size;
-#endif
+  int frame_size = 11;
+
   __ addi_d(SP, SP, (-frame_size) * wordSize);
   __ st_d(RA, SP, (frame_size - 1) * wordSize);   // save return address
   __ st_d(FP, SP, (frame_size - 2) * wordSize);  // save sender's fp
@@ -890,7 +888,7 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
   // Get mirror and store it in the frame as GC root for this Method*
   __ load_mirror(T2, Rmethod, T4);
   __ st_d(T2, FP, (-++i) * wordSize); // Mirror
-#ifndef CORE
+
   if (ProfileInterpreter) {
     Label method_data_continue;
     __ ld_d(AT, Rmethod,  in_bytes(Method::method_data_offset()));
@@ -901,7 +899,6 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
   } else {
     __ st_d(R0, FP, (-++i) * wordSize);
   }
-#endif // !CORE
 
   __ ld_d(T2, Rmethod, in_bytes(Method::const_offset()));
   __ ld_d(T2, T2, in_bytes(ConstMethod::constants_offset()));
@@ -990,10 +987,6 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   // Rmethod: Method*
   address entry_point = __ pc();
 
-#ifndef CORE
-  const Address invocation_counter(Rmethod,in_bytes(MethodCounters::invocation_counter_offset() +
-  InvocationCounter::counter_offset()));
-#endif
   // get parameter size (always needed)
   // the size in the java stack
   __ ld_d(V0, Rmethod, in_bytes(Method::const_offset()));
@@ -1030,11 +1023,6 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   // [ argument word n-1     ] <--- T0
   //   ...
   // [ argument word 0       ] <--- LVP
-
-
-#ifndef CORE
-  if (inc_counter) __ ld_w(T3, invocation_counter);  // (pre-)fetch invocation count
-#endif
 
   // initialize fixed part of activation frame
   generate_fixed_frame(true);
@@ -1084,7 +1072,6 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   __ li(AT, (int)true);
   __ st_b(AT, TREG, in_bytes(JavaThread::do_not_unlock_if_synchronized_offset()));
 
-#ifndef CORE
   // increment invocation count & check for overflow
   Label invocation_counter_overflow;
   if (inc_counter) {
@@ -1093,7 +1080,6 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 
   Label continue_after_compile;
   __ bind(continue_after_compile);
-#endif // CORE
 
   bang_stack_shadow_pages(true);
 
@@ -1523,15 +1509,12 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   __ ld_d(FP, FP, frame::link_offset * wordSize); // restore sender's fp
   __ jr(RA);
 
-#ifndef CORE
   if (inc_counter) {
     // Handle overflow of counter and compile method
     __ bind(invocation_counter_overflow);
     generate_counter_overflow(continue_after_compile);
-    // entry_point is the beginning of this
-    // function and checks again for compiled code
   }
-#endif
+
   return entry_point;
 }
 
@@ -1682,12 +1665,10 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
   __ li(AT, (int)true);
   __ st_b(AT, TREG, in_bytes(JavaThread::do_not_unlock_if_synchronized_offset()));
 
-#ifndef CORE
-
   // mdp : T8
   // tmp1: T4
   // tmp2: T2
-   __ profile_parameters_type(T8, T4, T2);
+  __ profile_parameters_type(T8, T4, T2);
 
   // increment invocation count & check for overflow
   Label invocation_counter_overflow;
@@ -1697,8 +1678,6 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
 
   Label continue_after_compile;
   __ bind(continue_after_compile);
-
-#endif // CORE
 
   bang_stack_shadow_pages(false);
 
@@ -1833,7 +1812,6 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
   __ ori(T3, T3, JavaThread::popframe_processing_bit);
   __ st_w(T3, TREG, in_bytes(JavaThread::popframe_condition_offset()));
 
-#ifndef CORE
   {
     // Check to see whether we are returning to a deoptimized frame.
     // (The PopFrame call ensures that the caller of the popped frame is
@@ -1873,7 +1851,6 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
 
     __ bind(caller_not_deoptimized);
   }
-#endif /* !CORE */
 
   __ remove_activation(vtos, T3,
                        /* throw_monitor_exception */ false,
@@ -1914,13 +1891,13 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
   __ restore_locals();
   // S8 be used in C2
   __ li(S8, (long)Interpreter::dispatch_table(itos));
-#ifndef CORE
+
   // The method data pointer was incremented already during
   // call profiling. We have to restore the mdp for the current bcp.
   if (ProfileInterpreter) {
     __ set_method_data_pointer_for_bcp();
   }
-#endif // !CORE
+
   // Clear the popframe condition flag
   __ li(AT, JavaThread::popframe_inactive);
   __ st_w(AT, TREG, in_bytes(JavaThread::popframe_condition_offset()));

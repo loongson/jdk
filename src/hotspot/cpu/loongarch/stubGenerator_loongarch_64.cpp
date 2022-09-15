@@ -5372,10 +5372,9 @@ class StubGenerator: public StubCodeGenerator {
     if (VerifyOops) {
       StubRoutines::_verify_oop_subroutine_entry   = generate_verify_oop();
     }
-#ifndef CORE
+
     // arraycopy stubs used by compilers
     generate_arraycopy_stubs();
-#endif
 
     if (UseLSX && vmIntrinsics::is_intrinsic_available(vmIntrinsics::_dsin)) {
       StubRoutines::_dsin = generate_dsin_dcos(/* isCos = */ false);

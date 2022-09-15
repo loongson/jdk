@@ -280,12 +280,6 @@ address TemplateInterpreterGenerator::generate_CRC32C_updateBytes_entry(Abstract
   return NULL;
 }
 
-address TemplateInterpreterGenerator::generate_Continuation_doYield_entry(void) {
-  if (!Continuations::enabled()) return nullptr;
-  Unimplemented();
-  return NULL;
-}
-
 //
 // Various method entries
 //

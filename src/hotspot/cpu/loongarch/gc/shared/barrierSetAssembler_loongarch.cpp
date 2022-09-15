@@ -217,32 +217,97 @@ void BarrierSetAssembler::incr_allocated_bytes(MacroAssembler* masm,
   __ st_d(t1, Address(TREG, JavaThread::allocated_bytes_offset()));
 }
 
-void BarrierSetAssembler::nmethod_entry_barrier(MacroAssembler* masm) {
+static volatile uint32_t _patching_epoch = 0;
+
+address BarrierSetAssembler::patching_epoch_addr() {
+  return (address)&_patching_epoch;
+}
+
+void BarrierSetAssembler::increment_patching_epoch() {
+  Atomic::inc(&_patching_epoch);
+}
+
+void BarrierSetAssembler::clear_patching_epoch() {
+  _patching_epoch = 0;
+}
+
+void BarrierSetAssembler::nmethod_entry_barrier(MacroAssembler* masm, Label* slow_path, Label* continuation, Label* guard) {
   BarrierSetNMethod* bs_nm = BarrierSet::barrier_set()->barrier_set_nmethod();
 
   if (bs_nm == NULL) {
     return;
   }
 
-  Label skip, guard;
-  Address thread_disarmed_addr(TREG, in_bytes(bs_nm->thread_disarmed_offset()));
+  Label local_guard;
+  NMethodPatchingType patching_type = nmethod_patching_type();
 
-  __ lipc(SCR1, guard);
-  __ ld_w(SCR1, SCR1, 0);
+  if (slow_path == NULL) {
+    guard = &local_guard;
+  }
 
-  // Subsequent loads of oops must occur after load of guard value.
-  // BarrierSetNMethod::disarm sets guard with release semantics.
-  __ membar(__ LoadLoad);
-  __ ld_w(SCR2, thread_disarmed_addr);
-  __ beq(SCR1, SCR2, skip);
+  __ lipc(SCR1, *guard);
+  __ ld_wu(SCR1, SCR1, 0);
 
-  __ call_long(StubRoutines::la::method_entry_barrier());
-  __ b(skip);
+  switch (patching_type) {
+    case NMethodPatchingType::conc_data_patch:
+      // Subsequent loads of oops must occur after load of guard value.
+      // BarrierSetNMethod::disarm sets guard with release semantics.
+      __ membar(__ LoadLoad); // fall through to stw_instruction_and_data_patch
+    case NMethodPatchingType::stw_instruction_and_data_patch:
+      {
+        // With STW patching, no data or instructions are updated concurrently,
+        // which means there isn't really any need for any fencing for neither
+        // data nor instruction modification happening concurrently. The
+        // instruction patching is synchronized with global icache_flush() by
+        // the write hart on riscv. So here we can do a plain conditional
+        // branch with no fencing.
+        Address thread_disarmed_addr(TREG, in_bytes(bs_nm->thread_disarmed_offset()));
+        __ ld_wu(SCR2, thread_disarmed_addr);
+        break;
+      }
+    case NMethodPatchingType::conc_instruction_and_data_patch:
+      {
+        // If we patch code we need both a code patching and a loadload
+        // fence. It's not super cheap, so we use a global epoch mechanism
+        // to hide them in a slow path.
+        // The high level idea of the global epoch mechanism is to detect
+        // when any thread has performed the required fencing, after the
+        // last nmethod was disarmed. This implies that the required
+        // fencing has been performed for all preceding nmethod disarms
+        // as well. Therefore, we do not need any further fencing.
+        __ lea(SCR2, ExternalAddress((address)&_patching_epoch));
+        // Embed an artificial data dependency to order the guard load
+        // before the epoch load.
+        __ srli_d(RA, SCR1, 32);
+        __ orr(SCR2, SCR2, RA);
+        // Read the global epoch value.
+        __ ld_wu(SCR2, SCR2);
+        // Combine the guard value (low order) with the epoch value (high order).
+        __ slli_d(SCR2, SCR2, 32);
+        __ orr(SCR1, SCR1, SCR2);
+        // Compare the global values with the thread-local values
+        Address thread_disarmed_and_epoch_addr(TREG, in_bytes(bs_nm->thread_disarmed_offset()));
+        __ ld_d(SCR2, thread_disarmed_and_epoch_addr);
+        break;
+      }
+    default:
+      ShouldNotReachHere();
+  }
 
-  __ bind(guard);
-  __ emit_int32(0);   // nmethod guard value. Skipped over in common case.
+  if (slow_path == NULL) {
+    Label skip_barrier;
+    __ beq(SCR1, SCR2, skip_barrier);
 
-  __ bind(skip);
+    __ call_long(StubRoutines::la::method_entry_barrier());
+    __ b(skip_barrier);
+
+    __ bind(local_guard);
+    __ emit_int32(0);   // nmethod guard value. Skipped over in common case.
+    __ bind(skip_barrier);
+  } else {
+    __ bne(SCR1, SCR2, *slow_path);
+    __ bind(*continuation);
+  }
 }
 
 void BarrierSetAssembler::c2i_entry_barrier(MacroAssembler* masm) {

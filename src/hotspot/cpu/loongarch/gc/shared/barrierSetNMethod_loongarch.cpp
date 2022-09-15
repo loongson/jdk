@@ -26,6 +26,7 @@
 #include "precompiled.hpp"
 #include "code/codeCache.hpp"
 #include "code/nativeInst.hpp"
+#include "gc/shared/barrierSetAssembler.hpp"
 #include "gc/shared/barrierSetNMethod.hpp"
 #include "logging/log.hpp"
 #include "memory/resourceArea.hpp"
@@ -36,20 +37,57 @@
 #include "utilities/align.hpp"
 #include "utilities/debug.hpp"
 
+static int slow_path_size(nmethod* nm) {
+  // The slow path code is out of line with C2.
+  // Leave a b to the stub in the fast path.
+  return nm->is_compiled_by_c2() ? 1 : 6;
+}
+
+static int entry_barrier_offset(nmethod* nm) {
+  BarrierSetAssembler* bs_asm = BarrierSet::barrier_set()->barrier_set_assembler();
+  switch (bs_asm->nmethod_patching_type()) {
+    case NMethodPatchingType::stw_instruction_and_data_patch:
+      return -4 * (3 + slow_path_size(nm));
+    case NMethodPatchingType::conc_data_patch:
+      return -4 * (4 + slow_path_size(nm));
+    case NMethodPatchingType::conc_instruction_and_data_patch:
+      return -4 * (9 + slow_path_size(nm));
+  }
+  ShouldNotReachHere();
+  return 0;
+}
+
 class NativeNMethodBarrier: public NativeInstruction {
   address instruction_address() const { return addr_at(0); }
 
-  int *guard_addr() {
-    return reinterpret_cast<int*>(instruction_address() + 9 * 4);
+  int local_guard_offset(nmethod* nm) {
+    // It's the last instruction
+    return (-entry_barrier_offset(nm)) - 4;
+  }
+
+  int *guard_addr(nmethod* nm) {
+    if (nm->is_compiled_by_c2()) {
+      // With c2 compiled code, the guard is out-of-line in a stub
+      // We find it using the RelocIterator.
+      RelocIterator iter(nm);
+      while (iter.next()) {
+        if (iter.type() == relocInfo::entry_guard_type) {
+          entry_guard_Relocation* const reloc = iter.entry_guard_reloc();
+          return reinterpret_cast<int*>(reloc->addr());
+        }
+      }
+      ShouldNotReachHere();
+    }
+    return reinterpret_cast<int*>(instruction_address() + local_guard_offset(nm));
   }
 
 public:
-  int get_value() {
-    return Atomic::load_acquire(guard_addr());
+  int get_value(nmethod* nm) {
+    return Atomic::load_acquire(guard_addr(nm));
   }
 
-  void set_value(int value) {
-    Atomic::release_store(guard_addr(), value);
+  void set_value(nmethod* nm, int value) {
+    Atomic::release_store(guard_addr(nm), value);
   }
 
   void verify() const;
@@ -64,14 +102,7 @@ struct CheckInsn {
 
 static const struct CheckInsn barrierInsn[] = {
   { 0xfe000000, 0x18000000, "pcaddi"},
-  { 0xffc00000, 0x28800000, "ld.w"},
-  { 0xffff8000, 0x38720000, "dbar"},
-  { 0xffc00000, 0x28800000, "ld.w"},
-  { 0xfc000000, 0x58000000, "beq"},
-  { 0xfe000000, 0x14000000, "lu12i.w"},
-  { 0xfe000000, 0x16000000, "lu32i.d"},
-  { 0xfc000000, 0x4c000000, "jirl"},
-  { 0xfc000000, 0x50000000, "b"}
+  { 0xffc00000, 0x2a800000, "ld.wu"},
 };
 
 // The encodings must match the instructions emitted by
@@ -123,17 +154,8 @@ void BarrierSetNMethod::deoptimize(nmethod* nm, address* return_address_ptr) {
   new_frame->pc = SharedRuntime::get_handle_wrong_method_stub();
 }
 
-// This is the offset of the entry barrier from where the frame is completed.
-// If any code changes between the end of the verified entry where the entry
-// barrier resides, and the completion of the frame, then
-// NativeNMethodCmpBarrier::verify() will immediately complain when it does
-// not find the expected native instruction at this offset, which needs updating.
-// Note that this offset is invariant of PreserveFramePointer.
-
-static const int entry_barrier_offset = -4 * 10;
-
 static NativeNMethodBarrier* native_nmethod_barrier(nmethod* nm) {
-  address barrier_address = nm->code_begin() + nm->frame_complete_offset() + entry_barrier_offset;
+  address barrier_address = nm->code_begin() + nm->frame_complete_offset() + entry_barrier_offset(nm);
   NativeNMethodBarrier* barrier = reinterpret_cast<NativeNMethodBarrier*>(barrier_address);
   debug_only(barrier->verify());
   return barrier;
@@ -144,15 +166,40 @@ void BarrierSetNMethod::disarm(nmethod* nm) {
     return;
   }
 
+  // The patching epoch is incremented before the nmethod is disarmed. Disarming
+  // is performed with a release store. In the nmethod entry barrier, the values
+  // are read in the opposite order, such that the load of the nmethod guard
+  // acquires the patching epoch. This way, the guard is guaranteed to block
+  // entries to the nmethod, util it has safely published the requirement for
+  // further fencing by mutators, before they are allowed to enter.
+  BarrierSetAssembler* bs_asm = BarrierSet::barrier_set()->barrier_set_assembler();
+  bs_asm->increment_patching_epoch();
+
   // Disarms the nmethod guard emitted by BarrierSetAssembler::nmethod_entry_barrier.
   // Symmetric "LD.W; DBAR" is in the nmethod barrier.
   NativeNMethodBarrier* barrier = native_nmethod_barrier(nm);
 
-  barrier->set_value(disarmed_value());
+  barrier->set_value(nm, disarmed_value());
 }
 
 void BarrierSetNMethod::arm(nmethod* nm, int arm_value) {
-  Unimplemented();
+  if (!supports_entry_barrier(nm)) {
+    return;
+  }
+
+  if (arm_value == disarmed_value()) {
+    // The patching epoch is incremented before the nmethod is disarmed. Disarming
+    // is performed with a release store. In the nmethod entry barrier, the values
+    // are read in the opposite order, such that the load of the nmethod guard
+    // acquires the patching epoch. This way, the guard is guaranteed to block
+    // entries to the nmethod, until it has safely published the requirement for
+    // further fencing by mutators, before they are allowed to enter.
+    BarrierSetAssembler* bs_asm = BarrierSet::barrier_set()->barrier_set_assembler();
+    bs_asm->increment_patching_epoch();
+  }
+
+  NativeNMethodBarrier* barrier = native_nmethod_barrier(nm);
+  barrier->set_value(nm, arm_value);
 }
 
 bool BarrierSetNMethod::is_armed(nmethod* nm) {
@@ -161,5 +208,5 @@ bool BarrierSetNMethod::is_armed(nmethod* nm) {
   }
 
   NativeNMethodBarrier* barrier = native_nmethod_barrier(nm);
-  return barrier->get_value() != disarmed_value();
+  return barrier->get_value(nm) != disarmed_value();
 }

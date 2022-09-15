@@ -1731,3 +1731,17 @@ bool C2_MacroAssembler::in_scratch_emit_size() {
   }
   return MacroAssembler::in_scratch_emit_size();
 }
+
+void C2_MacroAssembler::emit_entry_barrier_stub(C2EntryBarrierStub* stub) {
+  bind(stub->slow_path());
+  call_long(StubRoutines::la::method_entry_barrier());
+  b(stub->continuation());
+
+  bind(stub->guard());
+  relocate(entry_guard_Relocation::spec());
+  emit_int32(0);  // nmethod guard value
+}
+
+int C2_MacroAssembler::entry_barrier_stub_size() {
+  return 5 * 4;
+}

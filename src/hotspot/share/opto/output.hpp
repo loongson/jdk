@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2022. These
+ * modifications are Copyright (c) 2022, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_OPTO_OUTPUT_HPP
 #define SHARE_OPTO_OUTPUT_HPP
 
@@ -118,7 +124,7 @@ public:
 class C2EntryBarrierStub: public ResourceObj {
   Label _slow_path;
   Label _continuation;
-  Label _guard; // Used on AArch64 and RISCV
+  Label _guard; // Used on AArch64, RISCV and LoongArch
 
 public:
   C2EntryBarrierStub() :

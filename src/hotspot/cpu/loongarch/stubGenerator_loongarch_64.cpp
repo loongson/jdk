@@ -3043,6 +3043,18 @@ class StubGenerator: public StubCodeGenerator {
 
     address start = __ pc();
 
+    BarrierSetAssembler* bs_asm = BarrierSet::barrier_set()->barrier_set_assembler();
+
+    if (bs_asm->nmethod_patching_type() == NMethodPatchingType::conc_instruction_and_data_patch) {
+      BarrierSetNMethod* bs_nm = BarrierSet::barrier_set()->barrier_set_nmethod();
+      Address thread_epoch_addr(TREG, in_bytes(bs_nm->thread_disarmed_offset()) + 4);
+      __ lea(SCR1, ExternalAddress(bs_asm->patching_epoch_addr()));
+      __ ld_wu(SCR1, SCR1);
+      __ st_w(SCR1, thread_epoch_addr);
+      __ ibar(0);
+      __ membar(__ LoadLoad);
+    }
+
     __ set_last_Java_frame(SP, FP, RA);
 
     __ enter();

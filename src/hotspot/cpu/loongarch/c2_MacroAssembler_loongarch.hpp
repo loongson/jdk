@@ -47,8 +47,8 @@
 #define T8 RT8
 
 public:
-  void emit_entry_barrier_stub(C2EntryBarrierStub* stub) {}
-  static int entry_barrier_stub_size() { return 0; }
+  void emit_entry_barrier_stub(C2EntryBarrierStub* stub);
+  static int entry_barrier_stub_size();
 
   void cmp_branch_short(int flag, Register op1, Register op2, Label& L, bool is_signed);
   void cmp_branch_long(int flag, Register op1, Register op2, Label* L, bool is_signed);

@@ -456,7 +456,6 @@ void InterpreterMacroAssembler::pop(TosState state) {
   }
 }
 
-//FSR=V0,SSR=V1
 void InterpreterMacroAssembler::push(TosState state) {
   switch (state) {
     case atos:

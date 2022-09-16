@@ -1099,7 +1099,7 @@ static void gen_special_dispatch(MacroAssembler* masm,
       // pass the receiver oop in a register.  If this is not true on some
       // platform, pick a temp and load the receiver from stack.
       fatal("receiver always in a register");
-      receiver_reg = SSR;  // known to be free at this point
+      receiver_reg = T6;  // known to be free at this point
       __ ld_d(receiver_reg, Address(SP, r->reg2stack() * VMRegImpl::stack_slot_size));
     } else {
       // no data motion is needed

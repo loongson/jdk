@@ -339,9 +339,10 @@ void TemplateTable::ldc(bool wide) {
 
 void TemplateTable::condy_helper(Label& Done) {
   const Register obj = FSR;
-  const Register off = SSR;
-  const Register flags = T3;
   const Register rarg = A1;
+  const Register flags = A2;
+  const Register off = A3;
+
   __ li(rarg, (int)bytecode());
   __ call_VM(obj, CAST_FROM_FN_PTR(address, InterpreterRuntime::resolve_ldc), rarg);
   __ get_vm_result_2(flags, TREG);
@@ -447,8 +448,9 @@ void TemplateTable::fast_aldc(bool wide) {
   transition(vtos, atos);
 
   Register result = FSR;
-  Register tmp = SSR;
-  Register rarg = A1;
+  Register tmp = A1;
+  Register rarg = A2;
+
   int index_size = wide ? sizeof(u2) : sizeof(u1);
 
   Label resolved;
@@ -706,7 +708,8 @@ void TemplateTable::index_check_without_pop(Register array, Register index) {
   __ ld_w(AT, array, arrayOopDesc::length_offset_in_bytes());
   __ bltu(index, AT, ok);
 
-  //throw_ArrayIndexOutOfBoundsException assume abberrant index in A2
+  // throw_ArrayIndexOutOfBoundsException assume abberrant index in A2
+  assert(index != A1, "smashed arg");
   if (A1 != array) __ move(A1, array);
   if (A2 != index) __ move(A2, index);
   __ jmp(Interpreter::_throw_ArrayIndexOutOfBoundsException_entry);
@@ -715,36 +718,36 @@ void TemplateTable::index_check_without_pop(Register array, Register index) {
 
 void TemplateTable::iaload() {
   transition(itos, itos);
-  index_check(SSR, FSR);
-  __ alsl_d(FSR, FSR, SSR, 1);
+  index_check(A1, FSR);
+  __ alsl_d(FSR, FSR, A1, 1);
   __ access_load_at(T_INT, IN_HEAP | IS_ARRAY, FSR, Address(FSR, arrayOopDesc::base_offset_in_bytes(T_INT)), noreg, noreg);
 }
 
 void TemplateTable::laload() {
   transition(itos, ltos);
-  index_check(SSR, FSR);
-  __ alsl_d(T4, FSR, SSR, Address::times_8 - 1);
+  index_check(A1, FSR);
+  __ alsl_d(T4, FSR, A1, Address::times_8 - 1);
   __ access_load_at(T_LONG, IN_HEAP | IS_ARRAY, FSR, Address(T4, arrayOopDesc::base_offset_in_bytes(T_LONG)), noreg, noreg);
 }
 
 void TemplateTable::faload() {
   transition(itos, ftos);
-  index_check(SSR, FSR);
-  __ alsl_d(FSR, FSR, SSR, Address::times_4 - 1);
+  index_check(A1, FSR);
+  __ alsl_d(FSR, FSR, A1, Address::times_4 - 1);
   __ access_load_at(T_FLOAT, IN_HEAP | IS_ARRAY, noreg, Address(FSR, arrayOopDesc::base_offset_in_bytes(T_FLOAT)), noreg, noreg);
 }
 
 void TemplateTable::daload() {
   transition(itos, dtos);
-  index_check(SSR, FSR);
-  __ alsl_d(T4, FSR, SSR, 2);
+  index_check(A1, FSR);
+  __ alsl_d(T4, FSR, A1, 2);
   __ access_load_at(T_DOUBLE, IN_HEAP | IS_ARRAY, noreg, Address(T4, arrayOopDesc::base_offset_in_bytes(T_DOUBLE)), noreg, noreg);
 }
 
 void TemplateTable::aaload() {
   transition(itos, atos);
-  index_check(SSR, FSR);
-  __ alsl_d(FSR, FSR, SSR, (UseCompressedOops ? Address::times_4 : Address::times_8) - 1);
+  index_check(A1, FSR);
+  __ alsl_d(FSR, FSR, A1, (UseCompressedOops ? Address::times_4 : Address::times_8) - 1);
   //add for compressedoops
   do_oop_load(_masm,
               Address(FSR, arrayOopDesc::base_offset_in_bytes(T_OBJECT)),
@@ -754,15 +757,15 @@ void TemplateTable::aaload() {
 
 void TemplateTable::baload() {
   transition(itos, itos);
-  index_check(SSR, FSR);
-  __ add_d(FSR, SSR, FSR);
+  index_check(A1, FSR);
+  __ add_d(FSR, A1, FSR);
   __ access_load_at(T_BYTE, IN_HEAP | IS_ARRAY, FSR, Address(FSR, arrayOopDesc::base_offset_in_bytes(T_BYTE)), noreg, noreg);
 }
 
 void TemplateTable::caload() {
   transition(itos, itos);
-  index_check(SSR, FSR);
-  __ alsl_d(FSR, FSR, SSR, Address::times_2 - 1);
+  index_check(A1, FSR);
+  __ alsl_d(FSR, FSR, A1, Address::times_2 - 1);
   __ access_load_at(T_CHAR, IN_HEAP | IS_ARRAY, FSR, Address(FSR, arrayOopDesc::base_offset_in_bytes(T_CHAR)), noreg, noreg);
 }
 
@@ -774,15 +777,15 @@ void TemplateTable::fast_icaload() {
   // load index out of locals
   locals_index(T2);
   __ ld_w(FSR, T2, 0);
-  index_check(SSR, FSR);
-  __ alsl_d(FSR, FSR, SSR, 0);
+  index_check(A1, FSR);
+  __ alsl_d(FSR, FSR, A1, 0);
   __ access_load_at(T_CHAR, IN_HEAP | IS_ARRAY, FSR, Address(FSR, arrayOopDesc::base_offset_in_bytes(T_CHAR)), noreg, noreg);
 }
 
 void TemplateTable::saload() {
   transition(itos, itos);
-  index_check(SSR, FSR);
-  __ alsl_d(FSR, FSR, SSR, Address::times_2 - 1);
+  index_check(A1, FSR);
+  __ alsl_d(FSR, FSR, A1, Address::times_2 - 1);
   __ access_load_at(T_SHORT, IN_HEAP | IS_ARRAY, FSR, Address(FSR, arrayOopDesc::base_offset_in_bytes(T_SHORT)), noreg, noreg);
 }
 
@@ -957,13 +960,12 @@ void TemplateTable::wide_astore() {
   __ st_d(FSR, T2, 0);
 }
 
-// used register : T2
 void TemplateTable::iastore() {
   transition(itos, vtos);
-  __ pop_i(SSR);   // T2: array  SSR: index
-  index_check(T2, SSR);  // prefer index in SSR
-  __ alsl_d(T2, SSR, T2, Address::times_4 - 1);
-  __ access_store_at(T_INT, IN_HEAP | IS_ARRAY, Address(T2, arrayOopDesc::base_offset_in_bytes(T_INT)), FSR, noreg, noreg);
+  __ pop_i(T2);
+  index_check(A1, T2);
+  __ alsl_d(A1, T2, A1, Address::times_4 - 1);
+  __ access_store_at(T_INT, IN_HEAP | IS_ARRAY, Address(A1, arrayOopDesc::base_offset_in_bytes(T_INT)), FSR, noreg, noreg);
 }
 
 // used register T2, T3
@@ -978,10 +980,10 @@ void TemplateTable::lastore() {
 // used register T2
 void TemplateTable::fastore() {
   transition(ftos, vtos);
-  __ pop_i(SSR);
-  index_check(T2, SSR);
-  __ alsl_d(T2, SSR, T2, Address::times_4 - 1);
-  __ access_store_at(T_FLOAT, IN_HEAP | IS_ARRAY, Address(T2, arrayOopDesc::base_offset_in_bytes(T_FLOAT)), noreg, noreg, noreg);
+  __ pop_i(T2);
+  index_check(A1, T2);
+  __ alsl_d(A1, T2, A1, Address::times_4 - 1);
+  __ access_store_at(T_FLOAT, IN_HEAP | IS_ARRAY, Address(A1, arrayOopDesc::base_offset_in_bytes(T_FLOAT)), noreg, noreg, noreg);
 }
 
 // used register T2, T3
@@ -993,20 +995,15 @@ void TemplateTable::dastore() {
   __ access_store_at(T_DOUBLE, IN_HEAP | IS_ARRAY, Address(T3, arrayOopDesc::base_offset_in_bytes(T_DOUBLE)), noreg, noreg, noreg);
 }
 
-// used register : T2, T3, T8
-// T2 : array
-// T3 : subklass
-// T8 : supklass
 void TemplateTable::aastore() {
   Label is_null, ok_is_subtype, done;
   transition(vtos, vtos);
   // stack: ..., array, index, value
-  __ ld_d(FSR, at_tos());     // Value
-  __ ld_w(SSR, at_tos_p1());  // Index
-  __ ld_d(T2, at_tos_p2());  // Array
+  __ ld_d(FSR, at_tos());    // Value
+  __ ld_w(T2, at_tos_p1());  // Index
+  __ ld_d(A1, at_tos_p2());  // Array
 
-  // index_check(T2, SSR);
-  index_check_without_pop(T2, SSR);
+  index_check_without_pop(A1, T2);
   // do array store check - check for NULL value first
   __ beq(FSR, R0, is_null);
 
@@ -1015,11 +1012,11 @@ void TemplateTable::aastore() {
   __ load_klass(T3, FSR);
   // Move superklass into T8
   //add for compressedoops
-  __ load_klass(T8, T2);
+  __ load_klass(T8, A1);
   __ ld_d(T8, Address(T8,  ObjArrayKlass::element_klass_offset()));
-  // Compress array+index*4+12 into a single register. T2
-  __ alsl_d(T2, SSR, T2, (UseCompressedOops? Address::times_4 : Address::times_8) - 1);
-  __ addi_d(T2, T2, arrayOopDesc::base_offset_in_bytes(T_OBJECT));
+  // Compress array+index*4+12 into a single register.
+  __ alsl_d(A1, T2, A1, (UseCompressedOops? Address::times_4 : Address::times_8) - 1);
+  __ addi_d(A1, A1, arrayOopDesc::base_offset_in_bytes(T_OBJECT));
 
   // Generate subtype check.
   // Superklass in T8.  Subklass in T3.
@@ -1029,14 +1026,14 @@ void TemplateTable::aastore() {
   __ jmp(Interpreter::_throw_ArrayStoreException_entry);
   // Come here on success
   __ bind(ok_is_subtype);
-  do_oop_store(_masm, Address(T2, 0), FSR, IS_ARRAY);
+  do_oop_store(_masm, Address(A1, 0), FSR, IS_ARRAY);
   __ b(done);
 
-  // Have a NULL in FSR, T2=array, SSR=index.  Store NULL at ary[idx]
+  // Have a NULL in FSR, A1=array, T2=index.  Store NULL at ary[idx]
   __ bind(is_null);
   __ profile_null_seen(T4);
-  __ alsl_d(T2, SSR, T2, (UseCompressedOops? Address::times_4 : Address::times_8) - 1);
-  do_oop_store(_masm, Address(T2, arrayOopDesc::base_offset_in_bytes(T_OBJECT)), noreg, IS_ARRAY);
+  __ alsl_d(A1, T2, A1, (UseCompressedOops? Address::times_4 : Address::times_8) - 1);
+  do_oop_store(_masm, Address(A1, arrayOopDesc::base_offset_in_bytes(T_OBJECT)), noreg, IS_ARRAY);
 
   __ bind(done);
   __ addi_d(SP, SP, 3 * Interpreter::stackElementSize);
@@ -1044,12 +1041,12 @@ void TemplateTable::aastore() {
 
 void TemplateTable::bastore() {
   transition(itos, vtos);
-  __ pop_i(SSR);
-  index_check(T2, SSR);
+  __ pop_i(T2);
+  index_check(A1, T2);
 
   // Need to check whether array is boolean or byte
   // since both types share the bastore bytecode.
-  __ load_klass(T4, T2);
+  __ load_klass(T4, A1);
   __ ld_w(T4, T4, in_bytes(Klass::layout_helper_offset()));
 
   int diffbit = Klass::layout_helper_boolean_diffbit();
@@ -1061,16 +1058,16 @@ void TemplateTable::bastore() {
   __ andi(FSR, FSR, 0x1);
   __ bind(L_skip);
 
-  __ add_d(SSR, T2, SSR);
-  __ access_store_at(T_BYTE, IN_HEAP | IS_ARRAY, Address(SSR, arrayOopDesc::base_offset_in_bytes(T_BYTE)), FSR, noreg, noreg);
+  __ add_d(A1, A1, T2);
+  __ access_store_at(T_BYTE, IN_HEAP | IS_ARRAY, Address(A1, arrayOopDesc::base_offset_in_bytes(T_BYTE)), FSR, noreg, noreg);
 }
 
 void TemplateTable::castore() {
   transition(itos, vtos);
-  __ pop_i(SSR);
-  index_check(T2, SSR);
-  __ alsl_d(SSR, SSR, T2, Address::times_2 - 1);
-  __ access_store_at(T_CHAR, IN_HEAP | IS_ARRAY, Address(SSR, arrayOopDesc::base_offset_in_bytes(T_CHAR)), FSR, noreg, noreg);
+  __ pop_i(T2);
+  index_check(A1, T2);
+  __ alsl_d(A1, T2, A1, Address::times_2 - 1);
+  __ access_store_at(T_CHAR, IN_HEAP | IS_ARRAY, Address(A1, arrayOopDesc::base_offset_in_bytes(T_CHAR)), FSR, noreg, noreg);
 }
 
 void TemplateTable::sastore() {
@@ -1180,7 +1177,6 @@ void TemplateTable::dup2_x1() {
   // stack: ..., b, c, a, b, c
 }
 
-// blows FSR, SSR
 void TemplateTable::dup2_x2() {
   transition(vtos, vtos);
   // stack: ..., a, b, c, d
@@ -1218,35 +1214,33 @@ void TemplateTable::swap() {
 
 void TemplateTable::iop2(Operation op) {
   transition(itos, itos);
-
-  __ pop_i(SSR);
+  // FSR(A0) <== A1 op A0
+  __ pop_i(A1);
   switch (op) {
-    case add  : __ add_w(FSR, SSR, FSR); break;
-    case sub  : __ sub_w(FSR, SSR, FSR); break;
-    case mul  : __ mul_w(FSR, SSR, FSR);    break;
-    case _and : __ andr(FSR, SSR, FSR);   break;
-    case _or  : __ orr(FSR, SSR, FSR);    break;
-    case _xor : __ xorr(FSR, SSR, FSR);   break;
-    case shl  : __ sll_w(FSR, SSR, FSR);   break;
-    case shr  : __ sra_w(FSR, SSR, FSR);   break;
-    case ushr : __ srl_w(FSR, SSR, FSR);   break;
+    case add  : __ add_w(FSR, A1, FSR); break;
+    case sub  : __ sub_w(FSR, A1, FSR); break;
+    case mul  : __ mul_w(FSR, A1, FSR); break;
+    case _and : __ andr (FSR, A1, FSR); break;
+    case _or  : __ orr  (FSR, A1, FSR); break;
+    case _xor : __ xorr (FSR, A1, FSR); break;
+    case shl  : __ sll_w(FSR, A1, FSR); break;
+    case shr  : __ sra_w(FSR, A1, FSR); break;
+    case ushr : __ srl_w(FSR, A1, FSR); break;
     default   : ShouldNotReachHere();
   }
 }
 
-// the result stored in FSR, SSR,
-// used registers : T2, T3
 void TemplateTable::lop2(Operation op) {
   transition(ltos, ltos);
-  __ pop_l(T2);
-
+  // FSR(A0) <== A1 op A0
+  __ pop_l(A1);
   switch (op) {
-    case add : __ add_d(FSR, T2, FSR); break;
-    case sub : __ sub_d(FSR, T2, FSR); break;
-    case _and: __ andr(FSR, T2, FSR);  break;
-    case _or : __ orr(FSR, T2, FSR);   break;
-    case _xor: __ xorr(FSR, T2, FSR);  break;
-    default : ShouldNotReachHere();
+    case add  : __ add_d(FSR, A1, FSR); break;
+    case sub  : __ sub_d(FSR, A1, FSR); break;
+    case _and : __ andr (FSR, A1, FSR); break;
+    case _or  : __ orr  (FSR, A1, FSR); break;
+    case _xor : __ xorr (FSR, A1, FSR); break;
+    default   : ShouldNotReachHere();
   }
 }
 
@@ -1261,21 +1255,20 @@ void TemplateTable::idiv() {
   __ jmp(Interpreter::_throw_ArithmeticException_entry);
   __ bind(not_zero);
 
-  __ pop_i(SSR);
-  __ div_w(FSR, SSR, FSR);
+  __ pop_i(A1);
+  __ div_w(FSR, A1, FSR);
 }
 
 void TemplateTable::irem() {
   transition(itos, itos);
-  Label not_zero;
-  __ pop_i(SSR);
-
-  __ bne(FSR, R0, not_zero);
-  //__ brk(7);
+  // explicitly check for div0
+  Label no_div0;
+  __ bnez(FSR, no_div0);
   __ jmp(Interpreter::_throw_ArithmeticException_entry);
 
-  __ bind(not_zero);
-  __ mod_w(FSR, SSR, FSR);
+  __ bind(no_div0);
+  __ pop_i(A1);
+  __ mod_w(FSR, A1, FSR);
 }
 
 void TemplateTable::lmul() {
@@ -1785,26 +1778,26 @@ void TemplateTable::if_icmp(Condition cc) {
   transition(itos, vtos);
   // assume branch is more often taken than not (loops use backward branches)
   Label not_taken;
-
-  __ pop_i(SSR);
+  __ pop_i(A1);
+  __ add_w(FSR, FSR, R0);
   switch(cc) {
     case not_equal:
-      __ beq(SSR, FSR, not_taken);
+      __ beq(A1, FSR, not_taken);
       break;
     case equal:
-      __ bne(SSR, FSR, not_taken);
+      __ bne(A1, FSR, not_taken);
       break;
     case less:
-      __ bge(SSR, FSR, not_taken);
+      __ bge(A1, FSR, not_taken);
       break;
     case less_equal:
-      __ blt(FSR, SSR, not_taken);
+      __ blt(FSR, A1, not_taken);
       break;
     case greater:
-      __ bge(FSR, SSR, not_taken);
+      __ bge(FSR, A1, not_taken);
       break;
     case greater_equal:
-      __ blt(SSR, FSR, not_taken);
+      __ blt(A1, FSR, not_taken);
       break;
   }
 
@@ -1838,14 +1831,14 @@ void TemplateTable::if_acmp(Condition cc) {
   transition(atos, vtos);
   // assume branch is more often taken than not (loops use backward branches)
   Label not_taken;
-  //  __ ld_w(SSR, SP, 0);
-  __ pop_ptr(SSR);
+  __ pop_ptr(A1);
+
   switch(cc) {
     case not_equal:
-      __ beq(SSR, FSR, not_taken);
+      __ beq(A1, FSR, not_taken);
       break;
     case equal:
-      __ bne(SSR, FSR, not_taken);
+      __ bne(A1, FSR, not_taken);
       break;
     default:
       ShouldNotReachHere();
@@ -3192,7 +3185,7 @@ void TemplateTable::prepare_invoke(int byte_no,
      // Push the appendix as a trailing parameter.
      // This must be done before we get the receiver,
      // since the parameter_size includes it.
-     Register tmp = SSR;
+     Register tmp = T6;
      __ push(tmp);
      __ move(tmp, index);
      __ load_resolved_reference_at_index(index, tmp, recv);

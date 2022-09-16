@@ -97,13 +97,10 @@ constexpr Register TREG           = S6;
 constexpr Register S5_heapbase    = S5;
 
 constexpr Register FSR            = V0;
-constexpr Register SSR            = T6;
 constexpr FloatRegister FSF       = FA0;
 
 constexpr Register RECEIVER       = T0;
 constexpr Register IC_Klass       = T1;
-
-constexpr Register SHIFT_count    = T3;
 
 // ---------- Scratch Register ----------
 constexpr Register AT             = T7;

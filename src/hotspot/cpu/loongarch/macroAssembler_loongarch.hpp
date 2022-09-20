@@ -123,8 +123,13 @@ class MacroAssembler: public Assembler {
 
   address emit_trampoline_stub(int insts_call_instruction_offset, address target);
 
+  void push_cont_fastpath(Register java_thread);
+  void pop_cont_fastpath(Register java_thread);
+
   // Alignment
   void align(int modulus);
+
+  void post_call_nop();
 
   // Stack frame creation/removal
   void enter();

@@ -502,3 +502,32 @@ bool NativeInstruction::is_safepoint_poll() {
   return Assembler::high(insn_word(), 10) == Assembler::ld_w_op &&
          Assembler::low(insn_word(), 5)   == AT->encoding();
 }
+
+void NativePostCallNop::make_deopt() {
+  NativeDeoptInstruction::insert(addr_at(0));
+}
+
+void NativePostCallNop::patch(jint diff) {
+  assert(diff != 0, "must be");
+  assert(check(), "must be");
+
+  int lo = (diff & 0xffff);
+  int hi = ((diff >> 16) & 0xffff);
+
+  uint32_t *code_pos_first  = (uint32_t *) addr_at(4);
+  uint32_t *code_pos_second = (uint32_t *) addr_at(8);
+
+  int opcode = (Assembler::ori_op << 17);
+
+  *((uint32_t *)(code_pos_first))  = (uint32_t) ((opcode | lo) << 5);
+  *((uint32_t *)(code_pos_second)) = (uint32_t) ((opcode | hi) << 5);
+}
+
+void NativeDeoptInstruction::verify() {
+}
+
+// Inserts an undefined instruction at a given pc
+void NativeDeoptInstruction::insert(address code_pos) {
+  *(uint32_t *)code_pos = instruction_code;
+  ICache::invalidate_range(code_pos, instruction_size);
+}

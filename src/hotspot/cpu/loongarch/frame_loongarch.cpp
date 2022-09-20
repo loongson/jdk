@@ -47,7 +47,6 @@ void RegisterMap::check_location_valid() {
 }
 #endif
 
-
 // Profiling/safepoint support
 
 bool frame::safe_for_sender(JavaThread *thread) {
@@ -85,7 +84,7 @@ bool frame::safe_for_sender(JavaThread *thread) {
     // ok. adapter blobs never have a frame complete and are never ok.
 
     if (!_cb->is_frame_complete_at(_pc)) {
-      if (_cb->is_compiled() || _cb->is_adapter_blob() || _cb->is_runtime_stub()) {
+      if (_cb->is_nmethod() || _cb->is_adapter_blob() || _cb->is_runtime_stub()) {
         return false;
       }
     }
@@ -143,6 +142,12 @@ bool frame::safe_for_sender(JavaThread *thread) {
       saved_fp = (intptr_t*) *(sender_sp - 2);
     }
 
+    if (Continuation::is_return_barrier_entry(sender_pc)) {
+      // If our sender_pc is the return barrier, then our "real" sender is the continuation entry
+      frame s = Continuation::continuation_bottom_sender(thread, *this, sender_sp);
+      sender_sp = s.sp();
+      sender_pc = s.pc();
+    }
 
     // If the potential sender is the interpreter then we can do some more checking
     if (Interpreter::contains(sender_pc)) {
@@ -252,15 +257,18 @@ bool frame::safe_for_sender(JavaThread *thread) {
 void frame::patch_pc(Thread* thread, address pc) {
   assert(_cb == CodeCache::find_blob(pc), "unexpected pc");
   address* pc_addr = &(((address*) sp())[-1]);
+  address pc_old = *pc_addr;
 
   if (TracePcPatching) {
     tty->print_cr("patch_pc at address " INTPTR_FORMAT " [" INTPTR_FORMAT " -> " INTPTR_FORMAT "]",
-                  p2i(pc_addr), p2i(*pc_addr), p2i(pc));
+                  p2i(pc_addr), p2i(pc_old), p2i(pc));
   }
+
+  assert(!Continuation::is_return_barrier_entry(pc_old), "return barrier");
 
   // Either the return address is the original one or we are going to
   // patch in the same address that's already there.
-  assert(_pc == *pc_addr || pc == *pc_addr || *pc_addr == 0, "must be");
+  assert(_pc == pc_old || pc == pc_old || pc_old == 0, "must be");
   DEBUG_ONLY(address old_pc = _pc;)
   *pc_addr = pc;
   _pc = pc; // must be set before call to get_deopt_original_pc
@@ -272,10 +280,6 @@ void frame::patch_pc(Thread* thread, address pc) {
   } else {
     _deopt_state = not_deoptimized;
   }
-}
-
-bool frame::is_interpreted_frame() const  {
-  return Interpreter::contains(pc());
 }
 
 intptr_t* frame::entry_frame_argument_at(int offset) const {
@@ -304,10 +308,10 @@ BasicObjectLock* frame::interpreter_frame_monitor_begin() const {
 }
 
 BasicObjectLock* frame::interpreter_frame_monitor_end() const {
-  BasicObjectLock* result = (BasicObjectLock*) *addr_at(interpreter_frame_monitor_block_top_offset);
+  BasicObjectLock* result = (BasicObjectLock*) at(interpreter_frame_monitor_block_top_offset);
   // make sure the pointer points inside the frame
-  assert((intptr_t) fp() >  (intptr_t) result, "result must <  than frame pointer");
-  assert((intptr_t) sp() <= (intptr_t) result, "result must >= than stack pointer");
+  assert(sp() <= (intptr_t*) result, "monitor end should be above the stack pointer");
+  assert((intptr_t*) result < fp(), "monitor end should be strictly below the frame pointer");
   return result;
 }
 
@@ -413,7 +417,8 @@ void frame::adjust_unextended_sp() {
 //------------------------------------------------------------------------------
 // frame::sender_for_interpreter_frame
 frame frame::sender_for_interpreter_frame(RegisterMap* map) const {
-  // sp is the raw sp from the sender after adapter or interpreter extension
+  // SP is the raw SP from the sender after adapter or interpreter
+  // extension.
   intptr_t* sender_sp = this->sender_sp();
 
   // This is the sp before any possible extension (adapter/locals).
@@ -427,11 +432,21 @@ frame frame::sender_for_interpreter_frame(RegisterMap* map) const {
   // Since the interpreter always saves FP if we record where it is then
   // we don't have to always save FP on entry and exit to c2 compiled
   // code, on entry will be enough.
+
 #ifdef COMPILER2_OR_JVMCI
   if (map->update_map()) {
     update_map_with_saved_link(map, (intptr_t**) addr_at(link_offset));
   }
 #endif // COMPILER2_OR_JVMCI
+
+  if (Continuation::is_return_barrier_entry(sender_pc())) {
+    if (map->walk_cont()) { // about to walk into an h-stack
+      return Continuation::top_frame(*this, map);
+    } else {
+      return Continuation::continuation_bottom_sender(map->thread(), *this, sender_sp);
+    }
+  }
+
   return frame(sender_sp, unextended_sp, link(), sender_pc());
 }
 
@@ -476,14 +491,20 @@ bool frame::is_interpreted_frame_valid(JavaThread* thread) const {
     return false;
   }
 
-  // validate ConstantPoolCache*
+  // validate constantPoolCache*
   ConstantPoolCache* cp = *interpreter_frame_cache_addr();
-  if (MetaspaceObj::is_valid(cp) == false) return false;
+  if (MetaspaceObj::is_valid(cp) == false) {
+    return false;
+  }
 
   // validate locals
+  address locals = (address) *interpreter_frame_locals_addr();
+  if (locals > thread->stack_base() /*|| locals < (address) fp() */) {
+    return false;
+  }
 
-  address locals =  (address) *interpreter_frame_locals_addr();
-  return thread->is_in_stack_range_incl(locals, (address)fp());
+  // We'd have to be pretty unlucky to be mislead at this point
+  return true;
 }
 
 BasicType frame::interpreter_frame_result(oop* oop_result, jvalue* value_result) {
@@ -493,11 +514,9 @@ BasicType frame::interpreter_frame_result(oop* oop_result, jvalue* value_result)
 
   intptr_t* tos_addr;
   if (method->is_native()) {
-    // Prior to calling into the runtime to report the method_exit the possible
-    // return value is pushed to the native stack. If the result is a jfloat/jdouble
-    // then ST0 is saved. See the note in generate_native_result
     tos_addr = (intptr_t*)sp();
     if (type == T_FLOAT || type == T_DOUBLE) {
+      // This is because we do a push(ltos) after push(dtos) in generate_native_entry.
       tos_addr += 2 * Interpreter::stackElementWords;
     }
   } else {
@@ -555,6 +574,22 @@ void frame::describe_pd(FrameValues& values, int frame_no) {
     DESCRIBE_FP_OFFSET(interpreter_frame_locals);
     DESCRIBE_FP_OFFSET(interpreter_frame_bcp);
     DESCRIBE_FP_OFFSET(interpreter_frame_initial_sp);
+  }
+
+  if (is_java_frame() || Continuation::is_continuation_enterSpecial(*this)) {
+    intptr_t* ret_pc_loc;
+    intptr_t* fp_loc;
+    if (is_interpreted_frame()) {
+      ret_pc_loc = fp() + return_addr_offset;
+      fp_loc = fp();
+    } else {
+      ret_pc_loc = real_fp() - 1;
+      fp_loc = real_fp() - 2;
+    }
+    address ret_pc = *(address*)ret_pc_loc;
+    values.describe(frame_no, ret_pc_loc,
+      Continuation::is_return_barrier_entry(ret_pc) ? "return address (return barrier)" : "return address");
+    values.describe(-1, fp_loc, "saved fp", 0); // "unowned" as value belongs to sender
   }
 }
 #endif

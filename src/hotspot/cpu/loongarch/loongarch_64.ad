@@ -2309,12 +2309,15 @@ encode %{
     cbuf.set_insts_mark();
     __ relocate(relocInfo::runtime_call_type);
     __ patchable_call((address)$meth$$method);
+    _masm.clear_inst_mark();
+    __ post_call_nop();
   %}
 
   enc_class Java_Static_Call (method meth) %{    // JAVA STATIC CALL
     // CALL to fixup routine.  Fixup routine uses ScopeDesc info to determine
     // who we intended to call.
     C2_MacroAssembler _masm(&cbuf);
+    cbuf.set_insts_mark();
     address addr = (address)$meth$$method;
     address call;
     __ block_comment("Java_Static_Call");
@@ -2348,6 +2351,8 @@ encode %{
         }
       }
     }
+    _masm.clear_inst_mark();
+    __ post_call_nop();
   %}
 
 
@@ -2362,6 +2367,8 @@ encode %{
       ciEnv::current()->record_failure("CodeCache is full");
       return;
     }
+    _masm.clear_inst_mark();
+    __ post_call_nop();
   %}
 
 

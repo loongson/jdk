@@ -44,6 +44,8 @@
 // - - NativeGeneralJump
 // - - NativePushConst
 // - - NativeTstRegMem
+// - - NativePostCallNop
+// - - NativeDeoptInstruction
 
 // The base class for different kinds of native instruction abstractions.
 // Provides the primitive operations to manipulate code relative to this.
@@ -527,10 +529,22 @@ inline NativeCallTrampolineStub* nativeCallTrampolineStub_at(address addr) {
 
 class NativePostCallNop: public NativeInstruction {
 public:
-  bool check() const { return is_nop(); }
-  int displacement() const { return 0; }
-  void patch(jint diff) { Unimplemented(); }
-  void make_deopt() { Unimplemented(); }
+
+  bool check() const {
+    // nop; ori R0, xx, xx; ori R0, xx, xx;
+    return is_nop() && ((uint_at(4) & 0xffc0001f) == 0x03800000);
+  }
+
+  jint displacement() const {
+    uint32_t first_ori = uint_at(4);
+    uint32_t second_ori = uint_at(8);
+    int lo = ((first_ori >> 5) & 0xffff);
+    int hi = ((second_ori >> 5) & 0xffff);
+    return (jint) ((hi << 16) | lo);
+  }
+
+  void patch(jint diff);
+  void make_deopt();
 };
 
 inline NativePostCallNop* nativePostCallNop_at(address address) {
@@ -541,23 +555,34 @@ inline NativePostCallNop* nativePostCallNop_at(address address) {
   return NULL;
 }
 
-class NativeDeoptInstruction: public NativeInstruction {
-public:
-  address instruction_address() const       { Unimplemented(); return NULL; }
-  address next_instruction_address() const  { Unimplemented(); return NULL; }
+inline NativePostCallNop* nativePostCallNop_unsafe_at(address address) {
+  NativePostCallNop* nop = (NativePostCallNop*) address;
+  assert(nop->check(), "");
+  return nop;
+}
 
-  void  verify() { Unimplemented(); }
+class NativeDeoptInstruction: public NativeInstruction {
+ public:
+  enum {
+    // deopt instruction code should never be the same as NativeIllegalInstruction
+    instruction_code            =    0xbadcdead,
+    instruction_size            =    4,
+    instruction_offset          =    0,
+  };
+
+  address instruction_address() const       { return addr_at(instruction_offset); }
+  address next_instruction_address() const  { return addr_at(instruction_size); }
+
+  void  verify();
 
   static bool is_deopt_at(address instr) {
-    if (!Continuations::enabled()) return false;
-    Unimplemented();
-    return false;
+    assert(instr != NULL, "");
+    uint32_t value = *(uint32_t *) instr;
+    return value == instruction_code;
   }
 
   // MT-safe patching
-  static void insert(address code_pos) {
-    Unimplemented();
-  }
+  static void insert(address code_pos);
 };
 
 #endif // CPU_LOONGARCH_NATIVEINST_LOONGARCH_HPP

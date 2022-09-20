@@ -36,6 +36,8 @@
 #include "oops/objArrayKlass.hpp"
 #include "oops/oop.inline.hpp"
 #include "prims/methodHandles.hpp"
+#include "runtime/continuation.hpp"
+#include "runtime/continuationEntry.inline.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/javaThread.hpp"
@@ -45,6 +47,9 @@
 #include "utilities/copy.hpp"
 #ifdef COMPILER2
 #include "opto/runtime.hpp"
+#endif
+#if INCLUDE_JFR
+#include "jfr/support/jfrIntrinsics.hpp"
 #endif
 
 // Declaration and definition of StubGenerator (no .hpp file).
@@ -63,6 +68,10 @@
 
 //#define BIND(label) bind(label); BLOCK_COMMENT(#label ":")
 const int MXCSR_MASK = 0xFFC0;  // Mask out any pending exceptions
+
+OopMap* continuation_enter_setup(MacroAssembler* masm, int& stack_slots);
+void fill_continuation_entry(MacroAssembler* masm);
+void continuation_enter_cleanup(MacroAssembler* masm);
 
 // Stub Code definitions
 
@@ -279,6 +288,8 @@ class StubGenerator: public StubCodeGenerator {
     __ st_w(V0, T0, 0);
 
     __ bind(exit);
+
+    __ pop_cont_fastpath(TREG);
 
     // restore callee-save registers
     __ ld_d(BCP, FP, BCP_off * wordSize);
@@ -4552,6 +4563,208 @@ class StubGenerator: public StubCodeGenerator {
     return start;
   }
 
+  address generate_cont_thaw(Continuation::thaw_kind kind) {
+    bool return_barrier = Continuation::is_thaw_return_barrier(kind);
+    bool return_barrier_exception = Continuation::is_thaw_return_barrier_exception(kind);
+
+    address start = __ pc();
+
+    if (return_barrier) {
+      __ ld_d(SP, Address(TREG, JavaThread::cont_entry_offset()));
+    }
+
+#ifndef PRODUCT
+    {
+      Label OK;
+      __ ld_d(AT, Address(TREG, JavaThread::cont_entry_offset()));
+      __ beq(SP, AT, OK);
+      __ stop("incorrect sp before prepare_thaw");
+      __ bind(OK);
+    }
+#endif
+
+    if (return_barrier) {
+      // preserve possible return value from a method returning to the return barrier
+      __ addi_d(SP, SP, - 2 * wordSize);
+      __ fst_d(FA0, Address(SP, 0 * wordSize));
+      __ st_d(A0, Address(SP, 1 * wordSize));
+    }
+
+    __ addi_w(c_rarg1, R0, (return_barrier ? 1 : 0));
+    __ call_VM_leaf(CAST_FROM_FN_PTR(address, Continuation::prepare_thaw), TREG, c_rarg1);
+    __ move(T4, A0); // A0 contains the size of the frames to thaw, 0 if overflow or no more frames
+
+    if (return_barrier) {
+      // restore return value (no safepoint in the call to thaw, so even an oop return value should be OK)
+      __ ld_d(A0, Address(SP, 1 * wordSize));
+      __ fld_d(FA0, Address(SP, 0 * wordSize));
+      __ addi_d(SP, SP, 2 * wordSize);
+    }
+
+#ifndef PRODUCT
+    {
+      Label OK;
+      __ ld_d(AT, Address(TREG, JavaThread::cont_entry_offset()));
+      __ beq(SP, AT, OK);
+      __ stop("incorrect sp after prepare_thaw");
+      __ bind(OK);
+    }
+#endif
+
+    Label thaw_success;
+    // T4 contains the size of the frames to thaw, 0 if overflow or no more frames
+    __ bnez(T4, thaw_success);
+    __ jmp(StubRoutines::throw_StackOverflowError_entry());
+    __ bind(thaw_success);
+
+    // make room for the thawed frames
+    __ sub_d(SP, SP, T4);
+    assert(StackAlignmentInBytes == 16, "must be");
+    __ bstrins_d(SP, R0, 3, 0);
+
+    if (return_barrier) {
+      // save original return value -- again
+      __ addi_d(SP, SP, - 2 * wordSize);
+      __ fst_d(FA0, Address(SP, 0 * wordSize));
+      __ st_d(A0, Address(SP, 1 * wordSize));
+    }
+
+    // If we want, we can templatize thaw by kind, and have three different entries
+    __ li(c_rarg1, (uint32_t)kind);
+
+    __ call_VM_leaf(Continuation::thaw_entry(), TREG, c_rarg1);
+    __ move(T4, A0); // A0 is the sp of the yielding frame
+
+    if (return_barrier) {
+      // restore return value (no safepoint in the call to thaw, so even an oop return value should be OK)
+      __ ld_d(A0, Address(SP, 1 * wordSize));
+      __ fld_d(FA0, Address(SP, 0 * wordSize));
+      __ addi_d(SP, SP, 2 * wordSize);
+    } else {
+      __ move(A0, R0); // return 0 (success) from doYield
+    }
+
+    // we're now on the yield frame (which is in an address above us b/c sp has been pushed down)
+    __ move(FP, T4);
+    __ addi_d(SP, T4, - 2 * wordSize); // now pointing to fp spill
+
+    if (return_barrier_exception) {
+      __ ld_d(c_rarg1, Address(FP, -1 * wordSize)); // return address
+      __ verify_oop(A0);
+      __ move(TSR, A0); // save return value contaning the exception oop in callee-saved TSR
+
+      __ call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::exception_handler_for_return_address), TREG, c_rarg1);
+
+      // Continue at exception handler:
+      //   A0: exception oop
+      //   T4: exception handler
+      //   A1: exception pc
+      __ move(T4, A0);
+      __ move(A0, TSR);
+      __ verify_oop(A0);
+
+      __ leave();
+      __ move(A1, RA);
+      __ jr(T4);
+    } else {
+      // We're "returning" into the topmost thawed frame; see Thaw::push_return_frame
+      __ leave();
+      __ jr(RA);
+    }
+
+    return start;
+  }
+
+  address generate_cont_thaw() {
+    if (!Continuations::enabled()) return nullptr;
+
+    StubCodeMark mark(this, "StubRoutines", "Cont thaw");
+    address start = __ pc();
+    generate_cont_thaw(Continuation::thaw_top);
+    return start;
+  }
+
+  address generate_cont_returnBarrier() {
+    if (!Continuations::enabled()) return nullptr;
+
+    // TODO: will probably need multiple return barriers depending on return type
+    StubCodeMark mark(this, "StubRoutines", "cont return barrier");
+    address start = __ pc();
+
+    generate_cont_thaw(Continuation::thaw_return_barrier);
+
+    return start;
+  }
+
+  address generate_cont_returnBarrier_exception() {
+    if (!Continuations::enabled()) return nullptr;
+
+    StubCodeMark mark(this, "StubRoutines", "cont return barrier exception handler");
+    address start = __ pc();
+
+    generate_cont_thaw(Continuation::thaw_return_barrier_exception);
+
+    return start;
+  }
+
+#if INCLUDE_JFR
+
+  // For c2: c_rarg0 is junk, call to runtime to write a checkpoint.
+  // It returns a jobject handle to the event writer.
+  // The handle is dereferenced and the return value is the event writer oop.
+  RuntimeStub* generate_jfr_write_checkpoint() {
+    enum layout {
+      fp_off,
+      fp_off2,
+      return_off,
+      return_off2,
+      framesize // inclusive of return address
+    };
+
+    CodeBuffer code("jfr_write_checkpoint", 512, 64);
+    MacroAssembler* _masm = new MacroAssembler(&code);
+
+    address start = __ pc();
+    __ enter();
+    int frame_complete = __ pc() - start;
+
+    Label L;
+    address the_pc = __ pc();
+    __ bind(L);
+    __ set_last_Java_frame(TREG, SP, FP, L);
+    __ move(c_rarg0, TREG);
+    __ call_VM_leaf(CAST_FROM_FN_PTR(address, JfrIntrinsicSupport::write_checkpoint), 1);
+    __ reset_last_Java_frame(true);
+
+    // A0 is jobject handle result, unpack and process it through a barrier.
+    Label null_jobject;
+    __ beqz(A0, null_jobject);
+
+    DecoratorSet decorators = ACCESS_READ | IN_NATIVE;
+    BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
+    // For zBarrierSet, tmp1 shall not be SCR1 or same as dst
+    bs->load_at(_masm, decorators, T_OBJECT, A0, Address(A0, 0), /* tmp1 */ SCR2, noreg);
+
+    __ bind(null_jobject);
+
+    __ leave();
+    __ jr(RA);
+
+    OopMapSet* oop_maps = new OopMapSet();
+    OopMap* map = new OopMap(framesize, 1);
+    oop_maps->add_gc_map(frame_complete, map);
+
+    RuntimeStub* stub =
+      RuntimeStub::new_runtime_stub(code.name(),
+                                    &code,
+                                    frame_complete,
+                                    (framesize >> (LogBytesPerWord - LogBytesPerInt)),
+                                    oop_maps,
+                                    false);
+    return stub;
+  }
+
+#endif // INCLUDE_JFR
 
 #undef __
 #define __ masm->
@@ -5222,90 +5435,6 @@ class StubGenerator: public StubCodeGenerator {
     // }
   };
 
-  address generate_cont_thaw() {
-    if (!Continuations::enabled()) return nullptr;
-    Unimplemented();
-    return nullptr;
-  }
-
-  address generate_cont_returnBarrier() {
-    if (!Continuations::enabled()) return nullptr;
-    Unimplemented();
-    return nullptr;
-  }
-
-  address generate_cont_returnBarrier_exception() {
-    if (!Continuations::enabled()) return nullptr;
-    Unimplemented();
-    return nullptr;
-  }
-
-#if INCLUDE_JFR
-
-#undef __
-#define __ _masm->
-
-  static void jfr_epilogue(MacroAssembler* _masm, Register thread) {
-    __ reset_last_Java_frame(true);
-
-    Label null_jobject;
-    __ beqz(V0, null_jobject);
-
-    DecoratorSet decorators = ACCESS_READ | IN_NATIVE;
-    BasicType type = T_OBJECT;
-    BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
-    // For zBarrierSet, tmp1 shall not be SCR1 or same as dst
-    bs->load_at(_masm, decorators, type, /* dst */ V0, Address(V0), /* tmp1 */ SCR2, TREG);
-
-    __ bind(null_jobject);
-  }
-  // For c2: c_rarg0 is junk, call to runtime to write a checkpoint.
-  // It returns a jobject handle to the event writer.
-  // The handle is dereferenced and the return value is the event writer oop.
-  static RuntimeStub* generate_jfr_write_checkpoint() {
-    enum layout {
-      fp_off,
-      fp_off2,
-      return_off,
-      return_off2,
-      framesize // inclusive of return address
-    };
-
-    int insts_size = 512;
-    int locs_size = 64;
-    CodeBuffer code("jfr_write_checkpoint", insts_size, locs_size);
-    OopMapSet* oop_maps = new OopMapSet();
-    MacroAssembler* masm = new MacroAssembler(&code);
-    MacroAssembler* _masm = masm;
-
-    address start = __ pc();
-    __ enter();
-    int frame_complete = __ pc() - start;
-    Label L;
-    address the_pc = __ pc();
-    __ bind(L);
-    __ set_last_Java_frame(TREG, SP, FP, L);
-
-    __ move(A0, TREG);
-    __ call_VM_leaf(CAST_FROM_FN_PTR(address, JfrIntrinsicSupport::write_checkpoint), 1);
-    jfr_epilogue(_masm, TREG);
-    __ leave();
-    __ jr(RA);
-
-    OopMap* map = new OopMap(framesize, 1);
-    oop_maps->add_gc_map(the_pc - start, map);
-
-    RuntimeStub* stub = // codeBlob framesize is in words (not VMRegImpl::slot_size)
-      RuntimeStub::new_runtime_stub("jfr_write_checkpoint", &code, frame_complete,
-                                    (framesize >> (LogBytesPerWord - LogBytesPerInt)),
-                                    oop_maps, false);
-    return stub;
-  }
-
-#undef __
-
-#endif // INCLUDE_JFR
-
   // Initialization
   void generate_initial() {
     // Generates all stubs and initializes the entry points
@@ -5348,8 +5477,7 @@ class StubGenerator: public StubCodeGenerator {
     StubRoutines::_cont_returnBarrierExc = generate_cont_returnBarrier_exception();
 
     JFR_ONLY(StubRoutines::_jfr_write_checkpoint_stub = generate_jfr_write_checkpoint();)
-    JFR_ONLY(StubRoutines::_jfr_write_checkpoint = StubRoutines::_jfr_write_checkpoint_stub == nullptr ? nullptr
-                                                    : StubRoutines::_jfr_write_checkpoint_stub->entry_point();)
+    JFR_ONLY(StubRoutines::_jfr_write_checkpoint = StubRoutines::_jfr_write_checkpoint_stub->entry_point();)
   }
 
   void generate_all() {
@@ -5457,3 +5585,76 @@ void StubGenerator_generate(CodeBuffer* code, int phase) {
   }
   StubGenerator g(code, phase);
 }
+
+#undef __
+#define __ masm->
+
+// on exit, sp points to the ContinuationEntry
+OopMap* continuation_enter_setup(MacroAssembler* masm, int& stack_slots) {
+  assert(ContinuationEntry::size() % VMRegImpl::stack_slot_size == 0, "");
+  assert(in_bytes(ContinuationEntry::cont_offset())  % VMRegImpl::stack_slot_size == 0, "");
+  assert(in_bytes(ContinuationEntry::chunk_offset()) % VMRegImpl::stack_slot_size == 0, "");
+
+  stack_slots += checked_cast<int>(ContinuationEntry::size()) / wordSize;
+  __ li(AT, checked_cast<int>(ContinuationEntry::size()));
+  __ sub_d(SP, SP, AT);
+
+  OopMap* map = new OopMap(((int)ContinuationEntry::size() + wordSize) / VMRegImpl::stack_slot_size, 0 /* arg_slots*/);
+  ContinuationEntry::setup_oopmap(map);
+
+  __ ld_d(AT, Address(TREG, JavaThread::cont_entry_offset()));
+  __ st_d(AT, Address(SP, ContinuationEntry::parent_offset()));
+  __ st_d(SP, Address(TREG, JavaThread::cont_entry_offset()));
+
+  return map;
+}
+
+// on entry j_rarg0 points to the continuation
+//          SP points to ContinuationEntry
+//          j_rarg2 -- isVirtualThread
+void fill_continuation_entry(MacroAssembler* masm) {
+#ifdef ASSERT
+  __ li(AT, ContinuationEntry::cookie_value());
+  __ st_w(AT, Address(SP, ContinuationEntry::cookie_offset()));
+#endif
+
+  __ st_d(j_rarg0, Address(SP, ContinuationEntry::cont_offset()));
+  __ st_w(j_rarg2, Address(SP, ContinuationEntry::flags_offset()));
+  __ st_d(R0, Address(SP, ContinuationEntry::chunk_offset()));
+  __ st_w(R0, Address(SP, ContinuationEntry::argsize_offset()));
+  __ st_w(R0, Address(SP, ContinuationEntry::pin_count_offset()));
+
+  __ ld_d(AT, Address(TREG, JavaThread::cont_fastpath_offset()));
+  __ st_d(AT, Address(SP, ContinuationEntry::parent_cont_fastpath_offset()));
+  __ ld_d(AT, Address(TREG, JavaThread::held_monitor_count_offset()));
+  __ st_d(AT, Address(SP, ContinuationEntry::parent_held_monitor_count_offset()));
+
+  __ st_d(R0, Address(TREG, JavaThread::cont_fastpath_offset()));
+  __ st_d(R0, Address(TREG, JavaThread::held_monitor_count_offset()));
+}
+
+// on entry, sp points to the ContinuationEntry
+// on exit, fp points to the spilled fp + 2 * wordSize in the entry frame
+void continuation_enter_cleanup(MacroAssembler* masm) {
+#ifndef PRODUCT
+  Label OK;
+  __ ld_d(AT, Address(TREG, JavaThread::cont_entry_offset()));
+  __ beq(SP, AT, OK);
+  __ stop("incorrect sp for cleanup");
+  __ bind(OK);
+#endif
+
+  __ ld_d(AT, Address(SP, ContinuationEntry::parent_cont_fastpath_offset()));
+  __ st_d(AT, Address(TREG, JavaThread::cont_fastpath_offset()));
+  __ ld_d(AT, Address(SP, ContinuationEntry::parent_held_monitor_count_offset()));
+  __ st_d(AT, Address(TREG, JavaThread::held_monitor_count_offset()));
+
+  __ ld_d(AT, Address(SP, ContinuationEntry::parent_offset()));
+  __ st_d(AT, Address(TREG, JavaThread::cont_entry_offset()));
+
+  // add 2 extra words to match up with leave()
+  __ li(AT, (int)ContinuationEntry::size() + 2 * wordSize);
+  __ add_d(FP, SP, AT);
+}
+
+#undef __

@@ -2110,45 +2110,40 @@ void TemplateTable::fast_binaryswitch() {
 void TemplateTable::_return(TosState state) {
   transition(state, state);
   assert(_desc->calls_vm(),
-      "inconsistent calls_vm information"); // call in remove_activation
+         "inconsistent calls_vm information"); // call in remove_activation
 
   if (_desc->bytecode() == Bytecodes::_return_register_finalizer) {
     assert(state == vtos, "only valid state");
-    __ ld_d(T1, aaddress(0));
-    __ load_klass(LVP, T1);
-    __ ld_w(LVP, LVP, in_bytes(Klass::access_flags_offset()));
+
+    __ ld_d(c_rarg1, aaddress(0));
+    __ load_klass(LVP, c_rarg1);
+    __ ld_w(LVP, Address(LVP, Klass::access_flags_offset()));
     __ li(AT, JVM_ACC_HAS_FINALIZER);
     __ andr(AT, AT, LVP);
     Label skip_register_finalizer;
-    __ beq(AT, R0, skip_register_finalizer);
+    __ beqz(AT, skip_register_finalizer);
+
     __ call_VM(noreg, CAST_FROM_FN_PTR(address,
-    InterpreterRuntime::register_finalizer), T1);
+                        InterpreterRuntime::register_finalizer), c_rarg1);
+
     __ bind(skip_register_finalizer);
   }
 
-  if (_desc->bytecode() != Bytecodes::_return_register_finalizer) {
-    Label no_safepoint;
-    NOT_PRODUCT(__ block_comment("Thread-local Safepoint poll"));
-    __ ld_b(AT, TREG, in_bytes(JavaThread::polling_word_offset()));
-    __ andi(AT, AT, SafepointMechanism::poll_bit());
-    __ beq(AT, R0, no_safepoint);
-    __ push(state);
-    __ call_VM(noreg, CAST_FROM_FN_PTR(address,
-                                    InterpreterRuntime::at_safepoint));
-    __ pop(state);
-    __ bind(no_safepoint);
+  // Issue a StoreStore barrier after all stores but before return
+  // from any constructor for any class with a final field. We don't
+  // know if this is a finalizer, so we always do so.
+  if (_desc->bytecode() == Bytecodes::_return) {
+    __ membar(__ StoreStore);
   }
 
   // Narrow result if state is itos but result type is smaller.
   // Need to narrow in the return bytecode rather than in generate_return_entry
   // since compiled code callers expect the result to already be narrowed.
   if (state == itos) {
-    __ narrow(FSR);
+    __ narrow(A0);
   }
 
   __ remove_activation(state, T4);
-  __ membar(__ StoreStore);
-
   __ jr(T4);
 }
 

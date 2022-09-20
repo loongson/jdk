@@ -1545,8 +1545,36 @@ void MacroAssembler::cmpxchg32(Address addr, Register oldval, Register newval, R
     b(*fail);
 }
 
+void MacroAssembler::push_cont_fastpath(Register java_thread) {
+  if (!Continuations::enabled()) return;
+  Label done;
+  ld_d(AT, Address(java_thread, JavaThread::cont_fastpath_offset()));
+  bgeu(AT, SP, done);
+  st_d(SP, Address(java_thread, JavaThread::cont_fastpath_offset()));
+  bind(done);
+}
+
+void MacroAssembler::pop_cont_fastpath(Register java_thread) {
+  if (!Continuations::enabled()) return;
+  Label done;
+  ld_d(AT, Address(java_thread, JavaThread::cont_fastpath_offset()));
+  bltu(SP, AT, done);
+  st_d(R0, Address(java_thread, JavaThread::cont_fastpath_offset()));
+  bind(done);
+}
+
 void MacroAssembler::align(int modulus) {
   while (offset() % modulus != 0) nop();
+}
+
+void MacroAssembler::post_call_nop() {
+  if (!Continuations::enabled()) return;
+  InstructionMark im(this);
+  relocate(post_call_nop_Relocation::spec());
+  // pick 2 instructions to save oopmap(8 bits) and offset(24 bits)
+  nop();
+  ori(R0, R0, 0);
+  ori(R0, R0, 0);
 }
 
 static RegSet caller_saved_regset = RegSet::range(A0, A7) + RegSet::range(T0, T8) + RegSet::of(FP, RA) - RegSet::of(SCR1, SCR2);

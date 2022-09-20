@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2022, These
+ * modifications are Copyright (c) 2022, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #include "precompiled.hpp"
 #include "classfile/javaClasses.inline.hpp"
 #include "classfile/vmSymbols.hpp"
@@ -766,7 +772,7 @@ frame FreezeBase::freeze_start_frame_yield_stub(frame f) {
 }
 
 frame FreezeBase::freeze_start_frame_safepoint_stub(frame f) {
-#if (defined(X86) || defined(AARCH64)) && !defined(ZERO)
+#if (defined(X86) || defined(AARCH64) || defined(LOONGARCH64)) && !defined(ZERO)
   f.set_fp(f.real_fp()); // f.set_fp(*Frame::callee_link_address(f)); // ????
 #else
   Unimplemented();
@@ -821,7 +827,7 @@ inline freeze_result FreezeBase::recurse_freeze_java_frame(const frame& f, frame
   _freeze_size += fsize;
   NOT_PRODUCT(_frames++;)
 
-  assert(FKind::frame_bottom(f) <= _bottom_address, "");
+  NOT_LOONGARCH64(assert(FKind::frame_bottom(f) <= _bottom_address, "");)
 
   // We don't use FKind::frame_bottom(f) == _bottom_address because on x64 there's sometimes an extra word between
   // enterSpecial and an interpreted frame
@@ -1047,7 +1053,7 @@ NOINLINE freeze_result FreezeBase::recurse_freeze_interpreted_frame(frame& f, fr
   // The frame's top never includes the stack arguments to the callee
   intptr_t* const stack_frame_top = ContinuationHelper::InterpretedFrame::frame_top(f, callee_argsize, callee_interpreted);
   const int locals = f.interpreter_frame_method()->max_locals();
-  const int fsize = f.fp() + frame::metadata_words + locals - stack_frame_top;
+  const int fsize = f.fp() NOT_LOONGARCH64(+ frame::metadata_words) + locals - stack_frame_top;
 
   intptr_t* const stack_frame_bottom = ContinuationHelper::InterpretedFrame::frame_bottom(f);
   assert(stack_frame_bottom - stack_frame_top >= fsize, ""); // == on x86
@@ -1488,7 +1494,7 @@ static freeze_result is_pinned0(JavaThread* thread, oop cont_scope, bool safepoi
   if (!safepoint) {
     f = f.sender(&map); // this is the yield frame
   } else { // safepoint yield
-#if (defined(X86) || defined(AARCH64)) && !defined(ZERO)
+#if (defined(X86) || defined(AARCH64) || defined(LOONGARCH64)) && !defined(ZERO)
     f.set_fp(f.real_fp()); // Instead of this, maybe in ContinuationWrapper::set_last_frame always use the real_fp?
 #else
     Unimplemented();
@@ -2107,8 +2113,8 @@ void ThawBase::recurse_thaw_compiled_frame(const frame& hf, frame& caller, int n
 
   // If we're the bottom-most thawed frame, we're writing to within one word from entrySP
   // (we might have one padding word for alignment)
-  assert(!is_bottom_frame || (_cont.entrySP() - 1 <= to + sz && to + sz <= _cont.entrySP()), "");
-  assert(!is_bottom_frame || hf.compiled_frame_stack_argsize() != 0 || (to + sz && to + sz == _cont.entrySP()), "");
+  NOT_LOONGARCH64(assert(!is_bottom_frame || (_cont.entrySP() - 1 <= to + sz && to + sz <= _cont.entrySP()), "");)
+  NOT_LOONGARCH64(assert(!is_bottom_frame || hf.compiled_frame_stack_argsize() != 0 || (to + sz && to + sz == _cont.entrySP()), "");)
 
   copy_from_chunk(from, to, sz); // copying good oops because we invoked barriers above
 

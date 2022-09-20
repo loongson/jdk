@@ -5069,7 +5069,7 @@ instruct loadConP_general(mRegP dst, immP src) %{
     if ($src->constant_reloc() == relocInfo::metadata_type){
       __ mov_metadata(dst, (Metadata*)value);
     } else if($src->constant_reloc() == relocInfo::oop_type){
-      __ movoop(dst, (jobject)value, /*immediate*/true);
+      __ movoop(dst, (jobject)value);
     } else if ($src->constant_reloc() == relocInfo::none) {
       __ li(dst, (long)value);
     }

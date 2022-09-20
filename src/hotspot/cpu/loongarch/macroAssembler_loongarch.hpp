@@ -662,7 +662,7 @@ class MacroAssembler: public Assembler {
   void mul_add(Register out, Register in, Register offset,
                Register len, Register k);
 
-  void movoop(Register dst, jobject obj, bool immediate = false);
+  void movoop(Register dst, jobject obj);
 
 #undef VIRTUAL
 

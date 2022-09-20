@@ -297,10 +297,7 @@ void LIR_Assembler::jobject2reg(jobject o, Register reg) {
   if (o == NULL) {
     __ move(reg, R0);
   } else {
-    int oop_index = __ oop_recorder()->find_index(o);
-    RelocationHolder rspec = oop_Relocation::spec(oop_index);
-    __ relocate(rspec);
-    __ patchable_li52(reg, (long)o);
+    __ movoop(reg, o);
   }
 }
 

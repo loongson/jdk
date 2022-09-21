@@ -1813,7 +1813,6 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
 
     // Compute size of arguments for saving when returning to deoptimized caller
     __ get_method(A1);
-    __ verify_oop(A1);
     __ ld_d(A1, A1, in_bytes(Method::const_offset()));
     __ ld_hu(A1, A1, in_bytes(ConstMethod::size_of_parameters_offset()));
     __ shl(A1, Interpreter::logStackElementSize);
@@ -1919,7 +1918,6 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
   __ remove_activation(vtos, T3, false, true, false);
   // restore exception
   __ get_vm_result(T0, TREG);
-  __ verify_oop(T0);
 
   // In between activations - previous activation type unknown yet
   // compute continuation point - the continuation point expects

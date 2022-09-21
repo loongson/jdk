@@ -1035,19 +1035,19 @@ static void restore_args(MacroAssembler *masm, int arg_count, int first_arg, VMR
 }
 
 static void verify_oop_args(MacroAssembler* masm,
-                            methodHandle method,
+                            const methodHandle& method,
                             const BasicType* sig_bt,
                             const VMRegPair* regs) {
-  Register temp_reg = T4;  // not part of any compiled calling seq
   if (VerifyOops) {
-    for (int i = 0; i < method->size_of_parameters(); i++) {
-      if (sig_bt[i] == T_OBJECT ||
-          sig_bt[i] == T_ARRAY) {
+    // verify too many args may overflow the code buffer
+    int arg_size = MIN2(64, method->size_of_parameters());
+
+    for (int i = 0; i < arg_size; i++) {
+      if (is_reference_type(sig_bt[i])) {
         VMReg r = regs[i].first();
         assert(r->is_valid(), "bad oop arg");
         if (r->is_stack()) {
-          __ ld_d(temp_reg, Address(SP, r->reg2stack() * VMRegImpl::stack_slot_size + wordSize));
-          __ verify_oop(temp_reg);
+          __ verify_oop_addr(Address(SP, r->reg2stack() * VMRegImpl::stack_slot_size));
         } else {
           __ verify_oop(r->as_Register());
         }
@@ -1308,7 +1308,7 @@ static void gen_continuation_yield(MacroAssembler* masm,
 }
 
 static void gen_special_dispatch(MacroAssembler* masm,
-                                 methodHandle method,
+                                 const methodHandle& method,
                                  const BasicType* sig_bt,
                                  const VMRegPair* regs) {
   verify_oop_args(masm, method, sig_bt, regs);

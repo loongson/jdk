@@ -45,11 +45,16 @@
 #include "runtime/stubCodeGenerator.hpp"
 #include "runtime/stubRoutines.hpp"
 #include "utilities/copy.hpp"
+
 #ifdef COMPILER2
 #include "opto/runtime.hpp"
 #endif
 #if INCLUDE_JFR
 #include "jfr/support/jfrIntrinsics.hpp"
+#endif
+
+#if INCLUDE_ZGC
+#include "gc/z/zThreadLocalData.hpp"
 #endif
 
 // Declaration and definition of StubGenerator (no .hpp file).
@@ -435,11 +440,71 @@ class StubGenerator: public StubCodeGenerator {
 
   // Non-destructive plausibility checks for oops
   //
+  // Arguments:
+  //    c_rarg0: error message
+  //    c_rarg1: oop to verify
+  //
+  // Stack after saving c_rarg3:
+  //    [tos + 0]: saved c_rarg3
+  //    [tos + 1]: saved c_rarg2
+  //    [tos + 2]: saved c_rarg1
+  //    [tos + 3]: saved c_rarg0
+  //    [tos + 4]: saved AT
+  //    [tos + 5]: saved RA
   address generate_verify_oop() {
+
     StubCodeMark mark(this, "StubRoutines", "verify_oop");
     address start = __ pc();
-    __ verify_oop_subroutine();
-    address end = __ pc();
+
+    Label exit, error;
+
+    const Register msg = c_rarg0;
+    const Register oop = c_rarg1;
+
+    __ push(RegSet::of(c_rarg2, c_rarg3));
+
+    __ li(c_rarg2, (address) StubRoutines::verify_oop_count_addr());
+    __ ld_d(c_rarg3, Address(c_rarg2));
+    __ addi_d(c_rarg3, c_rarg3, 1);
+    __ st_d(c_rarg3, Address(c_rarg2));
+
+    // make sure object is 'reasonable'
+    __ beqz(oop, exit); // if obj is NULL it is OK
+
+#if INCLUDE_ZGC
+    if (UseZGC) {
+      // Check if mask is good.
+      // verifies that ZAddressBadMask & object == 0
+      __ ld_d(c_rarg3, Address(TREG, ZThreadLocalData::address_bad_mask_offset()));
+      __ andr(c_rarg2, oop, c_rarg3);
+      __ bnez(c_rarg2, error);
+    }
+#endif
+
+    // Check if the oop is in the right area of memory
+    __ li(c_rarg3, (intptr_t) Universe::verify_oop_mask());
+    __ andr(c_rarg2, oop, c_rarg3);
+    __ li(c_rarg3, (intptr_t) Universe::verify_oop_bits());
+
+    // Compare c_rarg2 and c_rarg3.
+    __ bne(c_rarg2, c_rarg3, error);
+
+    // make sure klass is 'reasonable', which is not zero.
+    __ load_klass(c_rarg2, oop); // get klass
+    __ beqz(c_rarg2, error);     // if klass is NULL it is broken
+
+    // return if everything seems ok
+    __ bind(exit);
+    __ pop(RegSet::of(c_rarg2, c_rarg3));
+    __ jr(RA);
+
+    // handle errors
+    __ bind(error);
+    __ pop(RegSet::of(c_rarg2, c_rarg3));
+    // error message already in c_rarg0, pass it to debug
+    __ call(CAST_FROM_FN_PTR(address, MacroAssembler::debug), relocInfo::runtime_call_type);
+    __ brk(5);
+
     return start;
   }
 

@@ -1256,126 +1256,63 @@ void MacroAssembler::load_mirror(Register mirror, Register method, Register tmp)
 void MacroAssembler::_verify_oop(Register reg, const char* s, const char* file, int line) {
   if (!VerifyOops) return;
 
-  const char * b = NULL;
+  const char* bx = NULL;
   {
     ResourceMark rm;
     stringStream ss;
     ss.print("verify_oop: %s: %s (%s:%d)", reg->name(), s, file, line);
-    b = code_string(ss.as_string());
+    bx = code_string(ss.as_string());
   }
 
-  addi_d(SP, SP, -6 * wordSize);
-  st_d(SCR1, Address(SP, 0 * wordSize));
-  st_d(SCR2, Address(SP, 1 * wordSize));
-  st_d(RA, Address(SP, 2 * wordSize));
-  st_d(A0, Address(SP, 3 * wordSize));
-  st_d(A1, Address(SP, 4 * wordSize));
+  push(RegSet::of(RA, SCR1, c_rarg0, c_rarg1));
 
-  move(A1, reg);
-  patchable_li52(A0, (uintptr_t)(address)b); // Fixed size instructions
-  li(SCR2, StubRoutines::verify_oop_subroutine_entry_address());
-  ld_d(SCR2, Address(SCR2));
-  jalr(SCR2);
+  move(c_rarg1, reg);
+  // The length of the instruction sequence emitted should be independent
+  // of the value of the local char buffer address so that the size of mach
+  // nodes for scratch emit and normal emit matches.
+  patchable_li52(c_rarg0, (long)bx);
 
-  ld_d(SCR1, Address(SP, 0 * wordSize));
-  ld_d(SCR2, Address(SP, 1 * wordSize));
-  ld_d(RA, Address(SP, 2 * wordSize));
-  ld_d(A0, Address(SP, 3 * wordSize));
-  ld_d(A1, Address(SP, 4 * wordSize));
-  addi_d(SP, SP, 6 * wordSize);
+  // call indirectly to solve generation ordering problem
+  li(SCR1, StubRoutines::verify_oop_subroutine_entry_address());
+  ld_d(SCR1, SCR1, 0);
+  jalr(SCR1);
+
+  pop(RegSet::of(RA, SCR1, c_rarg0, c_rarg1));
 }
 
 void MacroAssembler::_verify_oop_addr(Address addr, const char* s, const char* file, int line) {
   if (!VerifyOops) return;
 
-  const char* b = NULL;
+  const char* bx = NULL;
   {
     ResourceMark rm;
     stringStream ss;
     ss.print("verify_oop_addr: %s (%s:%d)", s, file, line);
-    b = code_string(ss.as_string());
+    bx = code_string(ss.as_string());
   }
 
-  addi_d(SP, SP, -6 * wordSize);
-  st_d(SCR1, Address(SP, 0 * wordSize));
-  st_d(SCR2, Address(SP, 1 * wordSize));
-  st_d(RA, Address(SP, 2 * wordSize));
-  st_d(A0, Address(SP, 3 * wordSize));
-  st_d(A1, Address(SP, 4 * wordSize));
+  push(RegSet::of(RA, SCR1, c_rarg0, c_rarg1));
 
-  patchable_li52(A0, (uintptr_t)(address)b); // Fixed size instructions
   // addr may contain sp so we will have to adjust it based on the
   // pushes that we just did.
   if (addr.uses(SP)) {
-    lea(A1, addr);
-    ld_d(A1, Address(A1, 6 * wordSize));
+    lea(c_rarg1, addr);
+    ld_d(c_rarg1, Address(c_rarg1, 4 * wordSize));
   } else {
-    ld_d(A1, addr);
+    ld_d(c_rarg1, addr);
   }
+
+  // The length of the instruction sequence emitted should be independent
+  // of the value of the local char buffer address so that the size of mach
+  // nodes for scratch emit and normal emit matches.
+  patchable_li52(c_rarg0, (long)bx);
 
   // call indirectly to solve generation ordering problem
-  li(SCR2, StubRoutines::verify_oop_subroutine_entry_address());
-  ld_d(SCR2, Address(SCR2));
-  jalr(SCR2);
+  li(SCR1, StubRoutines::verify_oop_subroutine_entry_address());
+  ld_d(SCR1, SCR1, 0);
+  jalr(SCR1);
 
-  ld_d(SCR1, Address(SP, 0 * wordSize));
-  ld_d(SCR2, Address(SP, 1 * wordSize));
-  ld_d(RA, Address(SP, 2 * wordSize));
-  ld_d(A0, Address(SP, 3 * wordSize));
-  ld_d(A1, Address(SP, 4 * wordSize));
-  addi_d(SP, SP, 6 * wordSize);
-}
-
-// used registers :  SCR1, SCR2
-void MacroAssembler::verify_oop_subroutine() {
-  // RA: ra
-  // A0: char* error message
-  // A1: oop   object to verify
-  Label exit, error;
-  // increment counter, SCR2 has be saved in caller verify_oop
-  li(SCR2, (long)StubRoutines::verify_oop_count_addr());
-  ld_w(SCR1, SCR2, 0);
-  addi_d(SCR1, SCR1, 1);
-  st_w(SCR1, SCR2, 0);
-
-  // make sure object is 'reasonable'
-  beqz(A1, exit);         // if obj is NULL it is ok
-
-#if INCLUDE_ZGC
-  if (UseZGC) {
-    // Check if mask is good.
-    // verifies that ZAddressBadMask & A1 == 0
-    ld_d(AT, Address(TREG, ZThreadLocalData::address_bad_mask_offset()));
-    andr(AT, A1, AT);
-    bnez(AT, error);
-  }
-#endif
-
-  // Check if the oop is in the right area of memory
-  // const int oop_mask = Universe::verify_oop_mask();
-  // const int oop_bits = Universe::verify_oop_bits();
-  const uintptr_t oop_mask = Universe::verify_oop_mask();
-  const uintptr_t oop_bits = Universe::verify_oop_bits();
-  li(SCR1, oop_mask);
-  andr(SCR2, A1, SCR1);
-  li(SCR1, oop_bits);
-  bne(SCR2, SCR1, error);
-
-  // make sure klass is 'reasonable'
-  // add for compressedoops
-  load_klass(SCR2, A1);
-  beqz(SCR2, error);                        // if klass is NULL it is broken
-  // return if everything seems ok
-  bind(exit);
-
-  jr(RA);
-
-  // handle errors
-  bind(error);
-  push_call_clobbered_registers();
-  call(CAST_FROM_FN_PTR(address, MacroAssembler::debug), relocInfo::runtime_call_type);
-  pop_call_clobbered_registers();
-  jr(RA);
+  pop(RegSet::of(RA, SCR1, c_rarg0, c_rarg1));
 }
 
 void MacroAssembler::verify_tlab(Register t1, Register t2) {

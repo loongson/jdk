@@ -2170,7 +2170,7 @@ void SharedRuntime::generate_deopt_blob() {
   // Load count of frams into T3
   __ ld_w(count, unroll, Deoptimization::UnrollBlock::number_of_frames_offset_in_bytes());
   // Pick up the initial fp we should save
-  __ ld_d(FP, unroll,  Deoptimization::UnrollBlock::initial_info_offset_in_bytes());
+  __ ld_d(FP, unroll, Deoptimization::UnrollBlock::initial_info_offset_in_bytes());
    // Now adjust the caller's stack to make up for the extra locals
   // but record the original sp so that we can save it in the skeletal interpreter
   // frame and the stack walking of interpreter_sender will get the unextended sp
@@ -2335,11 +2335,7 @@ void SharedRuntime::generate_uncommon_trap_blob() {
 
   // Pop deoptimized frame
   __ ld_w(T8, unroll, Deoptimization::UnrollBlock::size_of_deoptimized_frame_offset_in_bytes());
-  __ addi_d(T8, T8, -2 * wordSize);
   __ add_d(SP, SP, T8);
-  __ ld_d(FP, SP, 0);
-  __ ld_d(RA, SP, wordSize);
-  __ addi_d(SP, SP, 2 * wordSize);
 
 #ifdef ASSERT
   // Compilers generate code that bang the stack by as much as the
@@ -2366,14 +2362,17 @@ void SharedRuntime::generate_uncommon_trap_blob() {
   __ ld_d(sizes, unroll, Deoptimization::UnrollBlock::frame_sizes_offset_in_bytes());
   __ ld_wu(count, unroll, Deoptimization::UnrollBlock::number_of_frames_offset_in_bytes());
 
+  // Pick up the initial fp we should save
+  __ ld_d(FP, unroll, Deoptimization::UnrollBlock::initial_info_offset_in_bytes());
+
   // Now adjust the caller's stack to make up for the extra locals
   // but record the original sp so that we can save it in the skeletal interpreter
   // frame and the stack walking of interpreter_sender will get the unextended sp
   // value and not the "real" sp value.
-
   __ move(sender_sp, SP);
   __ ld_w(AT, unroll, Deoptimization::UnrollBlock::caller_adjustment_offset_in_bytes());
   __ sub_d(SP, SP, AT);
+
   // Push interpreter frames in a loop
   Label loop;
   __ bind(loop);

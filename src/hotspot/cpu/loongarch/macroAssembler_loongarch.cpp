@@ -164,7 +164,7 @@ void MacroAssembler::patchable_call(address target, address call_site) {
 
 // Maybe emit a call via a trampoline. If the code cache is small
 // trampolines won't be emitted.
-address MacroAssembler::trampoline_call(AddressLiteral entry, CodeBuffer* cbuf) {
+address MacroAssembler::trampoline_call(AddressLiteral entry) {
   assert(entry.rspec().type() == relocInfo::runtime_call_type ||
          entry.rspec().type() == relocInfo::opt_virtual_call_type ||
          entry.rspec().type() == relocInfo::static_call_type ||
@@ -184,13 +184,12 @@ address MacroAssembler::trampoline_call(AddressLiteral entry, CodeBuffer* cbuf) 
     target = pc();
   }
 
-  if (cbuf != nullptr) { cbuf->set_insts_mark(); }
+  address call_pc = pc();
   relocate(entry.rspec());
   bl(target);
 
-  // just need to return a non-null address
   postcond(pc() != badAddress);
-  return pc();
+  return call_pc;
 }
 
 // Emit a trampoline stub for a call to a target which is too far away.

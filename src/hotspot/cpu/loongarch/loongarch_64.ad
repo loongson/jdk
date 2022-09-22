@@ -2432,10 +2432,8 @@ encode %{
     C2_MacroAssembler _masm(&cbuf);
     // This is the instruction starting address for relocation info.
     __ block_comment("Java_To_Runtime");
-    cbuf.set_insts_mark();
     __ relocate(relocInfo::runtime_call_type);
     __ patchable_call((address)$meth$$method);
-    _masm.clear_inst_mark();
     __ post_call_nop();
   %}
 
@@ -2443,14 +2441,13 @@ encode %{
     // CALL to fixup routine.  Fixup routine uses ScopeDesc info to determine
     // who we intended to call.
     C2_MacroAssembler _masm(&cbuf);
-    cbuf.set_insts_mark();
     address addr = (address)$meth$$method;
     address call;
     __ block_comment("Java_Static_Call");
 
     if ( !_method ) {
       // A call to a runtime wrapper, e.g. new, new_typeArray_Java, uncommon_trap.
-      call = __ trampoline_call(AddressLiteral(addr, relocInfo::runtime_call_type), &cbuf);
+      call = __ trampoline_call(AddressLiteral(addr, relocInfo::runtime_call_type));
       if (call == nullptr) {
         ciEnv::current()->record_failure("CodeCache is full");
         return;
@@ -2464,7 +2461,7 @@ encode %{
       int method_index = resolved_method_index(cbuf);
       RelocationHolder rspec = _optimized_virtual ? opt_virtual_call_Relocation::spec(method_index)
                                      : static_call_Relocation::spec(method_index);
-      call = __ trampoline_call(AddressLiteral(addr, rspec), &cbuf);
+      call = __ trampoline_call(AddressLiteral(addr, rspec));
       if (call == nullptr) {
         ciEnv::current()->record_failure("CodeCache is full");
         return;
@@ -2472,17 +2469,16 @@ encode %{
       if (CodeBuffer::supports_shared_stubs() && _method->can_be_statically_bound()) {
         // Calls of the same statically bound method can share
         // a stub to the interpreter.
-        cbuf.shared_stub_to_interp_for(_method, cbuf.insts()->mark_off());
+        cbuf.shared_stub_to_interp_for(_method, call - cbuf.insts_begin());
       } else {
         // Emit stub for static call
-        address stub = CompiledDirectCall::emit_to_interp_stub(cbuf);
+        address stub = CompiledDirectCall::emit_to_interp_stub(cbuf, call);
         if (stub == nullptr) {
           ciEnv::current()->record_failure("CodeCache is full");
           return;
         }
       }
     }
-    _masm.clear_inst_mark();
     __ post_call_nop();
   %}
 
@@ -2498,7 +2494,6 @@ encode %{
       ciEnv::current()->record_failure("CodeCache is full");
       return;
     }
-    _masm.clear_inst_mark();
     __ post_call_nop();
   %}
 

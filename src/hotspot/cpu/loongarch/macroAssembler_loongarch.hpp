@@ -27,8 +27,11 @@
 #define CPU_LOONGARCH_MACROASSEMBLER_LOONGARCH_HPP
 
 #include "asm/assembler.hpp"
+#include "code/vmreg.hpp"
 #include "runtime/rtmLocking.hpp"
 #include "utilities/macros.hpp"
+
+class OopMap;
 
 // MacroAssembler extends Assembler by frequently used macros.
 //
@@ -135,6 +138,19 @@ class MacroAssembler: public Assembler {
   // The pointer will be loaded into the thread register.
   void get_thread(Register thread);
 
+  // support for argument shuffling
+  void simple_move32(VMRegPair src, VMRegPair dst, Register tmp = SCR1);
+  void float_move(VMRegPair src, VMRegPair dst, Register tmp = SCR1);
+  void long_move(VMRegPair src, VMRegPair dst, Register tmp = SCR1);
+  void double_move(VMRegPair src, VMRegPair dst, Register tmp = SCR1);
+  void object_move(
+                   OopMap* map,
+                   int oop_handle_offset,
+                   int framesize_in_slots,
+                   VMRegPair src,
+                   VMRegPair dst,
+                   bool is_receiver,
+                   int* receiver_offset);
 
   // Support for VM calls
   //

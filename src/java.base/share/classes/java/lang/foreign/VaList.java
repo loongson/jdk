@@ -23,6 +23,12 @@
  *  questions.
  *
  */
+
+/*
+ * This file has been modified by Loongson Technology in 2022, These
+ * modifications are Copyright (c) 2022, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
 package java.lang.foreign;
 
 import java.util.NoSuchElementException;
@@ -32,6 +38,7 @@ import java.util.function.Consumer;
 import jdk.internal.foreign.abi.SharedUtils;
 import jdk.internal.foreign.abi.aarch64.linux.LinuxAArch64VaList;
 import jdk.internal.foreign.abi.aarch64.macos.MacOsAArch64VaList;
+import jdk.internal.foreign.abi.loongarch64.linux.LinuxLoongArch64VaList;
 import jdk.internal.foreign.abi.x64.sysv.SysVVaList;
 import jdk.internal.foreign.abi.x64.windows.WinVaList;
 import jdk.internal.javac.PreviewFeature;
@@ -67,7 +74,7 @@ import jdk.internal.reflect.Reflection;
  * @since 19
  */
 @PreviewFeature(feature=PreviewFeature.Feature.FOREIGN)
-sealed public interface VaList extends Addressable permits WinVaList, SysVVaList, LinuxAArch64VaList, MacOsAArch64VaList, SharedUtils.EmptyVaList {
+sealed public interface VaList extends Addressable permits WinVaList, SysVVaList, LinuxAArch64VaList, MacOsAArch64VaList, LinuxLoongArch64VaList, SharedUtils.EmptyVaList {
 
     /**
      * {@return the memory session associated with this variable argument list}
@@ -266,7 +273,7 @@ sealed public interface VaList extends Addressable permits WinVaList, SysVVaList
      * @since 19
      */
     @PreviewFeature(feature=PreviewFeature.Feature.FOREIGN)
-    sealed interface Builder permits WinVaList.Builder, SysVVaList.Builder, LinuxAArch64VaList.Builder, MacOsAArch64VaList.Builder {
+    sealed interface Builder permits WinVaList.Builder, SysVVaList.Builder, LinuxAArch64VaList.Builder, MacOsAArch64VaList.Builder, LinuxLoongArch64VaList.Builder {
 
         /**
          * Writes an {@code int} value to the variable argument list being constructed.

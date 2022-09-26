@@ -23,8 +23,70 @@
  */
 
 #include "precompiled.hpp"
+#include "asm/macroAssembler.hpp"
+#include "code/codeBlob.hpp"
+#include "code/codeCache.hpp"
+#include "code/vmreg.inline.hpp"
+#include "compiler/oopMap.hpp"
+#include "logging/logStream.hpp"
+#include "memory/resourceArea.hpp"
 #include "prims/downcallLinker.hpp"
-#include "utilities/debug.hpp"
+#include "runtime/stubCodeGenerator.hpp"
+
+#define __ _masm->
+
+class DowncallStubGenerator : public StubCodeGenerator {
+  BasicType* _signature;
+  int _num_args;
+  BasicType _ret_bt;
+  const ABIDescriptor& _abi;
+
+  const GrowableArray<VMReg>& _input_registers;
+  const GrowableArray<VMReg>& _output_registers;
+
+  bool _needs_return_buffer;
+
+  int _frame_complete;
+  int _framesize;
+  OopMapSet* _oop_maps;
+public:
+  DowncallStubGenerator(CodeBuffer* buffer,
+                         BasicType* signature,
+                         int num_args,
+                         BasicType ret_bt,
+                         const ABIDescriptor& abi,
+                         const GrowableArray<VMReg>& input_registers,
+                         const GrowableArray<VMReg>& output_registers,
+                         bool needs_return_buffer)
+   : StubCodeGenerator(buffer, PrintMethodHandleStubs),
+     _signature(signature),
+     _num_args(num_args),
+     _ret_bt(ret_bt),
+     _abi(abi),
+     _input_registers(input_registers),
+     _output_registers(output_registers),
+     _needs_return_buffer(needs_return_buffer),
+     _frame_complete(0),
+     _framesize(0),
+     _oop_maps(NULL) {
+  }
+
+  void generate();
+
+  int frame_complete() const {
+    return _frame_complete;
+  }
+
+  int framesize() const {
+    return (_framesize >> (LogBytesPerWord - LogBytesPerInt));
+  }
+
+  OopMapSet* oop_maps() const {
+    return _oop_maps;
+  }
+};
+
+static const int native_invoker_code_size = 1024;
 
 RuntimeStub* DowncallLinker::make_downcall_stub(BasicType* signature,
                                                 int num_args,
@@ -33,6 +95,231 @@ RuntimeStub* DowncallLinker::make_downcall_stub(BasicType* signature,
                                                 const GrowableArray<VMReg>& input_registers,
                                                 const GrowableArray<VMReg>& output_registers,
                                                 bool needs_return_buffer) {
-  Unimplemented();
-  return nullptr;
+  int locs_size  = 64;
+  CodeBuffer code("nep_invoker_blob", native_invoker_code_size, locs_size);
+  DowncallStubGenerator g(&code, signature, num_args, ret_bt, abi, input_registers, output_registers, needs_return_buffer);
+  g.generate();
+  code.log_section_sizes("nep_invoker_blob");
+
+  RuntimeStub* stub =
+    RuntimeStub::new_runtime_stub("nep_invoker_blob",
+                                  &code,
+                                  g.frame_complete(),
+                                  g.framesize(),
+                                  g.oop_maps(), false);
+
+#ifndef PRODUCT
+  LogTarget(Trace, foreign, downcall) lt;
+  if (lt.is_enabled()) {
+    ResourceMark rm;
+    LogStream ls(lt);
+    stub->print_on(&ls);
+  }
+#endif
+
+  return stub;
+}
+
+void DowncallStubGenerator::generate() {
+  enum layout {
+    fp_off,
+    fp_off2,
+    return_off,
+    return_off2,
+    framesize // inclusive of return address
+    // The following are also computed dynamically:
+    // spill area for return value
+    // out arg area (e.g. for stack args)
+  };
+
+  Register tmp1 = SCR1;
+  Register tmp2 = SCR2;
+
+  Register shuffle_reg = S0;
+  JavaCallingConvention in_conv;
+  NativeCallingConvention out_conv(_input_registers);
+  ArgumentShuffle arg_shuffle(_signature, _num_args, _signature, _num_args, &in_conv, &out_conv, shuffle_reg->as_VMReg());
+
+#ifndef PRODUCT
+  LogTarget(Trace, foreign, downcall) lt;
+  if (lt.is_enabled()) {
+    ResourceMark rm;
+    LogStream ls(lt);
+    arg_shuffle.print_on(&ls);
+  }
+#endif
+
+  int allocated_frame_size = 0;
+  if (_needs_return_buffer) {
+    allocated_frame_size += 8; // for address spill
+  }
+  allocated_frame_size += arg_shuffle.out_arg_stack_slots() <<LogBytesPerInt;
+  assert(_abi._shadow_space_bytes == 0, "not expecting shadow space on LoongArch64");
+
+  int ret_buf_addr_sp_offset = -1;
+  if (_needs_return_buffer) {
+     // in sync with the above
+     ret_buf_addr_sp_offset = allocated_frame_size - 8;
+  }
+
+  RegSpiller out_reg_spiller(_output_registers);
+  int spill_offset = -1;
+
+  if (!_needs_return_buffer) {
+    spill_offset = 0;
+    // spill area can be shared with the above, so we take the max of the 2
+    allocated_frame_size = out_reg_spiller.spill_size_bytes() > allocated_frame_size
+      ? out_reg_spiller.spill_size_bytes()
+      : allocated_frame_size;
+  }
+
+  _framesize = align_up(framesize
+    + (allocated_frame_size >> LogBytesPerInt), 4);
+  assert(is_even(_framesize/2), "SP not 16-byte aligned");
+
+  _oop_maps  = new OopMapSet();
+  address start = __ pc();
+
+  __ enter();
+
+  // RA and FP are already in place
+  __ addi_d(SP, SP, -(((unsigned)_framesize-4) << LogBytesPerInt)); // prolog
+
+  _frame_complete = __ pc() - start;
+
+  Label L;
+  address the_pc = __ pc();
+  __ bind(L);
+  __ set_last_Java_frame(TREG, SP, FP, L);
+  OopMap* map = new OopMap(_framesize, 0);
+  _oop_maps->add_gc_map(the_pc - start, map);
+
+  // State transition
+  __ li(tmp1, _thread_in_native);
+  if (os::is_MP()) {
+    __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
+    __ amswap_db_w(R0, tmp1, tmp2);
+  } else {
+    __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
+  }
+
+  __ block_comment("{ argument shuffle");
+  arg_shuffle.generate(_masm, shuffle_reg->as_VMReg(), 0, _abi._shadow_space_bytes);
+  if (_needs_return_buffer) {
+    assert(ret_buf_addr_sp_offset != -1, "no return buffer addr spill");
+    __ st_d(_abi._ret_buf_addr_reg, SP, ret_buf_addr_sp_offset);
+  }
+  __ block_comment("} argument shuffle");
+
+  __ jalr(_abi._target_addr_reg);
+  // this call is assumed not to have killed rthread
+
+  if (!_needs_return_buffer) {
+    // Unpack native results.
+    __ cast_primitive_type(_ret_bt, V0);
+  } else {
+    assert(ret_buf_addr_sp_offset != -1, "no return buffer addr SPill");
+    __ ld_d(tmp1, SP, ret_buf_addr_sp_offset);
+    int offset = 0;
+    for (int i = 0; i < _output_registers.length(); i++) {
+      VMReg reg = _output_registers.at(i);
+      if (reg->is_Register()) {
+        __ st_d(reg->as_Register(), tmp1, offset);
+        offset += 8;
+      } else if(reg->is_FloatRegister()) {
+        __ fst_d(reg->as_FloatRegister(), tmp1, offset);
+        offset += 8;
+      } else {
+        ShouldNotReachHere();
+      }
+    }
+  }
+
+  __ li(tmp1, _thread_in_native_trans);
+  if (os::is_MP()) {
+    __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
+    __ amswap_db_w(R0, tmp1, tmp2);
+  } else {
+    __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
+  }
+
+  // Force this write out before the read below
+  //if (os::is_MP())  __ membar(__ AnyAny);
+
+
+  Label L_after_safepoint_poll;
+  Label L_safepoint_poll_slow_path;
+
+  __ safepoint_poll(L_safepoint_poll_slow_path, TREG, true /* at_return */, true /* acquire */, false /* in_nmethod */);
+
+  __ ld_w(tmp1, TREG, in_bytes(JavaThread::suspend_flags_offset()));
+  __ bnez(tmp1, L_safepoint_poll_slow_path);
+
+  __ bind(L_after_safepoint_poll);
+
+  // change thread state
+  __ li(tmp1, _thread_in_Java);
+  if (os::is_MP()) {
+    __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
+    __ amswap_db_w(R0, tmp1, tmp2);
+  } else {
+    __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
+  }
+
+  __ block_comment("reguard stack check");
+  Label L_reguard;
+  Label L_after_reguard;
+  __ ld_w(tmp1, TREG, in_bytes(JavaThread::stack_guard_state_offset()));
+  __ addi_d(tmp1, tmp1, -StackOverflow::stack_guard_yellow_reserved_disabled);
+  __ beqz(tmp1, L_reguard);
+  __ bind(L_after_reguard);
+
+  __ reset_last_Java_frame(true);
+
+  __ leave(); // required for proper stackwalking of RuntimeStub frame
+  __ jr(RA);
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  __ block_comment("{ L_safepoint_poll_slow_path");
+  __ bind(L_safepoint_poll_slow_path);
+
+  if (!_needs_return_buffer) {
+    // Need to save the native result registers around any runtime calls.
+    out_reg_spiller.generate_spill(_masm, spill_offset);
+  }
+
+  __ move(c_rarg0, TREG);
+  assert(frame::arg_reg_save_area_bytes == 0, "not expecting frame reg save area");
+  __ call(CAST_FROM_FN_PTR(address, JavaThread::check_special_condition_for_native_trans), relocInfo::runtime_call_type);
+
+  if (!_needs_return_buffer) {
+    out_reg_spiller.generate_fill(_masm, spill_offset);
+  }
+
+  __ b(L_after_safepoint_poll);
+  __ block_comment("} L_safepoint_poll_slow_path");
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  __ block_comment("{ L_reguard");
+  __ bind(L_reguard);
+
+  if (!_needs_return_buffer) {
+    out_reg_spiller.generate_spill(_masm, spill_offset);
+  }
+
+  __ call(CAST_FROM_FN_PTR(address, SharedRuntime::reguard_yellow_pages),relocInfo::runtime_call_type);
+
+  if (!_needs_return_buffer) {
+    out_reg_spiller.generate_fill(_masm, spill_offset);
+  }
+
+  __ b(L_after_reguard);
+
+  __ block_comment("} L_reguard");
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  __ flush();
 }

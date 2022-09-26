@@ -23,6 +23,12 @@
  *  questions.
  *
  */
+
+/*
+ * This file has been modified by Loongson Technology in 2022, These
+ * modifications are Copyright (c) 2022, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
 package jdk.internal.foreign;
 
 import static java.lang.foreign.ValueLayout.ADDRESS;
@@ -32,7 +38,8 @@ public enum CABI {
     SysV,
     Win64,
     LinuxAArch64,
-    MacOsAArch64;
+    MacOsAArch64,
+    LinuxLoongArch64;
 
     private static final CABI ABI;
     private static final String ARCH;
@@ -58,6 +65,8 @@ public enum CABI {
                 // The Linux ABI follows the standard AAPCS ABI
                 ABI = LinuxAArch64;
             }
+        } else if (ARCH.equals("loongarch64")) {
+            ABI = LinuxLoongArch64;
         } else {
             // unsupported
             ABI = null;

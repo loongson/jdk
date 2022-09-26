@@ -29,6 +29,7 @@
 #include "asm/assembler.inline.hpp"
 #include "asm/macroAssembler.inline.hpp"
 #include "compiler/disassembler.hpp"
+#include "compiler/oopMap.hpp"
 #include "gc/shared/barrierSet.hpp"
 #include "gc/shared/barrierSetAssembler.hpp"
 #include "gc/shared/collectedHeap.inline.hpp"
@@ -3509,3 +3510,166 @@ void MacroAssembler::verify_cross_modify_fence_not_required() {
   }
 }
 #endif
+
+// The java_calling_convention describes stack locations as ideal slots on
+// a frame with no abi restrictions. Since we must observe abi restrictions
+// (like the placement of the register window) the slots must be biased by
+// the following value.
+static int reg2offset_in(VMReg r) {
+  // Account for saved rfp and lr
+  // This should really be in_preserve_stack_slots
+  return r->reg2stack() * VMRegImpl::stack_slot_size;
+}
+
+static int reg2offset_out(VMReg r) {
+  return (r->reg2stack() + SharedRuntime::out_preserve_stack_slots()) * VMRegImpl::stack_slot_size;
+}
+
+// A simple move of integer like type
+void MacroAssembler::simple_move32(VMRegPair src, VMRegPair dst, Register tmp) {
+  if (src.first()->is_stack()) {
+    if (dst.first()->is_stack()) {
+      // stack to stack
+      ld_w(tmp, FP, reg2offset_in(src.first()));
+      st_d(tmp, SP, reg2offset_out(dst.first()));
+    } else {
+      // stack to reg
+      ld_w(dst.first()->as_Register(), FP, reg2offset_in(src.first()));
+    }
+  } else if (dst.first()->is_stack()) {
+    // reg to stack
+    st_d(src.first()->as_Register(), SP, reg2offset_out(dst.first()));
+  } else {
+    if (dst.first() != src.first()) {
+      // 32bits extend sign
+      add_w(dst.first()->as_Register(), src.first()->as_Register(), R0);
+    }
+  }
+}
+
+// An oop arg. Must pass a handle not the oop itself
+void MacroAssembler::object_move(
+                        OopMap* map,
+                        int oop_handle_offset,
+                        int framesize_in_slots,
+                        VMRegPair src,
+                        VMRegPair dst,
+                        bool is_receiver,
+                        int* receiver_offset) {
+
+  // must pass a handle. First figure out the location we use as a handle
+  Register rHandle = dst.first()->is_stack() ? T5 : dst.first()->as_Register();
+
+  if (src.first()->is_stack()) {
+    // Oop is already on the stack as an argument
+    Label nil;
+    move(rHandle, R0);
+    ld_d(AT, FP, reg2offset_in(src.first()));
+    beqz(AT, nil);
+    lea(rHandle, Address(FP, reg2offset_in(src.first())));
+    bind(nil);
+
+    int offset_in_older_frame = src.first()->reg2stack()
+      + SharedRuntime::out_preserve_stack_slots();
+    map->set_oop(VMRegImpl::stack2reg(offset_in_older_frame + framesize_in_slots));
+    if (is_receiver) {
+      *receiver_offset = (offset_in_older_frame + framesize_in_slots) * VMRegImpl::stack_slot_size;
+    }
+  } else {
+    // Oop is in an a register we must store it to the space we reserve
+    // on the stack for oop_handles and pass a handle if oop is non-NULL
+    const Register rOop = src.first()->as_Register();
+    assert((rOop->encoding() >= A0->encoding()) && (rOop->encoding() <= T0->encoding()),"wrong register");
+    //Important: refer to java_calling_convention
+    int oop_slot = (rOop->encoding() - j_rarg1->encoding()) * VMRegImpl::slots_per_word + oop_handle_offset;
+    int offset = oop_slot*VMRegImpl::stack_slot_size;
+
+    Label skip;
+    st_d(rOop, SP, offset);
+    map->set_oop(VMRegImpl::stack2reg(oop_slot));
+    move(rHandle, R0);
+    beqz(rOop, skip);
+    lea(rHandle, Address(SP, offset));
+    bind(skip);
+
+    if (is_receiver) {
+      *receiver_offset = offset;
+    }
+  }
+
+  // If arg is on the stack then place it otherwise it is already in correct reg.
+  if (dst.first()->is_stack()) {
+    st_d(rHandle, Address(SP, reg2offset_out(dst.first())));
+  }
+}
+
+// Referring to c_calling_convention, float and/or double argument shuffling may
+// adopt int register for spilling. So we need to capture and deal with these
+// kinds of situations in the float_move and double_move methods.
+
+// A float move
+void MacroAssembler::float_move(VMRegPair src, VMRegPair dst, Register tmp) {
+  assert(!src.second()->is_valid() && !dst.second()->is_valid(), "bad float_move");
+  if (src.first()->is_stack()) {
+    // stack to stack/reg
+    if (dst.first()->is_stack()) {
+      ld_w(tmp, FP, reg2offset_in(src.first()));
+      st_w(tmp, SP, reg2offset_out(dst.first()));
+    } else if (dst.first()->is_FloatRegister()) {
+      fld_s(dst.first()->as_FloatRegister(), FP, reg2offset_in(src.first()));
+    } else {
+      ld_w(dst.first()->as_Register(), FP, reg2offset_in(src.first()));
+    }
+  } else {
+    // reg to stack/reg
+    if (dst.first()->is_stack()) {
+      fst_s(src.first()->as_FloatRegister(), SP, reg2offset_out(dst.first()));
+    } else if (dst.first()->is_FloatRegister()) {
+      fmov_s(dst.first()->as_FloatRegister(), src.first()->as_FloatRegister());
+    } else {
+      movfr2gr_s(dst.first()->as_Register(), src.first()->as_FloatRegister());
+    }
+  }
+}
+
+// A long move
+void MacroAssembler::long_move(VMRegPair src, VMRegPair dst, Register tmp) {
+  if (src.first()->is_stack()) {
+    if (dst.first()->is_stack()) {
+      ld_d(tmp, FP, reg2offset_in(src.first()));
+      st_d(tmp, SP, reg2offset_out(dst.first()));
+    } else {
+      ld_d(dst.first()->as_Register(), FP, reg2offset_in(src.first()));
+    }
+  } else {
+    if (dst.first()->is_stack()) {
+      st_d(src.first()->as_Register(), SP, reg2offset_out(dst.first()));
+    } else {
+      move(dst.first()->as_Register(), src.first()->as_Register());
+    }
+  }
+}
+
+// A double move
+void MacroAssembler::double_move(VMRegPair src, VMRegPair dst, Register tmp) {
+  if (src.first()->is_stack()) {
+    // source is all stack
+    if (dst.first()->is_stack()) {
+      ld_d(tmp, FP, reg2offset_in(src.first()));
+      st_d(tmp, SP, reg2offset_out(dst.first()));
+    } else if (dst.first()->is_FloatRegister()) {
+      fld_d(dst.first()->as_FloatRegister(), FP, reg2offset_in(src.first()));
+    } else {
+      ld_d(dst.first()->as_Register(), FP, reg2offset_in(src.first()));
+    }
+  } else {
+    // reg to stack/reg
+    if (dst.first()->is_stack()) {
+      fst_d(src.first()->as_FloatRegister(), SP, reg2offset_out(dst.first()));
+    } else if (dst.first()->is_FloatRegister()) {
+      fmov_d(dst.first()->as_FloatRegister(), src.first()->as_FloatRegister());
+    } else {
+      movfr2gr_d(dst.first()->as_Register(), src.first()->as_FloatRegister());
+    }
+  }
+}

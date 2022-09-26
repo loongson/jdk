@@ -23,6 +23,11 @@
  * questions.
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2022, These
+ * modifications are Copyright (c) 2022, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
 package jdk.internal.foreign;
 
 import java.lang.foreign.MemoryAddress;
@@ -59,7 +64,7 @@ public class SystemLookup implements SymbolLookup {
     private static final SymbolLookup makeSystemLookup() {
         try {
             return switch (CABI.current()) {
-                case SysV, LinuxAArch64, MacOsAArch64 -> libLookup(libs -> libs.load(jdkLibraryPath("syslookup")));
+                case SysV, LinuxAArch64, MacOsAArch64, LinuxLoongArch64 -> libLookup(libs -> libs.load(jdkLibraryPath("syslookup")));
                 case Win64 -> makeWindowsLookup(); // out of line to workaround javac crash
             };
         } catch (Throwable ex) {
@@ -120,7 +125,7 @@ public class SystemLookup implements SymbolLookup {
     private static Path jdkLibraryPath(String name) {
         Path javahome = Path.of(GetPropertyAction.privilegedGetProperty("java.home"));
         String lib = switch (CABI.current()) {
-            case SysV, LinuxAArch64, MacOsAArch64 -> "lib";
+            case SysV, LinuxAArch64, MacOsAArch64, LinuxLoongArch64 -> "lib";
             case Win64 -> "bin";
         };
         String libname = System.mapLibraryName(name);

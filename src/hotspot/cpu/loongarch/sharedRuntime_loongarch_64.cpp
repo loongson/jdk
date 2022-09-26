@@ -312,20 +312,6 @@ bool SharedRuntime::is_wide_vector(int size) {
   return size > 16;
 }
 
-// The java_calling_convention describes stack locations as ideal slots on
-// a frame with no abi restrictions. Since we must observe abi restrictions
-// (like the placement of the register window) the slots must be biased by
-// the following value.
-
-static int reg2offset_in(VMReg r) {
-  // This should really be in_preserve_stack_slots
-  return r->reg2stack() * VMRegImpl::stack_slot_size;
-}
-
-static int reg2offset_out(VMReg r) {
-  return (r->reg2stack() + SharedRuntime::out_preserve_stack_slots()) * VMRegImpl::stack_slot_size;
-}
-
 // ---------------------------------------------------------------------------
 // Read the array of BasicTypes from a signature, and compute where the
 // arguments should go.  Values in the VMRegPair regs array refer to 4-byte
@@ -1042,156 +1028,6 @@ static void restore_args(MacroAssembler *masm, int arg_count, int first_arg, VMR
   }
 }
 
-// A simple move of integer like type
-static void simple_move32(MacroAssembler* masm, VMRegPair src, VMRegPair dst) {
-  if (src.first()->is_stack()) {
-    if (dst.first()->is_stack()) {
-      // stack to stack
-      __ ld_w(AT, FP, reg2offset_in(src.first()));
-      __ st_d(AT, SP, reg2offset_out(dst.first()));
-    } else {
-      // stack to reg
-      __ ld_w(dst.first()->as_Register(), FP, reg2offset_in(src.first()));
-    }
-  } else if (dst.first()->is_stack()) {
-    // reg to stack
-    __ st_d(src.first()->as_Register(), SP, reg2offset_out(dst.first()));
-  } else {
-    if (dst.first() != src.first()) {
-      // 32bits extend sign
-      __ add_w(dst.first()->as_Register(), src.first()->as_Register(), R0);
-    }
-  }
-}
-
-// An oop arg. Must pass a handle not the oop itself
-static void object_move(MacroAssembler* masm,
-                        OopMap* map,
-                        int oop_handle_offset,
-                        int framesize_in_slots,
-                        VMRegPair src,
-                        VMRegPair dst,
-                        bool is_receiver,
-                        int* receiver_offset) {
-
-  // must pass a handle. First figure out the location we use as a handle
-  Register rHandle = dst.first()->is_stack() ? T5 : dst.first()->as_Register();
-
-  if (src.first()->is_stack()) {
-    // Oop is already on the stack as an argument
-    Label nil;
-    __ move(rHandle, R0);
-    __ ld_d(AT, FP, reg2offset_in(src.first()));
-    __ beqz(AT, nil);
-    __ lea(rHandle, Address(FP, reg2offset_in(src.first())));
-    __ bind(nil);
-
-    int offset_in_older_frame = src.first()->reg2stack()
-      + SharedRuntime::out_preserve_stack_slots();
-    map->set_oop(VMRegImpl::stack2reg(offset_in_older_frame + framesize_in_slots));
-    if (is_receiver) {
-      *receiver_offset = (offset_in_older_frame + framesize_in_slots) * VMRegImpl::stack_slot_size;
-    }
-  } else {
-    // Oop is in an a register we must store it to the space we reserve
-    // on the stack for oop_handles and pass a handle if oop is non-NULL
-    const Register rOop = src.first()->as_Register();
-    assert((rOop->encoding() >= A0->encoding()) && (rOop->encoding() <= T0->encoding()),"wrong register");
-    //Important: refer to java_calling_convention
-    int oop_slot = (rOop->encoding() - j_rarg1->encoding()) * VMRegImpl::slots_per_word + oop_handle_offset;
-    int offset = oop_slot*VMRegImpl::stack_slot_size;
-
-    Label skip;
-    __ st_d(rOop, SP, offset);
-    map->set_oop(VMRegImpl::stack2reg(oop_slot));
-    __ move(rHandle, R0);
-    __ beqz(rOop, skip);
-    __ lea(rHandle, Address(SP, offset));
-    __ bind(skip);
-
-    if (is_receiver) {
-      *receiver_offset = offset;
-    }
-  }
-
-  // If arg is on the stack then place it otherwise it is already in correct reg.
-  if (dst.first()->is_stack()) {
-    __ st_d(rHandle, Address(SP, reg2offset_out(dst.first())));
-  }
-}
-
-// Referring to c_calling_convention, float and/or double argument shuffling may
-// adopt int register for spilling. So we need to capture and deal with these
-// kinds of situations in the float_move and double_move methods.
-
-// A float move
-static void float_move(MacroAssembler* masm, VMRegPair src, VMRegPair dst) {
-  assert(!src.second()->is_valid() && !dst.second()->is_valid(), "bad float_move");
-  if (src.first()->is_stack()) {
-    // stack to stack/reg
-    if (dst.first()->is_stack()) {
-      __ ld_w(AT, FP, reg2offset_in(src.first()));
-      __ st_w(AT, SP, reg2offset_out(dst.first()));
-    } else if (dst.first()->is_FloatRegister()) {
-      __ fld_s(dst.first()->as_FloatRegister(), FP, reg2offset_in(src.first()));
-    } else {
-      __ ld_w(dst.first()->as_Register(), FP, reg2offset_in(src.first()));
-    }
-  } else {
-    // reg to stack/reg
-    if (dst.first()->is_stack()) {
-      __ fst_s(src.first()->as_FloatRegister(), SP, reg2offset_out(dst.first()));
-    } else if (dst.first()->is_FloatRegister()) {
-      __ fmov_s(dst.first()->as_FloatRegister(), src.first()->as_FloatRegister());
-    } else {
-      __ movfr2gr_s(dst.first()->as_Register(), src.first()->as_FloatRegister());
-    }
-  }
-}
-
-// A long move
-static void long_move(MacroAssembler* masm, VMRegPair src, VMRegPair dst) {
-  if (src.first()->is_stack()) {
-    assert(src.second()->is_stack() && dst.second()->is_stack(), "must be all stack");
-    if (dst.first()->is_stack()) {
-      __ ld_d(AT, FP, reg2offset_in(src.first()));
-      __ st_d(AT, SP, reg2offset_out(dst.first()));
-    } else {
-      __ ld_d(dst.first()->as_Register(), FP, reg2offset_in(src.first()));
-    }
-  } else {
-    if (dst.first()->is_stack()) {
-      __ st_d(src.first()->as_Register(), SP, reg2offset_out(dst.first()));
-    } else {
-      __ move(dst.first()->as_Register(), src.first()->as_Register());
-    }
-  }
-}
-
-// A double move
-static void double_move(MacroAssembler* masm, VMRegPair src, VMRegPair dst) {
-  if (src.first()->is_stack()) {
-    // source is all stack
-    if (dst.first()->is_stack()) {
-      __ ld_d(AT, FP, reg2offset_in(src.first()));
-      __ st_d(AT, SP, reg2offset_out(dst.first()));
-    } else if (dst.first()->is_FloatRegister()) {
-      __ fld_d(dst.first()->as_FloatRegister(), FP, reg2offset_in(src.first()));
-    } else {
-      __ ld_d(dst.first()->as_Register(), FP, reg2offset_in(src.first()));
-    }
-  } else {
-    // reg to stack/reg
-    if (dst.first()->is_stack()) {
-      __ fst_d(src.first()->as_FloatRegister(), SP, reg2offset_out(dst.first()));
-    } else if (dst.first()->is_FloatRegister()) {
-      __ fmov_d(dst.first()->as_FloatRegister(), src.first()->as_FloatRegister());
-    } else {
-      __ movfr2gr_d(dst.first()->as_Register(), src.first()->as_FloatRegister());
-    }
-  }
-}
-
 static void verify_oop_args(MacroAssembler* masm,
                             methodHandle method,
                             const BasicType* sig_bt,
@@ -1582,27 +1418,27 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       case T_BYTE:
       case T_SHORT:
       case T_INT:
-        simple_move32(masm, in_regs[in], out_regs[out]);
+        __ simple_move32(in_regs[in], out_regs[out]);
         break;
       case T_ARRAY:
       case T_OBJECT:
-        object_move(masm, map, oop_handle_offset, stack_slots,
+        __ object_move(map, oop_handle_offset, stack_slots,
                     in_regs[in], out_regs[out],
                     ((in == 0) && (!is_static)), &receiver_offset);
         break;
       case T_VOID:
         break;
       case T_FLOAT:
-        float_move(masm, in_regs[in], out_regs[out]);
+        __ float_move(in_regs[in], out_regs[out]);
         break;
       case T_DOUBLE:
         assert(in + 1 < total_in_args &&
                in_sig_bt[in + 1] == T_VOID &&
                out_sig_bt[out + 1] == T_VOID, "bad arg list");
-        double_move(masm, in_regs[in], out_regs[out]);
+        __ double_move(in_regs[in], out_regs[out]);
         break;
       case T_LONG :
-        long_move(masm, in_regs[in], out_regs[out]);
+        __ long_move(in_regs[in], out_regs[out]);
         break;
       case T_ADDRESS:
         fatal("found T_ADDRESS in java args");

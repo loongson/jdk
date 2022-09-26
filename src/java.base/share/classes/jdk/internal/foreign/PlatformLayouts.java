@@ -23,6 +23,12 @@
  *  questions.
  *
  */
+
+/*
+ * This file has been modified by Loongson Technology in 2022, These
+ * modifications are Copyright (c) 2022, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
 package jdk.internal.foreign;
 
 import java.lang.foreign.MemoryLayout;
@@ -206,5 +212,61 @@ public class PlatformLayouts {
          * The {@code va_list} native type, as it is passed to a function.
          */
         public static final ValueLayout.OfAddress C_VA_LIST = AArch64.C_POINTER;
+    }
+
+    public static final class LinuxLoongArch64 {
+        private LinuxLoongArch64() {
+            //just the one
+        }
+
+        /**
+         * The {@code bool} native type.
+         */
+        public static final ValueLayout.OfBoolean C_BOOL = ValueLayout.JAVA_BOOLEAN;
+
+        /**
+         * The {@code char} native type.
+         */
+        public static final ValueLayout.OfByte C_CHAR = ValueLayout.JAVA_BYTE;
+
+        /**
+         * The {@code short} native type.
+         */
+        public static final ValueLayout.OfShort C_SHORT = ValueLayout.JAVA_SHORT.withBitAlignment(16);
+
+        /**
+         * The {@code int} native type.
+         */
+        public static final ValueLayout.OfInt C_INT = ValueLayout.JAVA_INT.withBitAlignment(32);
+
+        /**
+         * The {@code long} native type.
+         */
+        public static final ValueLayout.OfLong C_LONG = ValueLayout.JAVA_LONG.withBitAlignment(64);
+
+        /**
+         * The {@code long long} native type.
+         */
+        public static final ValueLayout.OfLong C_LONG_LONG = ValueLayout.JAVA_LONG.withBitAlignment(64);
+
+        /**
+         * The {@code float} native type.
+         */
+        public static final ValueLayout.OfFloat C_FLOAT = ValueLayout.JAVA_FLOAT.withBitAlignment(32);
+
+        /**
+         * The {@code double} native type.
+         */
+        public static final ValueLayout.OfDouble C_DOUBLE = ValueLayout.JAVA_DOUBLE.withBitAlignment(64);
+
+        /**
+         * The {@code T*} native type.
+         */
+        public static final ValueLayout.OfAddress C_POINTER = ValueLayout.ADDRESS.withBitAlignment(64);
+
+        /**
+         * The {@code va_list} native type, as it is passed to a function.
+         */
+        public static final ValueLayout.OfAddress C_VA_LIST = LinuxLoongArch64.C_POINTER;
     }
 }

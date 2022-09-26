@@ -26,6 +26,7 @@
 #include "precompiled.hpp"
 #include "asm/assembler.hpp"
 #include "code/vmreg.hpp"
+#include "vmreg_loongarch.inline.hpp"
 
 
 

@@ -281,7 +281,7 @@ void BarrierSetAssembler::nmethod_entry_barrier(MacroAssembler* masm, Label* slo
         __ srli_d(RA, SCR1, 32);
         __ orr(SCR2, SCR2, RA);
         // Read the global epoch value.
-        __ ld_wu(SCR2, SCR2);
+        __ ld_wu(SCR2, SCR2, 0);
         // Combine the guard value (low order) with the epoch value (high order).
         __ slli_d(SCR2, SCR2, 32);
         __ orr(SCR1, SCR1, SCR2);
@@ -305,7 +305,8 @@ void BarrierSetAssembler::nmethod_entry_barrier(MacroAssembler* masm, Label* slo
     __ emit_int32(0);   // nmethod guard value. Skipped over in common case.
     __ bind(skip_barrier);
   } else {
-    __ bne(SCR1, SCR2, *slow_path);
+    __ xorr(SCR1, SCR1, SCR2);
+    __ bnez(SCR1, *slow_path);
     __ bind(*continuation);
   }
 }

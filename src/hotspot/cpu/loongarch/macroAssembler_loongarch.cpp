@@ -2593,14 +2593,15 @@ int MacroAssembler::patched_branch(int dest_pos, int inst, int inst_pos) {
   case bge_op:
   case bltu_op:
   case bgeu_op:
-    assert(is_simm16(v), "must be simm16");
 #ifndef PRODUCT
     if(!is_simm16(v))
     {
       tty->print_cr("must be simm16");
       tty->print_cr("Inst: %x", inst);
+      tty->print_cr("Op:   %x", high(inst, 6));
     }
 #endif
+    assert(is_simm16(v), "must be simm16");
 
     inst &= 0xfc0003ff;
     inst |= ((v & 0xffff) << 10);

@@ -105,7 +105,7 @@ int AbstractAssembler::code_fill_byte() {
 }
 
 // Now the Assembler instruction (identical for 32/64 bits)
-void Assembler::ld_b(Register rd, Address src) {
+void Assembler::ld_b(Register rd, const Address &src) {
   Register dst   = rd;
   Register base  = src.base();
   Register index = src.index();
@@ -150,7 +150,7 @@ void Assembler::ld_b(Register rd, Address src) {
   }
 }
 
-void Assembler::ld_bu(Register rd, Address src) {
+void Assembler::ld_bu(Register rd, const Address &src) {
   Register dst   = rd;
   Register base  = src.base();
   Register index = src.index();
@@ -195,7 +195,7 @@ void Assembler::ld_bu(Register rd, Address src) {
   }
 }
 
-void Assembler::ld_d(Register rd, Address src){
+void Assembler::ld_d(Register rd, const Address &src) {
   Register dst   = rd;
   Register base  = src.base();
   Register index = src.index();
@@ -249,7 +249,7 @@ void Assembler::ld_d(Register rd, Address src){
   }
 }
 
-void Assembler::ld_h(Register rd, Address src){
+void Assembler::ld_h(Register rd, const Address &src) {
   Register dst   = rd;
   Register base  = src.base();
   Register index = src.index();
@@ -294,7 +294,7 @@ void Assembler::ld_h(Register rd, Address src){
   }
 }
 
-void Assembler::ld_hu(Register rd, Address src){
+void Assembler::ld_hu(Register rd, const Address &src) {
   Register dst   = rd;
   Register base  = src.base();
   Register index = src.index();
@@ -339,17 +339,17 @@ void Assembler::ld_hu(Register rd, Address src){
   }
 }
 
-void Assembler::ll_w(Register rd, Address src){
+void Assembler::ll_w(Register rd, const Address &src) {
   assert(src.index() == NOREG, "index is unimplemented");
   ll_w(rd, src.base(), src.disp());
 }
 
-void Assembler::ll_d(Register rd, Address src){
+void Assembler::ll_d(Register rd, const Address &src) {
   assert(src.index() == NOREG, "index is unimplemented");
   ll_d(rd, src.base(), src.disp());
 }
 
-void Assembler::ld_w(Register rd, Address src){
+void Assembler::ld_w(Register rd, const Address &src) {
   Register dst   = rd;
   Register base  = src.base();
   Register index = src.index();
@@ -403,7 +403,7 @@ void Assembler::ld_w(Register rd, Address src){
   }
 }
 
-void Assembler::ld_wu(Register rd, Address src){
+void Assembler::ld_wu(Register rd, const Address &src) {
   Register dst   = rd;
   Register base  = src.base();
   Register index = src.index();
@@ -448,7 +448,7 @@ void Assembler::ld_wu(Register rd, Address src){
   }
 }
 
-void Assembler::st_b(Register rd, Address dst) {
+void Assembler::st_b(Register rd, const Address &dst) {
   Register src   = rd;
   Register base  = dst.base();
   Register index = dst.index();
@@ -495,17 +495,17 @@ void Assembler::st_b(Register rd, Address dst) {
   }
 }
 
-void Assembler::sc_w(Register rd, Address dst) {
+void Assembler::sc_w(Register rd, const Address &dst) {
   assert(dst.index() == NOREG, "index is unimplemented");
   sc_w(rd, dst.base(), dst.disp());
 }
 
-void Assembler::sc_d(Register rd, Address dst) {
+void Assembler::sc_d(Register rd, const Address &dst) {
   assert(dst.index() == NOREG, "index is unimplemented");
   sc_d(rd, dst.base(), dst.disp());
 }
 
-void Assembler::st_d(Register rd, Address dst) {
+void Assembler::st_d(Register rd, const Address &dst) {
   Register src   = rd;
   Register base  = dst.base();
   Register index = dst.index();
@@ -561,7 +561,7 @@ void Assembler::st_d(Register rd, Address dst) {
   }
 }
 
-void Assembler::st_h(Register rd, Address dst) {
+void Assembler::st_h(Register rd, const Address &dst) {
   Register src   = rd;
   Register base  = dst.base();
   Register index = dst.index();
@@ -608,7 +608,7 @@ void Assembler::st_h(Register rd, Address dst) {
   }
 }
 
-void Assembler::st_w(Register rd, Address dst) {
+void Assembler::st_w(Register rd, const Address &dst) {
   Register src   = rd;
   Register base  = dst.base();
   Register index = dst.index();
@@ -664,7 +664,7 @@ void Assembler::st_w(Register rd, Address dst) {
   }
 }
 
-void Assembler::fld_s(FloatRegister fd, Address src) {
+void Assembler::fld_s(FloatRegister fd, const Address &src) {
   Register base  = src.base();
   Register index = src.index();
 
@@ -708,7 +708,7 @@ void Assembler::fld_s(FloatRegister fd, Address src) {
   }
 }
 
-void Assembler::fld_d(FloatRegister fd, Address src) {
+void Assembler::fld_d(FloatRegister fd, const Address &src) {
   Register base  = src.base();
   Register index = src.index();
 
@@ -752,7 +752,7 @@ void Assembler::fld_d(FloatRegister fd, Address src) {
   }
 }
 
-void Assembler::fst_s(FloatRegister fd, Address dst) {
+void Assembler::fst_s(FloatRegister fd, const Address &dst) {
   Register base  = dst.base();
   Register index = dst.index();
 
@@ -796,7 +796,7 @@ void Assembler::fst_s(FloatRegister fd, Address dst) {
   }
 }
 
-void Assembler::fst_d(FloatRegister fd, Address dst) {
+void Assembler::fst_d(FloatRegister fd, const Address &dst) {
   Register base  = dst.base();
   Register index = dst.index();
 

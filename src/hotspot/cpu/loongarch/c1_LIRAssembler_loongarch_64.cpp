@@ -588,7 +588,7 @@ void LIR_Assembler::const2mem(LIR_Opr src, LIR_Opr dest, BasicType type,
   LIR_Const* c = src->as_constant_ptr();
   LIR_Address* to_addr = dest->as_address_ptr();
 
-  void (Assembler::* insn)(Register Rt, Address adr);
+  void (Assembler::* insn)(Register Rt, const Address &adr);
 
   switch (type) {
   case T_ADDRESS:

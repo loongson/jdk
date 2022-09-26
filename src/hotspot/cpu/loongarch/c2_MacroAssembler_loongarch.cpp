@@ -265,7 +265,7 @@ void C2_MacroAssembler::bc1f_long(Label& L) {
   bind(not_taken);
 }
 
-typedef void (MacroAssembler::* load_chr_insn)(Register rd, Address adr);
+typedef void (MacroAssembler::* load_chr_insn)(Register rd, const Address &adr);
 
 void C2_MacroAssembler::string_indexof(Register haystack, Register needle,
                                        Register haystack_len, Register needle_len,

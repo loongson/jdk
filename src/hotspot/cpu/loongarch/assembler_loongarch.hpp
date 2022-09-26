@@ -2074,25 +2074,25 @@ public:
   void fstx_s (FloatRegister fd, Register rj, Register rk) { emit_int32(insn_RRR(fstx_s_op,    (int)rk->encoding(), (int)rj->encoding(), (int)fd->encoding())); }
   void fstx_d (FloatRegister fd, Register rj, Register rk) { emit_int32(insn_RRR(fstx_d_op,    (int)rk->encoding(), (int)rj->encoding(), (int)fd->encoding())); }
 
-  void ld_b  (Register rd, Address src);
-  void ld_bu (Register rd, Address src);
-  void ld_d  (Register rd, Address src);
-  void ld_h  (Register rd, Address src);
-  void ld_hu (Register rd, Address src);
-  void ll_w  (Register rd, Address src);
-  void ll_d  (Register rd, Address src);
-  void ld_wu (Register rd, Address src);
-  void ld_w  (Register rd, Address src);
-  void st_b  (Register rd, Address dst);
-  void st_d  (Register rd, Address dst);
-  void st_w  (Register rd, Address dst);
-  void sc_w  (Register rd, Address dst);
-  void sc_d  (Register rd, Address dst);
-  void st_h  (Register rd, Address dst);
-  void fld_s (FloatRegister fd, Address src);
-  void fld_d (FloatRegister fd, Address src);
-  void fst_s (FloatRegister fd, Address dst);
-  void fst_d (FloatRegister fd, Address dst);
+  void ld_b  (Register rd, const Address &src);
+  void ld_bu (Register rd, const Address &src);
+  void ld_d  (Register rd, const Address &src);
+  void ld_h  (Register rd, const Address &src);
+  void ld_hu (Register rd, const Address &src);
+  void ll_w  (Register rd, const Address &src);
+  void ll_d  (Register rd, const Address &src);
+  void ld_wu (Register rd, const Address &src);
+  void ld_w  (Register rd, const Address &src);
+  void st_b  (Register rd, const Address &dst);
+  void st_d  (Register rd, const Address &dst);
+  void st_w  (Register rd, const Address &dst);
+  void sc_w  (Register rd, const Address &dst);
+  void sc_d  (Register rd, const Address &dst);
+  void st_h  (Register rd, const Address &dst);
+  void fld_s (FloatRegister fd, const Address &src);
+  void fld_d (FloatRegister fd, const Address &src);
+  void fst_s (FloatRegister fd, const Address &dst);
+  void fst_d (FloatRegister fd, const Address &dst);
 
   void amswap_w   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amswap_w_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void amswap_d   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amswap_d_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }

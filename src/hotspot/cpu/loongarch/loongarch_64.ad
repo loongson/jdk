@@ -11836,6 +11836,106 @@ instruct minD_reg_reg(regD dst, regD src1, regD src2) %{
   ins_pipe( fpu_regF_regF );
 %}
 
+// Float.isInfinite
+instruct isInfiniteF_reg_reg(mRegI dst, regF src)
+%{
+  match(Set dst (IsInfiniteF src));
+  format %{ "isInfinite    $dst, $src @isInfiniteF_reg_reg" %}
+  ins_encode %{
+    FloatRegister src = $src$$FloatRegister;
+    Register      dst = $dst$$Register;
+
+    __ fclass_s(fscratch, src);
+    __ movfr2gr_s(dst, fscratch);
+    __ andi(dst, dst, 0b0001000100);
+    __ slt(dst, R0, dst);
+  %}
+  size(16);
+  ins_pipe( pipe_slow );
+%}
+
+// Double.isInfinite
+instruct isInfiniteD_reg_reg(mRegI dst, regD src)
+%{
+  match(Set dst (IsInfiniteD src));
+  format %{ "isInfinite    $dst, $src @isInfiniteD_reg_reg" %}
+  ins_encode %{
+    FloatRegister src = $src$$FloatRegister;
+    Register      dst = $dst$$Register;
+
+    __ fclass_d(fscratch, src);
+    __ movfr2gr_d(dst, fscratch);
+    __ andi(dst, dst, 0b0001000100);
+    __ slt(dst, R0, dst);
+  %}
+  size(16);
+  ins_pipe( pipe_slow );
+%}
+
+instruct isInfiniteF_cmovI(mRegI dst, mRegI src1, mRegI src2, regF op, immI_0 zero, cmpOp cop)
+%{
+  match(Set dst (CMoveI (Binary cop (CmpI (IsInfiniteF op) zero)) (Binary src1 src2)));
+  format %{ "isInfinite_cmovI    $dst, $src1, $src2, $op, $cop @isInfiniteF_cmovI" %}
+  ins_encode %{
+    Register      src1 = $src1$$Register;
+    Register      src2 = $src2$$Register;
+    Register      dst  = $dst$$Register;
+    FloatRegister op   = $op$$FloatRegister;
+    int         flag = $cop$$cmpcode;
+
+    __ fclass_s(fscratch, op);
+    __ movfr2gr_s(AT, fscratch);
+    __ andi(AT, AT, 0b0001000100);
+    switch(flag) {
+      case 0x01: // EQ
+        __ maskeqz(dst, src1, AT);
+        __ masknez(AT, src2, AT);
+        break;
+      case 0x02: // NE
+        __ masknez(dst, src1, AT);
+        __ maskeqz(AT, src2, AT);
+        break;
+      default:
+        ShouldNotReachHere();
+    }
+    __ orr(dst, dst, AT);
+  %}
+  size(24);
+  ins_pipe( pipe_slow );
+%}
+
+instruct isInfiniteD_cmovI(mRegI dst, mRegI src1, mRegI src2, regD op, immI_0 zero, cmpOp cop)
+%{
+  match(Set dst (CMoveI (Binary cop (CmpI (IsInfiniteD op) zero)) (Binary src1 src2)));
+  format %{ "isInfinite_cmovI    $dst, $src1, $src2, $op, $cop @isInfiniteD_cmovI" %}
+  ins_encode %{
+    Register      src1 = $src1$$Register;
+    Register      src2 = $src2$$Register;
+    Register      dst  = $dst$$Register;
+    FloatRegister op   = $op$$FloatRegister;
+    int           flag = $cop$$cmpcode;
+
+    __ fclass_d(fscratch, op);
+    __ movfr2gr_d(AT, fscratch);
+    __ andi(AT, AT, 0b0001000100);
+    switch(flag) {
+      case 0x01: // EQ
+        __ maskeqz(dst, src1, AT);
+        __ masknez(AT, src2, AT);
+        break;
+      case 0x02: // NE
+        __ masknez(dst, src1, AT);
+        __ maskeqz(AT, src2, AT);
+        break;
+      default:
+        ShouldNotReachHere();
+    }
+    __ orr(dst, dst, AT);
+  %}
+  size(24);
+  ins_pipe( pipe_slow );
+%}
+
 instruct combine_i2l(mRegL dst, mRegI src1, immL_MaxUI mask, mRegI src2, immI_32 shift32)
 %{
   match(Set dst (OrL (AndL (ConvI2L src1) mask) (LShiftL (ConvI2L src2) shift32)));

@@ -29,7 +29,6 @@
 #include "prims/upcallLinker.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/signature.hpp"
-#include "runtime/signature.hpp"
 #include "runtime/stubRoutines.hpp"
 #include "utilities/formatBuffer.hpp"
 #include "utilities/globalDefinitions.hpp"
@@ -37,12 +36,10 @@
 
 #define __ _masm->
 
-#define T4 RT4
-
 // for callee saved regs, according to the caller's ABI
 static int compute_reg_save_area_size(const ABIDescriptor& abi) {
   int size = 0;
-  for (int i = 0; i < RegisterImpl::number_of_registers; i++) {
+  for (int i = 0; i < Register::number_of_registers; i++) {
     Register reg = as_Register(i);
     if (reg == FP || reg == SP || reg == RA) continue; // saved/restored by prologue/epilogue
     if (!abi.is_volatile_reg(reg)) {
@@ -50,7 +47,7 @@ static int compute_reg_save_area_size(const ABIDescriptor& abi) {
     }
   }
 
-  for (int i = 0; i < FloatRegisterImpl::number_of_registers; i++) {
+  for (int i = 0; i < FloatRegister::number_of_registers; i++) {
     FloatRegister reg = as_FloatRegister(i);
     if (!abi.is_volatile_reg(reg)) {
       size += 8;
@@ -68,7 +65,7 @@ static void preserve_callee_saved_registers(MacroAssembler* _masm, const ABIDesc
   int offset = reg_save_area_offset;
 
   __ block_comment("{ preserve_callee_saved_regs ");
-  for (int i = 0; i < RegisterImpl::number_of_registers; i++) {
+  for (int i = 0; i < Register::number_of_registers; i++) {
     Register reg = as_Register(i);
     if (reg == FP || reg == SP || reg == RA) continue; // saved/restored by prologue/epilogue
     if (!abi.is_volatile_reg(reg)) {
@@ -77,7 +74,7 @@ static void preserve_callee_saved_registers(MacroAssembler* _masm, const ABIDesc
     }
   }
 
-  for (int i = 0; i < FloatRegisterImpl::number_of_registers; i++) {
+  for (int i = 0; i < FloatRegister::number_of_registers; i++) {
     FloatRegister reg = as_FloatRegister(i);
     if (!abi.is_volatile_reg(reg)) {
       __ fst_d(reg, SP, offset);
@@ -96,7 +93,7 @@ static void restore_callee_saved_registers(MacroAssembler* _masm, const ABIDescr
   int offset = reg_save_area_offset;
 
   __ block_comment("{ restore_callee_saved_regs ");
-  for (int i = 0; i < RegisterImpl::number_of_registers; i++) {
+  for (int i = 0; i < Register::number_of_registers; i++) {
     Register reg = as_Register(i);
     if (reg == FP || reg == SP || reg == RA) continue; // saved/restored by prologue/epilogue
     if (!abi.is_volatile_reg(reg)) {
@@ -105,7 +102,7 @@ static void restore_callee_saved_registers(MacroAssembler* _masm, const ABIDescr
     }
   }
 
-  for (int i = 0; i < FloatRegisterImpl::number_of_registers; i++) {
+  for (int i = 0; i < FloatRegister::number_of_registers; i++) {
     FloatRegister reg = as_FloatRegister(i);
     if (!abi.is_volatile_reg(reg)) {
       __ fld_d(reg, SP, offset);
@@ -253,7 +250,7 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Method* entry,
         break;
         case T_FLOAT:
         case T_DOUBLE:
-          j_expected_result_reg = FV0->as_VMReg();
+          j_expected_result_reg = FA0->as_VMReg();
           break;
         default:
           fatal("unexpected return type: %s", type2name(ret_type));

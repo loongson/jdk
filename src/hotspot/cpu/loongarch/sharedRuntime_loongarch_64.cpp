@@ -2319,7 +2319,7 @@ void SharedRuntime::generate_uncommon_trap_blob() {
     __ ld_d(AT, unroll, Deoptimization::UnrollBlock::unpack_kind_offset_in_bytes());
     __ li(T4, Deoptimization::Unpack_uncommon_trap);
     __ beq(AT, T4, L);
-    __ stop("SharedRuntime::generate_deopt_blob: expected Unpack_uncommon_trap");
+    __ stop("SharedRuntime::generate_uncommon_trap_blob: expected Unpack_uncommon_trap");
     __ bind(L);
   }
 #endif

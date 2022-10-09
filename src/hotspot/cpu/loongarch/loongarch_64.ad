@@ -5295,16 +5295,19 @@ instruct jmpCon_flags_long(cmpOpEqNe cop, FlagsReg cr, label labl) %{
 
   ins_encode %{
     Label*    L =  $labl$$label;
+    Label not_taken;
     switch($cop$$cmpcode) {
       case 0x01: //equal
-        __ bne_long($cr$$Register, R0, *L);
+        __ bne($cr$$Register, R0, not_taken);
         break;
       case 0x02: //not equal
-        __ beq_long($cr$$Register, R0, *L);
+        __ beq($cr$$Register, R0, not_taken);
         break;
       default:
         Unimplemented();
     }
+    __ jmp_far(*L);
+    __ bind(not_taken);
   %}
 
   ins_pipe( pipe_jump );
@@ -5569,36 +5572,39 @@ instruct branchConF_reg_reg_long(cmpOp cmp, regF src1, regF src2, label labl) %{
     FloatRegister reg_op1 = $src1$$FloatRegister;
     FloatRegister reg_op2 = $src2$$FloatRegister;
     Label*     L =  $labl$$label;
+    Label not_taken;
     int     flag = $cmp$$cmpcode;
 
     switch(flag) {
       case 0x01: //equal
         __ fcmp_ceq_s(FCC0, reg_op1, reg_op2);
-        __ bc1t_long(*L);
+        __ bceqz(FCC0, not_taken);
         break;
       case 0x02: //not_equal
         __ fcmp_ceq_s(FCC0, reg_op1, reg_op2);
-        __ bc1f_long(*L);
+        __ bcnez(FCC0, not_taken);
         break;
       case 0x03: //greater
         __ fcmp_cule_s(FCC0, reg_op1, reg_op2);
-        __ bc1f_long(*L);
+        __ bcnez(FCC0, not_taken);
         break;
       case 0x04: //greater_equal
         __ fcmp_cult_s(FCC0, reg_op1, reg_op2);
-        __ bc1f_long(*L);
+        __ bcnez(FCC0, not_taken);
         break;
       case 0x05: //less
         __ fcmp_cult_s(FCC0, reg_op1, reg_op2);
-        __ bc1t_long(*L);
+        __ bceqz(FCC0, not_taken);
         break;
       case 0x06: //less_equal
         __ fcmp_cule_s(FCC0, reg_op1, reg_op2);
-        __ bc1t_long(*L);
+        __ bceqz(FCC0, not_taken);
         break;
       default:
         Unimplemented();
     }
+    __ jmp_far(*L);
+    __ bind(not_taken);
   %}
 
   ins_pc_relative(1);
@@ -5614,37 +5620,40 @@ instruct branchConD_reg_reg_long(cmpOp cmp, regD src1, regD src2, label labl) %{
     FloatRegister reg_op1 = $src1$$FloatRegister;
     FloatRegister reg_op2 = $src2$$FloatRegister;
     Label*     L =  $labl$$label;
+    Label not_taken;
     int     flag = $cmp$$cmpcode;
 
     switch(flag) {
       case 0x01: //equal
         __ fcmp_ceq_d(FCC0, reg_op1, reg_op2);
-        __ bc1t_long(*L);
+        __ bceqz(FCC0, not_taken);
         break;
       case 0x02: //not_equal
         // c_ueq_d cannot distinguish NaN from equal. Double.isNaN(Double) is implemented by 'f != f', so the use of c_ueq_d causes bugs.
         __ fcmp_ceq_d(FCC0, reg_op1, reg_op2);
-        __ bc1f_long(*L);
+        __ bcnez(FCC0, not_taken);
         break;
       case 0x03: //greater
         __ fcmp_cule_d(FCC0, reg_op1, reg_op2);
-        __ bc1f_long(*L);
+        __ bcnez(FCC0, not_taken);
         break;
       case 0x04: //greater_equal
         __ fcmp_cult_d(FCC0, reg_op1, reg_op2);
-        __ bc1f_long(*L);
+        __ bcnez(FCC0, not_taken);
         break;
       case 0x05: //less
         __ fcmp_cult_d(FCC0, reg_op1, reg_op2);
-        __ bc1t_long(*L);
+        __ bceqz(FCC0, not_taken);
         break;
       case 0x06: //less_equal
         __ fcmp_cule_d(FCC0, reg_op1, reg_op2);
-        __ bc1t_long(*L);
+        __ bceqz(FCC0, not_taken);
         break;
       default:
         Unimplemented();
     }
+    __ jmp_far(*L);
+    __ bind(not_taken);
   %}
 
   ins_pc_relative(1);

@@ -203,68 +203,6 @@ void C2_MacroAssembler::fast_unlock(Register oop, Register box, Register flag,
   bind(no_count);
 }
 
-void C2_MacroAssembler::beq_long(Register rs, Register rt, Label& L) {
-  Label not_taken;
-
-  bne(rs, rt, not_taken);
-
-  jmp_far(L);
-
-  bind(not_taken);
-}
-
-void C2_MacroAssembler::bne_long(Register rs, Register rt, Label& L) {
-  Label not_taken;
-
-  beq(rs, rt, not_taken);
-
-  jmp_far(L);
-
-  bind(not_taken);
-}
-
-void C2_MacroAssembler::blt_long(Register rs, Register rt, Label& L, bool is_signed) {
-  Label not_taken;
-  if (is_signed) {
-    bge(rs, rt, not_taken);
-  } else {
-    bgeu(rs, rt, not_taken);
-  }
-  jmp_far(L);
-  bind(not_taken);
-}
-
-void C2_MacroAssembler::bge_long(Register rs, Register rt, Label& L, bool is_signed) {
-  Label not_taken;
-  if (is_signed) {
-    blt(rs, rt, not_taken);
-  } else {
-    bltu(rs, rt, not_taken);
-  }
-  jmp_far(L);
-  bind(not_taken);
-}
-
-void C2_MacroAssembler::bc1t_long(Label& L) {
-  Label not_taken;
-
-  bceqz(FCC0, not_taken);
-
-  jmp_far(L);
-
-  bind(not_taken);
-}
-
-void C2_MacroAssembler::bc1f_long(Label& L) {
-  Label not_taken;
-
-  bcnez(FCC0, not_taken);
-
-  jmp_far(L);
-
-  bind(not_taken);
-}
-
 typedef void (MacroAssembler::* load_chr_insn)(Register rd, const Address &adr);
 
 void C2_MacroAssembler::string_indexof(Register haystack, Register needle,
@@ -1673,40 +1611,45 @@ void C2_MacroAssembler::cmp_branch_short(int flag, Register op1, Register op2, L
 }
 
 void C2_MacroAssembler::cmp_branch_long(int flag, Register op1, Register op2, Label* L, bool is_signed) {
+    Label not_taken;
+
     switch(flag) {
       case 0x01: //equal
-        beq_long(op1, op2, *L);
+        bne(op1, op2, not_taken);
         break;
       case 0x02: //not_equal
-        bne_long(op1, op2, *L);
+        beq(op1, op2, not_taken);
         break;
       case 0x03: //above
         if (is_signed)
-          blt_long(op2, op1, *L, true /* signed */);
+          bge(op2, op1, not_taken);
         else
-          blt_long(op2, op1, *L, false);
+          bgeu(op2, op1, not_taken);
         break;
       case 0x04: //above_equal
         if (is_signed)
-          bge_long(op1, op2, *L, true /* signed */);
+          blt(op1, op2, not_taken);
         else
-          bge_long(op1, op2, *L, false);
+          bltu(op1, op2, not_taken);
         break;
       case 0x05: //below
         if (is_signed)
-          blt_long(op1, op2, *L, true /* signed */);
+          bge(op1, op2, not_taken);
         else
-          blt_long(op1, op2, *L, false);
+          bgeu(op1, op2, not_taken);
         break;
       case 0x06: //below_equal
         if (is_signed)
-          bge_long(op2, op1, *L, true /* signed */);
+          blt(op2, op1, not_taken);
         else
-          bge_long(op2, op1, *L, false);
+          bltu(op2, op1, not_taken);
         break;
       default:
         Unimplemented();
     }
+
+    jmp_far(*L);
+    bind(not_taken);
 }
 
 void C2_MacroAssembler::cmp_branchEqNe_off21(int flag, Register op1, Label& L) {

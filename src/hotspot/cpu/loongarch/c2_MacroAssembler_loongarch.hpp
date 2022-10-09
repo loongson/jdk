@@ -41,14 +41,6 @@ public:
   void fast_unlock(Register oop, Register box, Register flag,
                    Register disp_hdr, Register tmp);
 
-  // For C2 to support long branches
-  void beq_long   (Register rs, Register rt, Label& L);
-  void bne_long   (Register rs, Register rt, Label& L);
-  void blt_long   (Register rs, Register rt, Label& L, bool is_signed);
-  void bge_long   (Register rs, Register rt, Label& L, bool is_signed);
-  void bc1t_long  (Label& L);
-  void bc1f_long  (Label& L);
-
   // Compare strings.
   void string_compare(Register str1, Register str2,
                       Register cnt1, Register cnt2, Register result,

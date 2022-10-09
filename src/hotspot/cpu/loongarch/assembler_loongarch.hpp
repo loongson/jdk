@@ -1531,27 +1531,18 @@ class Assembler : public AbstractAssembler  {
   // get the offset field of beq, bne, blt[u], bge[u] instruction
   int offset16(address entry) {
     assert(is_simm16((entry - pc()) / 4), "change this code");
-    if (!is_simm16((entry - pc()) / 4)) {
-      tty->print_cr("!!! is_simm16: %lx", (entry - pc()) / 4);
-    }
     return (entry - pc()) / 4;
   }
 
   // get the offset field of beqz, bnez instruction
   int offset21(address entry) {
     assert(is_simm((int)(entry - pc()) / 4, 21), "change this code");
-    if (!is_simm((int)(entry - pc()) / 4, 21)) {
-      tty->print_cr("!!! is_simm21: %lx", (entry - pc()) / 4);
-    }
     return (entry - pc()) / 4;
   }
 
   // get the offset field of b instruction
   int offset26(address entry) {
     assert(is_simm((int)(entry - pc()) / 4, 26), "change this code");
-    if (!is_simm((int)(entry - pc()) / 4, 26)) {
-      tty->print_cr("!!! is_simm26: %lx", (entry - pc()) / 4);
-    }
     return (entry - pc()) / 4;
   }
 

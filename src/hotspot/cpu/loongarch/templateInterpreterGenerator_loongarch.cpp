@@ -1874,6 +1874,7 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
   // Finish with popframe handling
   __ restore_bcp();
   __ restore_locals();
+  __ get_method(Rmethod);
   // S8 be used in C2
   __ li(S8, (long)Interpreter::dispatch_table(itos));
 
@@ -1898,9 +1899,8 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
     // The member name argument must be restored if _invokestatic is re-executed after a PopFrame call.
     // Detect such a case in the InterpreterRuntime function and return the member name argument, or NULL.
 
-    __ get_method(T4);
     __ ld_d(T8, LVP, 0);
-    __ call_VM(T8, CAST_FROM_FN_PTR(address, InterpreterRuntime::member_name_arg_or_null), T8, T4, BCP);
+    __ call_VM(T8, CAST_FROM_FN_PTR(address, InterpreterRuntime::member_name_arg_or_null), T8, Rmethod, BCP);
 
     __ beq(T8, R0, L_done);
 

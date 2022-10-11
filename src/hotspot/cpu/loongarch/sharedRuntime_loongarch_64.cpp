@@ -794,7 +794,7 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
   address c2i_unverified_entry = __ pc();
   Label skip_fixup;
   {
-    Register holder = T1;
+    Register holder = IC_Klass;
     Register receiver = T0;
     Register temp = T8;
     address ic_miss = SharedRuntime::get_ic_miss_stub();
@@ -1280,8 +1280,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   // restoring them except fp. fp is the only callee save register
   // as far as the interpreter and the compiler(s) are concerned.
 
-  //refer to register_loongarch.hpp:IC_Klass
-  const Register ic_reg = T1;
+  const Register ic_reg = IC_Klass;
   const Register receiver = T0;
 
   Label hit;

@@ -35,49 +35,48 @@
 
 
 int InlineCacheBuffer::ic_stub_code_size() {
-  return NativeMovConstReg::instruction_size +
-         NativeGeneralJump::instruction_size +
-         1;
-  // so that code_end can be set in CodeBuffer
-  // 64bit 15 = 6 + 8 bytes + 1 byte
-  // 32bit 7 = 2 + 4 bytes + 1 byte
+  return NativeMovConstReg::instruction_size +  // patchable_li52() == 3 ins
+         NativeGeneralJump::instruction_size;   // patchable_jump() == 2 ins
 }
 
 
-// we use T1 as cached oop(klass) now. this is the target of virtual call,
-// when reach here, the receiver in T0
-// refer to shareRuntime_loongarch.cpp,gen_i2c2i_adapters
-void InlineCacheBuffer::assemble_ic_buffer_code(address code_begin, void* cached_value,
+// The use IC_Klass refer to SharedRuntime::gen_i2c2i_adapters
+void InlineCacheBuffer::assemble_ic_buffer_code(address code_begin,
+                                                void* cached_value,
                                                 address entry_point) {
   ResourceMark rm;
   CodeBuffer code(code_begin, ic_stub_code_size());
   MacroAssembler* masm = new MacroAssembler(&code);
-  // note: even though the code contains an embedded oop, we do not need reloc info
+  // Note: even though the code contains an embedded value, we do not need reloc info
   // because
-  // (1) the oop is old (i.e., doesn't matter for scavenges)
+  // (1) the value is old (i.e., doesn't matter for scavenges)
   // (2) these ICStubs are removed *before* a GC happens, so the roots disappear
-  //  assert(cached_oop == NULL || cached_oop->is_perm(), "must be perm oop");
+
 #define __ masm->
-  __ patchable_li52(T1, (long)cached_value);
-  // TODO: confirm reloc
+  address start = __ pc();
+  __ patchable_li52(IC_Klass, (long)cached_value);
   __ jmp(entry_point, relocInfo::runtime_call_type);
-  __ flush();
+
+  ICache::invalidate_range(code_begin, InlineCacheBuffer::ic_stub_code_size());
+  assert(__ pc() - start == ic_stub_code_size(), "must be");
 #undef __
 }
 
 
 address InlineCacheBuffer::ic_buffer_entry_point(address code_begin) {
-  NativeMovConstReg*        move = nativeMovConstReg_at(code_begin);   // creation also verifies the object
-  NativeGeneralJump*        jump = nativeGeneralJump_at(move->next_instruction_address());
+  // move -> jump -> entry
+  NativeMovConstReg* move = nativeMovConstReg_at(code_begin);
+  NativeGeneralJump* jump = nativeGeneralJump_at(move->next_instruction_address());
   return jump->jump_destination();
 }
 
 
 void* InlineCacheBuffer::ic_buffer_cached_value(address code_begin) {
-  // creation also verifies the object
-  NativeMovConstReg*        move = nativeMovConstReg_at(code_begin);
-  // Verifies the jump
-  NativeGeneralJump*        jump = nativeGeneralJump_at(move->next_instruction_address());
-  void* o= (void*)move->data();
-  return o;
+  // double check the instructions flow
+  NativeMovConstReg* move = nativeMovConstReg_at(code_begin);
+  NativeGeneralJump* jump = nativeGeneralJump_at(move->next_instruction_address());
+
+  // cached value is the data arg of NativeMovConstReg
+  void* cached_value = (void*)move->data();
+  return cached_value;
 }

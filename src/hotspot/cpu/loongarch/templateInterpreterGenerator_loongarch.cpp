@@ -358,15 +358,13 @@ address TemplateInterpreterGenerator::generate_math_entry(AbstractInterpreter::M
   return entry_point;
 }
 
+// Method entry for java.lang.Thread.currentThread
 address TemplateInterpreterGenerator::generate_currentThread() {
 
   address entry_point = __ pc();
 
-  __ ld_d(A0, TREG, in_bytes(JavaThread::threadObj_offset()));
-
+  __ ld_d(A0, Address(TREG, JavaThread::vthread_offset()));
   __ resolve_oop_handle(A0, T4);
-
-  __ move(SP, Rsender);
   __ jr(RA);
 
   return entry_point;

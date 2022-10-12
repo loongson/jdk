@@ -592,6 +592,10 @@ reg_class no_CR_reg %{
   return _NO_CR_REG_mask;
 %}
 
+reg_class p_has_s6_reg %{
+  return _PTR_HAS_S6_REG_mask;
+%}
+
 reg_class all_reg(
                     S8, S8_H,
                     S7, S7_H,
@@ -795,6 +799,7 @@ extern RegMask _ANY_REG32_mask;
 extern RegMask _ANY_REG_mask;
 extern RegMask _PTR_REG_mask;
 extern RegMask _NO_CR_REG_mask;
+extern RegMask _PTR_HAS_S6_REG_mask;
 
 class CallStubImpl {
 
@@ -873,11 +878,13 @@ RegMask _ANY_REG32_mask;
 RegMask _ANY_REG_mask;
 RegMask _PTR_REG_mask;
 RegMask _NO_CR_REG_mask;
+RegMask _PTR_HAS_S6_REG_mask;
 
 void reg_mask_init() {
   _ANY_REG32_mask = _ALL_REG32_mask;
   _ANY_REG_mask = _ALL_REG_mask;
   _PTR_REG_mask = _ALL_REG_mask;
+  _PTR_HAS_S6_REG_mask = _ALL_REG_mask;
 
   if (UseCompressedOops && (CompressedOops::ptrs_base() != NULL)) {
     _ANY_REG32_mask.Remove(OptoReg::as_OptoReg(r28->as_VMReg()));
@@ -900,6 +907,8 @@ void reg_mask_init() {
 
   _NO_CR_REG_mask = _PTR_REG_mask;
   _NO_CR_REG_mask.SUBTRACT(_T0_LONG_REG_mask);
+
+  _PTR_HAS_S6_REG_mask.OR(_S6_LONG_REG_mask);
 }
 
 void PhaseOutput::pd_perform_mach_node_analysis() {
@@ -3455,6 +3464,7 @@ operand mRegP() %{
   constraint(ALLOC_IN_RC(p_reg));
   match(RegP);
   match(a0_RegP);
+  match(javaThread_RegP);
 
   format %{  %}
   interface(REG_INTER);
@@ -3462,6 +3472,15 @@ operand mRegP() %{
 
 operand no_CR_mRegP() %{
   constraint(ALLOC_IN_RC(no_CR_reg));
+  match(RegP);
+  match(mRegP);
+
+  format %{  %}
+  interface(REG_INTER);
+%}
+
+operand p_has_s6_mRegP() %{
+  constraint(ALLOC_IN_RC(p_has_s6_reg));
   match(RegP);
   match(mRegP);
 
@@ -3515,6 +3534,16 @@ operand s6_RegP()
   match(RegP);
   match(mRegP);
 
+  format %{ %}
+  interface(REG_INTER);
+%}
+
+// Java Thread Register
+operand javaThread_RegP(mRegP reg)
+%{
+  constraint(ALLOC_IN_RC(s6_long_reg)); // S6 denotes TREG (java_thread)
+  match(reg);
+  op_cost(0);
   format %{ %}
   interface(REG_INTER);
 %}
@@ -3906,7 +3935,7 @@ operand indirect(mRegP reg) %{
 %}
 
 // Indirect Memory Plus Short Offset Operand
-operand indOffset12(mRegP reg, immL12 off)
+operand indOffset12(p_has_s6_mRegP reg, immL12 off)
 %{
   constraint(ALLOC_IN_RC(p_reg));
   match(AddP reg off);
@@ -10633,17 +10662,23 @@ instruct decodeKlass_not_null(mRegP dst, mRegN src) %{
   ins_pipe( ialu_regL_regL );
 %}
 
-//FIXME
-instruct tlsLoadP(mRegP dst) %{
+// ============================================================================
+// This name is KNOWN by the ADLC and cannot be changed.
+// The ADLC forces a 'TypeRawPtr::BOTTOM' output type
+// for this guy.
+instruct tlsLoadP(javaThread_RegP dst)
+%{
   match(Set dst (ThreadLocal));
 
   ins_cost(0);
-  format %{ " get_thread in $dst #@tlsLoadP" %}
-  ins_encode %{
-    __ move($dst$$Register, TREG);
-  %}
 
-  ins_pipe( ialu_loadI );
+  format %{ " -- \t// $dst=Thread::current(), empty encoding, #@tlsLoadP" %}
+
+  size(0);
+
+  ins_encode( /*empty*/ );
+
+  ins_pipe( empty );
 %}
 
 

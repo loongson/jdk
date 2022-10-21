@@ -16528,23 +16528,35 @@ instruct cmpV32(vecY dst, vecY src1, vecY src2, immI cond)
 
 // ---------------------------- LOAD_IOTA_INDICES -----------------------------
 
-instruct loadcon16B(vecX dst, immI_0 src) %{
-  predicate(Matcher::vector_length(n) == 16 && Matcher::vector_element_basic_type(n) == T_BYTE);
+instruct loadconV16(vecX dst, immI_0 src) %{
+  predicate(Matcher::vector_length_in_bytes(n) == 16);
   match(Set dst (VectorLoadConst src));
-  format %{ "vld_con    $dst, CONSTANT_MEMORY\t# @loadcon16B" %}
+  format %{ "vld_con    $dst, CONSTANT_MEMORY\t# @loadconV16" %}
   ins_encode %{
-    __ li(AT, (long)StubRoutines::la::vector_iota_indices());
+    // The iota indices are ordered by type B/S/I/L/F/D, and the offset between two types is 32.
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    int offset = exact_log2(type2aelembytes(bt)) << 5;
+    if (is_floating_point_type(bt)) {
+      offset += 64;
+    }
+    __ li(AT, (long)(StubRoutines::la::vector_iota_indices() + offset));
     __ vld($dst$$FloatRegister, AT, (int)0);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct loadcon32B(vecY dst, immI_0 src) %{
-  predicate(Matcher::vector_length(n) == 32 && Matcher::vector_element_basic_type(n) == T_BYTE);
+instruct loadconV32(vecY dst, immI_0 src) %{
+  predicate(Matcher::vector_length_in_bytes(n) == 32);
   match(Set dst (VectorLoadConst src));
-  format %{ "xvld_con    $dst, CONSTANT_MEMORY\t# @loadcon32B" %}
+  format %{ "xvld_con    $dst, CONSTANT_MEMORY\t# @loadconV32" %}
   ins_encode %{
-    __ li(AT, (long)StubRoutines::la::vector_iota_indices());
+    // The iota indices are ordered by type B/S/I/L/F/D, and the offset between two types is 32.
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    int offset = exact_log2(type2aelembytes(bt)) << 5;
+    if (is_floating_point_type(bt)) {
+      offset += 64;
+    }
+    __ li(AT, (long)(StubRoutines::la::vector_iota_indices() + offset));
     __ xvld($dst$$FloatRegister, AT, (int)0);
   %}
   ins_pipe( pipe_slow );

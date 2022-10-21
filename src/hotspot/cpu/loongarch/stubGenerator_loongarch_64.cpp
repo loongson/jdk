@@ -441,10 +441,36 @@ class StubGenerator: public StubCodeGenerator {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", stub_name);
     address start = __ pc();
+    // B
     __ emit_data64(0x0706050403020100, relocInfo::none);
     __ emit_data64(0x0F0E0D0C0B0A0908, relocInfo::none);
     __ emit_data64(0x1716151413121110, relocInfo::none);
     __ emit_data64(0x1F1E1D1C1B1A1918, relocInfo::none);
+    // H
+    __ emit_data64(0x0003000200010000, relocInfo::none);
+    __ emit_data64(0x0007000600050004, relocInfo::none);
+    __ emit_data64(0x000B000A00090008, relocInfo::none);
+    __ emit_data64(0x000F000E000D000C, relocInfo::none);
+    // W
+    __ emit_data64(0x0000000100000000, relocInfo::none);
+    __ emit_data64(0x0000000300000002, relocInfo::none);
+    __ emit_data64(0x0000000500000004, relocInfo::none);
+    __ emit_data64(0x0000000700000006, relocInfo::none);
+    // D
+    __ emit_data64(0x0000000000000000, relocInfo::none);
+    __ emit_data64(0x0000000000000001, relocInfo::none);
+    __ emit_data64(0x0000000000000002, relocInfo::none);
+    __ emit_data64(0x0000000000000003, relocInfo::none);
+    // S - FP
+    __ emit_data64(0x3F80000000000000, relocInfo::none); // 0.0f, 1.0f
+    __ emit_data64(0x4040000040000000, relocInfo::none); // 2.0f, 3.0f
+    __ emit_data64(0x40A0000040800000, relocInfo::none); // 4.0f, 5.0f
+    __ emit_data64(0x40E0000040C00000, relocInfo::none); // 6.0f, 7.0f
+    // D - FP
+    __ emit_data64(0x0000000000000000, relocInfo::none); // 0.0d
+    __ emit_data64(0x3FF0000000000000, relocInfo::none); // 1.0d
+    __ emit_data64(0x4000000000000000, relocInfo::none); // 2.0d
+    __ emit_data64(0x4008000000000000, relocInfo::none); // 3.0d
     return start;
   }
 

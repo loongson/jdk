@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
-// Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+// Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
 // DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 //
 // This code is free software; you can redistribute it and/or modify it
@@ -5180,25 +5180,17 @@ instruct loadConNKlass(mRegN dst, immNKlass src) %{
   ins_pipe( ialu_regI_regI ); // XXX
 %}
 
-//FIXME
 // Tail Call; Jump from runtime stub to Java code.
 // Also known as an 'interprocedural jump'.
 // Target of jump will eventually return to caller.
 // TailJump below removes the return address.
-instruct TailCalljmpInd(mRegP jump_target, mRegP method_ptr) %{
+instruct TailCalljmpInd(mRegP jump_target, s3_RegP method_ptr) %{
   match(TailCall jump_target method_ptr);
-  ins_cost(300);
+
   format %{ "JMP    $jump_target \t# @TailCalljmpInd" %}
 
   ins_encode %{
-    Register target = $jump_target$$Register;
-    Register    ptr = $method_ptr$$Register;
-
-    // RA will be used in generate_forward_exception()
-    __ push(RA);
-
-    __ move(S3, ptr);
-    __ jr(target);
+    __ jr($jump_target$$Register);
   %}
 
   ins_pipe( pipe_jump );

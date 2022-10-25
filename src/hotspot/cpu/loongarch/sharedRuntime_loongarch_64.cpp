@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2060,17 +2060,22 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   __ ld_d(AT, TREG, in_bytes(JavaThread::active_handles_offset()));
   __ st_w(R0, AT, JNIHandleBlock::top_offset_in_bytes());
 
+  __ leave();
+
   // Any exception pending?
   __ ld_d(AT, TREG, in_bytes(Thread::pending_exception_offset()));
   __ bne(AT, R0, exception_pending);
 
-  // no exception, we're almost done
-
-  // Return
-  __ leave();
-
+  // We're done
   __ jr(RA);
+
   // Unexpected paths are out of line and go here
+
+  // forward the exception
+  __ bind(exception_pending);
+
+  __ jmp(StubRoutines::forward_exception_entry(), relocInfo::runtime_call_type);
+
   // Slow path locking & unlocking
   if (method->is_synchronized()) {
 
@@ -2166,18 +2171,6 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       relocInfo::runtime_call_type);
   restore_native_result(masm, ret_type, stack_slots);
   __ b(reguard_done);
-
-  // BEGIN EXCEPTION PROCESSING
-  // Forward  the exception
-  __ bind(exception_pending);
-
-  // pop our frame
-  //forward_exception_entry need return address on stack
-  __ addi_d(SP, FP, - 2 * wordSize);
-  __ pop(FP);
-
-  // and forward the exception
-  __ jmp(StubRoutines::forward_exception_entry(), relocInfo::runtime_call_type);
 
   __ flush();
 
@@ -2814,10 +2807,8 @@ SafepointBlob* SharedRuntime::generate_handler_blob(address call_ptr, int poll_t
   // Exception pending
 
   reg_save.restore_live_registers(masm);
-  //forward_exception_entry need return address on the stack
-  __ push(RA);
-  // TODO: confirm reloc
-  __ jmp((address)StubRoutines::forward_exception_entry(), relocInfo::runtime_call_type);
+
+  __ jmp(StubRoutines::forward_exception_entry(), relocInfo::runtime_call_type);
 
   // No exception case
   __ bind(noException);
@@ -2928,8 +2919,6 @@ RuntimeStub* SharedRuntime::generate_resolve_blob(address destination, const cha
   reg_save.restore_live_registers(masm);
 
   // exception pending => remove activation and forward to exception handler
-  //forward_exception_entry need return address on the stack
-  __ push(RA);
 
   __ st_d(R0, Address(TREG, JavaThread::vm_result_offset()));
   __ ld_d(V0, Address(TREG, Thread::pending_exception_offset()));

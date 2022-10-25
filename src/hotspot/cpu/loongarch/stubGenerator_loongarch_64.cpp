@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -381,18 +381,18 @@ class StubGenerator: public StubCodeGenerator {
   // converted into a Java-level exception.
   //
   // Contract with Java-level exception handlers:
-  // V0: exception
-  // V1: throwing pc
+  //   A0: exception
+  //   A1: throwing pc
   //
-  // NOTE: At entry of this stub, exception-pc must be on stack !!
+  // NOTE: At entry of this stub, exception-pc must be in RA !!
 
   address generate_forward_exception() {
     StubCodeMark mark(this, "StubRoutines", "forward exception");
     address start = __ pc();
 
-    // Upon entry, the sp points to the return address returning into
+    // Upon entry, RA points to the return address returning into
     // Java (interpreted or compiled) code; i.e., the return address
-    // throwing pc.
+    // becomes the throwing pc.
     //
     // Arguments pushed before the runtime call are still on the stack
     // but the exception handler will reset the stack pointer ->
@@ -403,38 +403,43 @@ class StubGenerator: public StubCodeGenerator {
     // make sure this code is only executed if there is a pending exception
     {
       Label L;
-      __ ld_d(AT, TREG, in_bytes(Thread::pending_exception_offset()));
+      __ ld_d(AT, Address(TREG, Thread::pending_exception_offset()));
       __ bnez(AT, L);
       __ stop("StubRoutines::forward exception: no pending exception (1)");
       __ bind(L);
     }
 #endif
 
-    // compute exception handler into T4
-    __ ld_d(A1, SP, 0);
-    __ call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::exception_handler_for_return_address), TREG, A1);
-    __ move(T4, V0);
-    __ pop(V1);
+    const Register exception_handler = T4;
 
-    __ ld_d(V0, TREG, in_bytes(Thread::pending_exception_offset()));
+    __ move(TSR, RA); // keep return address in callee-saved register
+    __ call_VM_leaf(
+         CAST_FROM_FN_PTR(address, SharedRuntime::exception_handler_for_return_address),
+         TREG, RA);
+    __ move(RA, TSR); // restore
+
+    __ move(exception_handler, A0);
+    __ move(A1, RA); // save throwing pc
+
+    __ ld_d(A0, TREG, in_bytes(Thread::pending_exception_offset()));
     __ st_d(R0, TREG, in_bytes(Thread::pending_exception_offset()));
 
 #ifdef ASSERT
     // make sure exception is set
     {
       Label L;
-      __ bne(V0, R0, L);
+      __ bnez(A0, L);
       __ stop("StubRoutines::forward exception: no pending exception (2)");
       __ bind(L);
     }
 #endif
 
     // continue at exception handler (return address removed)
-    // V0: exception
-    // T4: exception handler
-    // V1: throwing pc
-    __ verify_oop(V0);
-    __ jr(T4);
+    //   A0: exception
+    //   A1: throwing pc
+    __ verify_oop(A0);
+    __ jr(exception_handler);
+
     return start;
   }
 
@@ -4936,9 +4941,8 @@ class StubGenerator: public StubCodeGenerator {
     __ ld_d(S6, SP, S6_off * wordSize);
     __ ld_d(S7, SP, S7_off * wordSize);
 
-    // discard arguments
-    __ addi_d(SP, FP, -2 * wordSize); // epilog
-    __ pop(FP);
+    __ leave();
+
     // check for pending exceptions
 #ifdef ASSERT
     Label L;

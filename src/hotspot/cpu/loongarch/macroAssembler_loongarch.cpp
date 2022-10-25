@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2017, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2017, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -817,8 +817,8 @@ void MacroAssembler::call_VM_base(Register oop_result,
     Label L;
     ld_d(AT, java_thread, in_bytes(Thread::pending_exception_offset()));
     beq(AT, R0, L);
-    lipc(AT, before_call);
-    push(AT);
+    // reload RA that may have been modified by the entry_point
+    lipc(RA, before_call);
     jmp(StubRoutines::forward_exception_entry(), relocInfo::runtime_call_type);
     bind(L);
   }

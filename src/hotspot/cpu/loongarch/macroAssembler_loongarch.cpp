@@ -704,9 +704,9 @@ void MacroAssembler::call_VM(Register oop_result,
                              Register arg_1,
                              Register arg_2,
                              bool check_exceptions) {
-  if (arg_1!=A1) move(A1, arg_1);
-  if (arg_2!=A2) move(A2, arg_2);
+  if (arg_1 != A1) move(A1, arg_1);
   assert(arg_2 != A1, "smashed argument");
+  if (arg_2 != A2) move(A2, arg_2);
   call_VM_helper(oop_result, entry_point, 2, check_exceptions);
 }
 
@@ -716,9 +716,11 @@ void MacroAssembler::call_VM(Register oop_result,
                              Register arg_2,
                              Register arg_3,
                              bool check_exceptions) {
-  if (arg_1!=A1) move(A1, arg_1);
-  if (arg_2!=A2) move(A2, arg_2); assert(arg_2 != A1, "smashed argument");
-  if (arg_3!=A3) move(A3, arg_3); assert(arg_3 != A1 && arg_3 != A2, "smashed argument");
+  if (arg_1 != A1) move(A1, arg_1);
+  assert(arg_2 != A1, "smashed argument");
+  if (arg_2 != A2) move(A2, arg_2);
+  assert(arg_3 != A1 && arg_3 != A2, "smashed argument");
+  if (arg_3 != A3) move(A3, arg_3);
   call_VM_helper(oop_result, entry_point, 3, check_exceptions);
 }
 
@@ -746,7 +748,8 @@ void MacroAssembler::call_VM(Register oop_result,
                              Register arg_2,
                              bool check_exceptions) {
   if (arg_1 != A1) move(A1, arg_1);
-  if (arg_2 != A2) move(A2, arg_2); assert(arg_2 != A1, "smashed argument");
+  assert(arg_2 != A1, "smashed argument");
+  if (arg_2 != A2) move(A2, arg_2);
   call_VM(oop_result, last_java_sp, entry_point, 2, check_exceptions);
 }
 
@@ -758,8 +761,10 @@ void MacroAssembler::call_VM(Register oop_result,
                              Register arg_3,
                              bool check_exceptions) {
   if (arg_1 != A1) move(A1, arg_1);
-  if (arg_2 != A2) move(A2, arg_2); assert(arg_2 != A1, "smashed argument");
-  if (arg_3 != A3) move(A3, arg_3); assert(arg_3 != A1 && arg_3 != A2, "smashed argument");
+  assert(arg_2 != A1, "smashed argument");
+  if (arg_2 != A2) move(A2, arg_2);
+  assert(arg_3 != A1 && arg_3 != A2, "smashed argument");
+  if (arg_3 != A3) move(A3, arg_3);
   call_VM(oop_result, last_java_sp, entry_point, 3, check_exceptions);
 }
 
@@ -853,14 +858,17 @@ void MacroAssembler::call_VM_leaf(address entry_point, Register arg_0) {
 
 void MacroAssembler::call_VM_leaf(address entry_point, Register arg_0, Register arg_1) {
   if (arg_0 != A0) move(A0, arg_0);
-  if (arg_1 != A1) move(A1, arg_1); assert(arg_1 != A0, "smashed argument");
+  assert(arg_1 != A0, "smashed argument");
+  if (arg_1 != A1) move(A1, arg_1);
   call_VM_leaf(entry_point, 2);
 }
 
 void MacroAssembler::call_VM_leaf(address entry_point, Register arg_0, Register arg_1, Register arg_2) {
   if (arg_0 != A0) move(A0, arg_0);
-  if (arg_1 != A1) move(A1, arg_1); assert(arg_1 != A0, "smashed argument");
-  if (arg_2 != A2) move(A2, arg_2); assert(arg_2 != A0 && arg_2 != A1, "smashed argument");
+  assert(arg_1 != A0, "smashed argument");
+  if (arg_1 != A1) move(A1, arg_1);
+  assert(arg_2 != A0 && arg_2 != A1, "smashed argument");
+  if (arg_2 != A2) move(A2, arg_2);
   call_VM_leaf(entry_point, 3);
 }
 
@@ -878,7 +886,8 @@ void MacroAssembler::super_call_VM_leaf(address entry_point,
                                                    Register arg_1,
                                                    Register arg_2) {
   if (arg_1 != A0) move(A0, arg_1);
-  if (arg_2 != A1) move(A1, arg_2); assert(arg_2 != A0, "smashed argument");
+  assert(arg_2 != A0, "smashed argument");
+  if (arg_2 != A1) move(A1, arg_2);
   MacroAssembler::call_VM_leaf_base(entry_point, 2);
 }
 
@@ -887,8 +896,10 @@ void MacroAssembler::super_call_VM_leaf(address entry_point,
                                                    Register arg_2,
                                                    Register arg_3) {
   if (arg_1 != A0) move(A0, arg_1);
-  if (arg_2 != A1) move(A1, arg_2); assert(arg_2 != A0, "smashed argument");
-  if (arg_3 != A2) move(A2, arg_3); assert(arg_3 != A0 && arg_3 != A1, "smashed argument");
+  assert(arg_2 != A0, "smashed argument");
+  if (arg_2 != A1) move(A1, arg_2);
+  assert(arg_3 != A0 && arg_3 != A1, "smashed argument");
+  if (arg_3 != A2) move(A2, arg_3);
   MacroAssembler::call_VM_leaf_base(entry_point, 3);
 }
 

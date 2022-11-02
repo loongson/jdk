@@ -85,6 +85,8 @@ class InterpreterMacroAssembler: public MacroAssembler {
     ld_d(LVP, FP, frame::interpreter_frame_locals_offset * wordSize);
   }
 
+  void get_dispatch();
+
   // Helpers for runtime call arguments/results
   void get_method(Register reg) {
     ld_d(reg, FP, frame::interpreter_frame_method_offset * wordSize);

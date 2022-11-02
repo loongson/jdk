@@ -134,10 +134,6 @@ class StubGenerator: public StubCodeGenerator {
   // -1 [ return address       ]
   //  0 [                      ] <--- old sp = fp_after_call
   //
-  // Find a right place in the call_stub for S8.
-  // S8 will point to the starting point of Interpreter::dispatch_table(itos).
-  // It should be saved/restored before/after Java calls.
-  //
   enum call_stub_layout {
     RA_off             = -1,
     FP_off             = -2,
@@ -203,8 +199,6 @@ class StubGenerator: public StubCodeGenerator {
     __ fst_d(F29, FP, F29_off * wordSize);
     __ fst_d(F30, FP, F30_off * wordSize);
     __ fst_d(F31, FP, F31_off * wordSize);
-
-    __ li(S8, (long)Interpreter::dispatch_table(itos));
 
     // install Java thread in global register now we have saved
     // whatever value it held

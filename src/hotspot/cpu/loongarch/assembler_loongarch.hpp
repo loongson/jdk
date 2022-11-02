@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -81,6 +81,7 @@ constexpr FloatRegister j_farg7   = FA7;
 constexpr Register Rnext          = S1;
 constexpr Register Rmethod        = S3;
 constexpr Register Rsender        = S4;
+constexpr Register Rdispatch      = S8;
 
 constexpr Register V0             = A0;
 constexpr Register V1             = A1;

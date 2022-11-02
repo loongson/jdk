@@ -229,6 +229,9 @@ void InterpreterMacroAssembler::get_unsigned_2_byte_index_at_bcp(Register reg,
   bstrins_w(reg, AT, 15, 8);
 }
 
+void InterpreterMacroAssembler::get_dispatch() {
+  li(Rdispatch, (long)Interpreter::dispatch_table());
+}
 
 void InterpreterMacroAssembler::get_cache_index_at_bcp(Register index,
                                                        int bcp_offset,
@@ -521,25 +524,23 @@ void InterpreterMacroAssembler::dispatch_epilog(TosState state, int step) {
   dispatch_next(state, step);
 }
 
-// assume the next bytecode in T8.
 void InterpreterMacroAssembler::dispatch_base(TosState state,
                                               address* table,
                                               bool verifyoop,
                                               bool generate_poll) {
   if (VerifyActivationFrameSize) {
     Label L;
-
-    sub_d(T2, FP, SP);
+    sub_d(SCR1, FP, SP);
     int min_frame_size = (frame::sender_sp_offset -
-      frame::interpreter_frame_initial_sp_offset) * wordSize;
-    addi_d(T2, T2, -min_frame_size);
-    bge(T2, R0, L);
+                          frame::interpreter_frame_initial_sp_offset) * wordSize;
+    addi_d(SCR1, SCR1, -min_frame_size);
+    bge(SCR1, R0, L);
     stop("broken stack frame");
     bind(L);
   }
 
   if (verifyoop && state == atos) {
-    verify_oop(FSR);
+    verify_oop(A0);
   }
 
   Label safepoint;
@@ -548,45 +549,25 @@ void InterpreterMacroAssembler::dispatch_base(TosState state,
 
   if (needs_thread_local_poll) {
     NOT_PRODUCT(block_comment("Thread-local Safepoint poll"));
-    ld_d(T3, TREG, in_bytes(JavaThread::polling_word_offset()));
-    andi(T3, T3, SafepointMechanism::poll_bit());
-    bne(T3, R0, safepoint);
+    ld_d(SCR1, TREG, in_bytes(JavaThread::polling_word_offset()));
+    andi(SCR1, SCR1, SafepointMechanism::poll_bit());
+    bnez(SCR1, safepoint);
   }
 
-  if((long)table >= (long)Interpreter::dispatch_table(btos) &&
-     (long)table <= (long)Interpreter::dispatch_table(vtos)) {
-    int table_size = (long)Interpreter::dispatch_table(itos) -
-                     (long)Interpreter::dispatch_table(stos);
-    int table_offset = ((int)state - (int)itos) * table_size;
-
-    // S8 points to the starting address of Interpreter::dispatch_table(itos).
-    // See StubGenerator::generate_call_stub(address& return_address) for the initialization of S8.
-    if (table_offset != 0) {
-      if (is_simm(table_offset, 12)) {
-        alsl_d(T3, Rnext, S8, LogBytesPerWord - 1);
-        ld_d(T3, T3, table_offset);
-      } else {
-        li(T2, table_offset);
-        alsl_d(T3, Rnext, S8, LogBytesPerWord - 1);
-        ldx_d(T3, T2, T3);
-      }
-    } else {
-      alsl_d(T2, Rnext, S8, LogBytesPerWord - 1);
-      ld_d(T3, T2, 0);
-    }
+  if (table == Interpreter::dispatch_table(state)) {
+    ori(SCR2, Rnext, state * DispatchTable::length);
+    ld_d(SCR2, Address(Rdispatch, SCR2, Address::times_8));
   } else {
-    li(T3, (long)table);
-    alsl_d(T2, Rnext, T3, LogBytesPerWord - 1);
-    ld_d(T3, T2, 0);
+    li(SCR2, (long)table);
+    ld_d(SCR2, Address(SCR2, Rnext, Address::times_8));
   }
-  jr(T3);
+  jr(SCR2);
 
   if (needs_thread_local_poll) {
     bind(safepoint);
-    li(T3, (long)safepoint_table);
-    alsl_d(T2, Rnext, T3, LogBytesPerWord - 1);
-    ld_d(T3, T2, 0);
-    jr(T3);
+    li(SCR2, (long)safepoint_table);
+    ld_d(SCR2, Address(SCR2, Rnext, Address::times_8));
+    jr(SCR2);
   }
 }
 

@@ -2584,8 +2584,6 @@ void SharedRuntime::generate_uncommon_trap_blob() {
   assert(framesize % 4 == 0, "sp not 16-byte aligned");
   address start = __ pc();
 
-   // S8 be used in C2
-  __ li(S8, (long)Interpreter::dispatch_table(itos));
   // Push self-frame.
   __ addi_d(SP, SP, -framesize * BytesPerInt);
 

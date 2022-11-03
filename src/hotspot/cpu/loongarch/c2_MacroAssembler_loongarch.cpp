@@ -152,7 +152,7 @@ void C2_MacroAssembler::fast_unlock(Register oop, Register box, Register flag,
 
   // Handle existing monitor.
   ld_d(tmp, oop, oopDesc::mark_offset_in_bytes());
-  andi(AT, disp_hdr, markWord::monitor_value);
+  andi(AT, tmp, markWord::monitor_value);
   bnez(AT, object_has_monitor);
 
   if (!UseHeavyMonitors) {

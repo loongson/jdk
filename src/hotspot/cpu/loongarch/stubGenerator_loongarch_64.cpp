@@ -69,10 +69,6 @@
 //#define BIND(label) bind(label); BLOCK_COMMENT(#label ":")
 const int MXCSR_MASK = 0xFFC0;  // Mask out any pending exceptions
 
-OopMap* continuation_enter_setup(MacroAssembler* masm, int& stack_slots);
-void fill_continuation_entry(MacroAssembler* masm);
-void continuation_enter_cleanup(MacroAssembler* masm);
-
 // Stub Code definitions
 
 class StubGenerator: public StubCodeGenerator {
@@ -5585,76 +5581,3 @@ void StubGenerator_generate(CodeBuffer* code, int phase) {
   }
   StubGenerator g(code, phase);
 }
-
-#undef __
-#define __ masm->
-
-// on exit, sp points to the ContinuationEntry
-OopMap* continuation_enter_setup(MacroAssembler* masm, int& stack_slots) {
-  assert(ContinuationEntry::size() % VMRegImpl::stack_slot_size == 0, "");
-  assert(in_bytes(ContinuationEntry::cont_offset())  % VMRegImpl::stack_slot_size == 0, "");
-  assert(in_bytes(ContinuationEntry::chunk_offset()) % VMRegImpl::stack_slot_size == 0, "");
-
-  stack_slots += checked_cast<int>(ContinuationEntry::size()) / wordSize;
-  __ li(AT, checked_cast<int>(ContinuationEntry::size()));
-  __ sub_d(SP, SP, AT);
-
-  OopMap* map = new OopMap(((int)ContinuationEntry::size() + wordSize) / VMRegImpl::stack_slot_size, 0 /* arg_slots*/);
-  ContinuationEntry::setup_oopmap(map);
-
-  __ ld_d(AT, Address(TREG, JavaThread::cont_entry_offset()));
-  __ st_d(AT, Address(SP, ContinuationEntry::parent_offset()));
-  __ st_d(SP, Address(TREG, JavaThread::cont_entry_offset()));
-
-  return map;
-}
-
-// on entry j_rarg0 points to the continuation
-//          SP points to ContinuationEntry
-//          j_rarg2 -- isVirtualThread
-void fill_continuation_entry(MacroAssembler* masm) {
-#ifdef ASSERT
-  __ li(AT, ContinuationEntry::cookie_value());
-  __ st_w(AT, Address(SP, ContinuationEntry::cookie_offset()));
-#endif
-
-  __ st_d(j_rarg0, Address(SP, ContinuationEntry::cont_offset()));
-  __ st_w(j_rarg2, Address(SP, ContinuationEntry::flags_offset()));
-  __ st_d(R0, Address(SP, ContinuationEntry::chunk_offset()));
-  __ st_w(R0, Address(SP, ContinuationEntry::argsize_offset()));
-  __ st_w(R0, Address(SP, ContinuationEntry::pin_count_offset()));
-
-  __ ld_d(AT, Address(TREG, JavaThread::cont_fastpath_offset()));
-  __ st_d(AT, Address(SP, ContinuationEntry::parent_cont_fastpath_offset()));
-  __ ld_d(AT, Address(TREG, JavaThread::held_monitor_count_offset()));
-  __ st_d(AT, Address(SP, ContinuationEntry::parent_held_monitor_count_offset()));
-
-  __ st_d(R0, Address(TREG, JavaThread::cont_fastpath_offset()));
-  __ st_d(R0, Address(TREG, JavaThread::held_monitor_count_offset()));
-}
-
-// on entry, sp points to the ContinuationEntry
-// on exit, fp points to the spilled fp + 2 * wordSize in the entry frame
-void continuation_enter_cleanup(MacroAssembler* masm) {
-#ifndef PRODUCT
-  Label OK;
-  __ ld_d(AT, Address(TREG, JavaThread::cont_entry_offset()));
-  __ beq(SP, AT, OK);
-  __ stop("incorrect sp for cleanup");
-  __ bind(OK);
-#endif
-
-  __ ld_d(AT, Address(SP, ContinuationEntry::parent_cont_fastpath_offset()));
-  __ st_d(AT, Address(TREG, JavaThread::cont_fastpath_offset()));
-  __ ld_d(AT, Address(SP, ContinuationEntry::parent_held_monitor_count_offset()));
-  __ st_d(AT, Address(TREG, JavaThread::held_monitor_count_offset()));
-
-  __ ld_d(AT, Address(SP, ContinuationEntry::parent_offset()));
-  __ st_d(AT, Address(TREG, JavaThread::cont_entry_offset()));
-
-  // add 2 extra words to match up with leave()
-  __ li(AT, (int)ContinuationEntry::size() + 2 * wordSize);
-  __ add_d(FP, SP, AT);
-}
-
-#undef __

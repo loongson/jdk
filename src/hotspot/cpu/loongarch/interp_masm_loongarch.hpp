@@ -175,7 +175,7 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   // jump to an invoked target
   void prepare_to_jump_from_interpreted();
-  void jump_from_interpreted(Register method, Register temp);
+  void jump_from_interpreted(Register method);
 
 
   // Returning from interpreted functions

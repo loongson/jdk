@@ -483,29 +483,30 @@ void InterpreterMacroAssembler::store_ptr(int n, Register val) {
   st_d(val, SP, Interpreter::expr_offset_in_bytes(n));
 }
 
+void InterpreterMacroAssembler::prepare_to_jump_from_interpreted() {
+  // set sender sp
+  move(Rsender, SP);
+  // record last_sp
+  st_d(SP, FP, frame::interpreter_frame_last_sp_offset * wordSize);
+}
+
 // Jump to from_interpreted entry of a call unless single stepping is possible
 // in this thread in which case we must call the i2i entry
-void InterpreterMacroAssembler::jump_from_interpreted(Register method, Register temp) {
-  // record last_sp
-  move(Rsender, SP);
-  st_d(SP, FP, frame::interpreter_frame_last_sp_offset * wordSize);
-
+void InterpreterMacroAssembler::jump_from_interpreted(Register method) {
+  prepare_to_jump_from_interpreted();
   if (JvmtiExport::can_post_interpreter_events()) {
     Label run_compiled_code;
     // JVMTI events, such as single-stepping, are implemented partly by avoiding running
     // compiled code in threads for which the event is enabled.  Check here for
     // interp_only_mode if these events CAN be enabled.
-
-    // interp_only is an int, on little endian it is sufficient to test the byte only
-    // Is a cmpl faster?
-    ld_w(AT, TREG, in_bytes(JavaThread::interp_only_mode_offset()));
-    beq(AT, R0, run_compiled_code);
-    ld_d(AT, method, in_bytes(Method::interpreter_entry_offset()));
+    ld_wu(AT, Address(TREG, JavaThread::interp_only_mode_offset()));
+    beqz(AT, run_compiled_code);
+    ld_d(AT, Address(method, Method::interpreter_entry_offset()));
     jr(AT);
     bind(run_compiled_code);
   }
 
-  ld_d(AT, method, in_bytes(Method::from_interpreted_offset()));
+  ld_d(AT, Address(method, Method::from_interpreted_offset()));
   jr(AT);
 }
 

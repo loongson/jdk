@@ -3257,7 +3257,7 @@ void TemplateTable::invokevirtual_helper(Register index,
   // is_virtual: true
   __ profile_arguments_type(T2, method, T4, true);
 
-  __ jump_from_interpreted(method, T2);
+  __ jump_from_interpreted(method);
 
   __ bind(notFinal);
 
@@ -3271,7 +3271,7 @@ void TemplateTable::invokevirtual_helper(Register index,
   // get target Method & entry point
   __ lookup_virtual_method(T2, index, method);
   __ profile_arguments_type(T2, method, T4, true);
-  __ jump_from_interpreted(method, T2);
+  __ jump_from_interpreted(method);
 }
 
 void TemplateTable::invokevirtual(int byte_no) {
@@ -3299,7 +3299,7 @@ void TemplateTable::invokespecial(int byte_no) {
   // is_virtual: false
   __ profile_arguments_type(T8, Rmethod, T4, false);
 
-  __ jump_from_interpreted(Rmethod, T4);
+  __ jump_from_interpreted(Rmethod);
   __ move(T0, T3);
 }
 
@@ -3316,7 +3316,7 @@ void TemplateTable::invokestatic(int byte_no) {
   // is_virtual: false
   __ profile_arguments_type(T8, Rmethod, T4, false);
 
-  __ jump_from_interpreted(Rmethod, T4);
+  __ jump_from_interpreted(Rmethod);
 }
 
 // i have no idea what to do here, now. for future change. FIXME.
@@ -3383,7 +3383,7 @@ void TemplateTable::invokeinterface(int byte_no) {
   __ profile_final_call(T1);
   __ profile_arguments_type(T1, Rmethod, T0, true);
 
-  __ jump_from_interpreted(Rmethod, T1);
+  __ jump_from_interpreted(Rmethod);
   // no return from above
   __ bind(notVFinal);
 
@@ -3437,7 +3437,7 @@ void TemplateTable::invokeinterface(int byte_no) {
   // do the call
   // T3: receiver
   // Rmethod: Method*
-  __ jump_from_interpreted(Rmethod, T1);
+  __ jump_from_interpreted(Rmethod);
   __ should_not_reach_here();
 
   // exception handling code follows...
@@ -3497,7 +3497,7 @@ void TemplateTable::invokehandle(int byte_no) {
    // is_virtual: true
    __ profile_arguments_type(T8, T2_method, T4, true);
 
-  __ jump_from_interpreted(T2_method, T4);
+  __ jump_from_interpreted(T2_method);
 }
 
  void TemplateTable::invokedynamic(int byte_no) {
@@ -3524,7 +3524,7 @@ void TemplateTable::invokehandle(int byte_no) {
 
    __ verify_oop(T2_callsite);
 
-   __ jump_from_interpreted(Rmethod, T4);
+   __ jump_from_interpreted(Rmethod);
  }
 
 //-----------------------------------------------------------------------------

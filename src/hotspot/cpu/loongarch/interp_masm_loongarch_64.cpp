@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -630,22 +630,13 @@ void InterpreterMacroAssembler::dispatch_via(TosState state, address* table) {
 //       installs IllegalMonitorStateException
 //    Else
 //       no error processing
-// used registers : T1, T2, T3, T8
-// T1 : thread, method access flags
-// T2 : monitor entry pointer
-// T3 : method, monitor top
-// T8 : unlock flag
-void InterpreterMacroAssembler::remove_activation(
-        TosState state,
-        Register ret_addr,
-        bool throw_monitor_exception,
-        bool install_monitor_exception,
-  bool notify_jvmdi) {
-  // Note: Registers V0, V1 and F0, F1 may be in use for the result
-  // check if synchronized method
-  Label unlocked, unlock, no_unlock;
+void InterpreterMacroAssembler::remove_activation(TosState state,
+                                                  bool throw_monitor_exception,
+                                                  bool install_monitor_exception,
+                                                  bool notify_jvmdi) {
+  const Register monitor_reg = j_rarg0;
 
-  const Register monitor_reg = T0;
+  Label unlocked, unlock, no_unlock;
 
   // The below poll is for the stack watermark barrier. It allows fixing up frames lazily,
   // that would normally not be safe to use. Such bad returns into unsafe territory of
@@ -654,6 +645,7 @@ void InterpreterMacroAssembler::remove_activation(
   Label fast_path;
   safepoint_poll(slow_path, TREG, true /* at_return */, false /* acquire */, false /* in_nmethod */);
   b(fast_path);
+
   bind(slow_path);
   push(state);
   Label L;
@@ -663,20 +655,24 @@ void InterpreterMacroAssembler::remove_activation(
   super_call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::at_unwind), TREG);
   reset_last_Java_frame(true);
   pop(state);
+
   bind(fast_path);
 
-  // get the value of _do_not_unlock_if_synchronized into T8
-  ld_b(T8, TREG, in_bytes(JavaThread::do_not_unlock_if_synchronized_offset()));
-  // reset the flag
-  st_b(R0, TREG, in_bytes(JavaThread::do_not_unlock_if_synchronized_offset()));
+  // get the value of _do_not_unlock_if_synchronized and then reset the flag
+  const Address do_not_unlock_if_synchronized(TREG,
+    in_bytes(JavaThread::do_not_unlock_if_synchronized_offset()));
+  ld_bu(TSR, do_not_unlock_if_synchronized);
+  st_b(R0, do_not_unlock_if_synchronized);
+
   // get method access flags
-  ld_d(T3, FP, frame::interpreter_frame_method_offset * wordSize);
-  ld_w(T1, T3, in_bytes(Method::access_flags_offset()));
-  andi(T1, T1, JVM_ACC_SYNCHRONIZED);
-  beq(T1, R0, unlocked);
+  ld_d(AT, FP, frame::interpreter_frame_method_offset * wordSize);
+  ld_wu(AT, AT, in_bytes(Method::access_flags_offset()));
+  andi(AT, AT, JVM_ACC_SYNCHRONIZED);
+  beqz(AT, unlocked);
 
   // Don't unlock anything if the _do_not_unlock_if_synchronized flag is set.
-  bne(T8, R0, no_unlock);
+  bnez(TSR, no_unlock);
+
   // unlock monitor
   push(state); // save result
 
@@ -684,10 +680,11 @@ void InterpreterMacroAssembler::remove_activation(
   // synchronized method. However, need to check that the object has
   // not been unlocked by an explicit monitorexit bytecode.
   addi_d(monitor_reg, FP, frame::interpreter_frame_initial_sp_offset * wordSize
-      - (int)sizeof(BasicObjectLock));
+                          - (int) sizeof(BasicObjectLock));
+
   // address of first monitor
-  ld_d(T1, monitor_reg, BasicObjectLock::obj_offset_in_bytes());
-  bnez(T1, unlock);
+  ld_d(AT, monitor_reg, BasicObjectLock::obj_offset_in_bytes());
+  bnez(AT, unlock);
 
   pop(state);
   if (throw_monitor_exception) {
@@ -714,7 +711,7 @@ void InterpreterMacroAssembler::remove_activation(
   // objects has been unlocked)
   bind(unlocked);
 
-  // V0, V1: Might contain return value
+  // A0: Might contain return value
 
   // Check that all monitors are unlocked
   {
@@ -726,8 +723,8 @@ void InterpreterMacroAssembler::remove_activation(
     bind(restart);
     // points to current entry, starting with top-most entry
     ld_d(monitor_reg, monitor_block_top);
-    // points to word before bottom of monitor block
-    addi_d(T3, FP, frame::interpreter_frame_initial_sp_offset * wordSize);
+    // points to word before bottom of monitor block, should be callee-saved
+    addi_d(TSR, FP, frame::interpreter_frame_initial_sp_offset * wordSize);
     b(entry);
 
     // Entry already locked, need to throw exception
@@ -757,17 +754,19 @@ void InterpreterMacroAssembler::remove_activation(
     }
 
     bind(loop);
-    ld_d(T1, monitor_reg, BasicObjectLock::obj_offset_in_bytes());
-    bnez(T1, exception);// check if current entry is used
+    // check if current entry is used
+    ld_d(AT, monitor_reg, BasicObjectLock::obj_offset_in_bytes());
+    bnez(AT, exception);
 
-    addi_d(monitor_reg, monitor_reg, entry_size);// otherwise advance to next entry
+    // otherwise advance to next entry
+    addi_d(monitor_reg, monitor_reg, entry_size);
     bind(entry);
-    bne(monitor_reg, T3, loop);  // check if bottom reached
+    bne(monitor_reg, TSR, loop); // check if bottom reached
   }
 
   bind(no_unlock);
 
-  // jvmpi support (jvmdi does not generate MethodExit on exception / popFrame)
+  // jvmpi support
   if (notify_jvmdi) {
     notify_method_exit(state, NotifyJVMTI); // preserve TOSCA
   } else {
@@ -775,14 +774,13 @@ void InterpreterMacroAssembler::remove_activation(
   }
 
   // remove activation
-  ld_d(TSR, FP, frame::interpreter_frame_sender_sp_offset * wordSize);
+  ld_d(Rsender, FP, frame::interpreter_frame_sender_sp_offset * wordSize);
   if (StackReservedPages > 0) {
     // testing if reserved zone needs to be re-enabled
     Label no_reserved_zone_enabling;
 
     ld_d(AT, Address(TREG, JavaThread::reserved_stack_activation_offset()));
-    sub_d(AT, TSR, AT);
-    bge(R0, AT, no_reserved_zone_enabling);
+    bge(AT, Rsender, no_reserved_zone_enabling);
 
     call_VM_leaf(
       CAST_FROM_FN_PTR(address, SharedRuntime::enable_stack_reserved_zone), TREG);
@@ -792,9 +790,12 @@ void InterpreterMacroAssembler::remove_activation(
 
     bind(no_reserved_zone_enabling);
   }
-  ld_d(ret_addr, FP, frame::return_addr_offset * wordSize);
-  ld_d(FP, FP, frame::link_offset * wordSize);
-  move(SP, TSR); // set sp to sender sp
+
+  // remove frame anchor
+  leave();
+
+  // set sp to sender sp
+  move(SP, Rsender);
 }
 
 // Lock object

@@ -2143,8 +2143,8 @@ void TemplateTable::_return(TosState state) {
     __ narrow(A0);
   }
 
-  __ remove_activation(state, T4);
-  __ jr(T4);
+  __ remove_activation(state);
+  __ jr(RA);
 }
 
 // ----------------------------------------------------------------------------

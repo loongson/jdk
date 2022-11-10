@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1823,18 +1823,21 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
     __ move(A0, TREG);
     __ super_call_VM_leaf(CAST_FROM_FN_PTR(address, Deoptimization::popframe_preserve_args), A0, A1, A2);
 
-    __ remove_activation(vtos, T4, false, false, false);
+    __ remove_activation(vtos,
+                         /* throw_monitor_exception */ false,
+                         /* install_monitor_exception */ false,
+                         /* notify_jvmdi */ false);
 
     // Inform deoptimization that it is responsible for restoring these arguments
     __ li(AT, JavaThread::popframe_force_deopt_reexecution_bit);
     __ st_w(AT, TREG, in_bytes(JavaThread::popframe_condition_offset()));
     // Continue in deoptimization handler
-    __ jr(T4);
+    __ jr(RA);
 
     __ bind(caller_not_deoptimized);
   }
 
-  __ remove_activation(vtos, T3,
+  __ remove_activation(vtos,
                        /* throw_monitor_exception */ false,
                        /* install_monitor_exception */ false,
                        /* notify_jvmdi */ false);
@@ -1915,7 +1918,7 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
   __ pop(T0);
   __ st_d(T0, TREG, in_bytes(JavaThread::vm_result_offset()));
   // remove the activation (without doing throws on illegalMonitorExceptions)
-  __ remove_activation(vtos, T3, false, true, false);
+  __ remove_activation(vtos, false, true, false);
   // restore exception
   __ get_vm_result(T0, TREG);
 
@@ -1924,17 +1927,17 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
   // the following registers set up:
   //
   // T0: exception
-  // T1: return address/pc that threw exception
+  // RA: return address/pc that threw exception
   // SP: expression stack of caller
   // FP: fp of caller
-  __ push2(T0, T3);             // save exception and return address
-  __ move(A1, T3);
-  __ super_call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::exception_handler_for_return_address), TREG, A1);
-  __ move(T4, V0);                             // save exception handler
-  __ pop2(V0, V1);                   // restore return address and exception
+  __ push2(T0, RA);             // save exception and return address
+  __ super_call_VM_leaf(CAST_FROM_FN_PTR(address,
+                        SharedRuntime::exception_handler_for_return_address), TREG, RA);
+  __ move(T4, A0);              // save exception handler
+  __ pop2(A0, A1);              // restore return address and exception
 
   // Note that an "issuing PC" is actually the next PC after the call
-  __ jr(T4);                                   // jump to exception handler of caller
+  __ jr(T4);                    // jump to exception handler of caller
 }
 
 
@@ -1956,11 +1959,11 @@ address TemplateInterpreterGenerator::generate_earlyret_entry_for(TosState state
   __ li(AT, JvmtiThreadState::earlyret_inactive);
   __ st_w(AT, cond_addr);
 
-  __ remove_activation(state, T0,
-                         false, /* throw_monitor_exception */
-                         false, /* install_monitor_exception */
-                         true); /* notify_jvmdi */
-  __ jr(T0);
+  __ remove_activation(state,
+                       false, /* throw_monitor_exception */
+                       false, /* install_monitor_exception */
+                       true); /* notify_jvmdi */
+  __ jr(RA);
 
   return entry;
 } // end of ForceEarlyReturn support

@@ -24,7 +24,6 @@
  */
 
 #include "precompiled.hpp"
-#include "jvm.h"
 #include "asm/assembler.hpp"
 #include "asm/assembler.inline.hpp"
 #include "asm/macroAssembler.inline.hpp"
@@ -35,6 +34,7 @@
 #include "gc/shared/collectedHeap.inline.hpp"
 #include "interpreter/bytecodeHistogram.hpp"
 #include "interpreter/interpreter.hpp"
+#include "jvm.h"
 #include "memory/resourceArea.hpp"
 #include "memory/universe.hpp"
 #include "nativeInst_loongarch.hpp"

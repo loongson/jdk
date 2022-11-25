@@ -976,6 +976,8 @@ const bool Matcher::match_rule_supported(int opcode) {
 
   switch (opcode) {
     case Op_RoundDoubleMode:
+    case Op_ConvF2HF:
+    case Op_ConvHF2F:
       if (!UseLSX)
         return false;
     case Op_PopCountI:
@@ -10620,6 +10622,30 @@ instruct convI2F_reg( regF dst, mRegI src ) %{
   %}
 
   ins_pipe( fpu_regF_regF );
+%}
+
+instruct convF2HF_reg_reg(mRegI dst, regF src, regF tmp) %{
+  predicate(UseLSX);
+  match(Set dst (ConvF2HF src));
+  format %{ "fcvt_f2hf    $dst, $src\t# TMEP($tmp) @convF2HF_reg_reg" %}
+  effect(TEMP tmp);
+  ins_encode %{
+      __ vfcvt_h_s($tmp$$FloatRegister, $src$$FloatRegister, $src$$FloatRegister);
+      __ vpickve2gr_h($dst$$Register, $tmp$$FloatRegister, 0);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct convHF2F_reg_reg(regF dst, mRegI src, regF tmp) %{
+  predicate(UseLSX);
+  match(Set dst (ConvHF2F src));
+  format %{ "fcvt_hf2f    $dst, $src\t# TMEP($tmp) @convHF2F_reg_reg" %}
+  effect(TEMP tmp);
+  ins_encode %{
+      __ vinsgr2vr_h($tmp$$FloatRegister, $src$$Register, 0);
+      __ vfcvtl_s_h($dst$$FloatRegister, $tmp$$FloatRegister);
+  %}
+  ins_pipe(pipe_slow);
 %}
 
 instruct roundD(regD dst, regD src, immI rmode) %{

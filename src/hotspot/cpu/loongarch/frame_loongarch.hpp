@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -105,6 +105,13 @@
 
     // size, in words, of frame metadata (e.g. pc and link)
     metadata_words                                   =  2,
+    // size, in words, of metadata at frame bottom, i.e. it is not part of the
+    // caller/callee overlap
+    metadata_words_at_bottom                         = metadata_words,
+    // size, in words, of frame metadata at the frame top, i.e. it is located
+    // between a callee frame and its stack arguments, where it is part
+    // of the caller/callee overlap
+    metadata_words_at_top                            = 0,
     // in bytes
     frame_alignment                                  =  16,
     // size, in words, of maximum shift in frame position due to alignment

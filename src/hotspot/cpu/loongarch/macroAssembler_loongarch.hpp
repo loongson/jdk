@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -630,6 +630,12 @@ class MacroAssembler: public Assembler {
     Assembler::bind(L);
     code()->clear_last_insn();
   }
+
+  // ChaCha20 functions support block
+  void cc20_quarter_round(FloatRegister aVec, FloatRegister bVec,
+                          FloatRegister cVec, FloatRegister dVec);
+  void cc20_shift_lane_org(FloatRegister bVec, FloatRegister cVec,
+                           FloatRegister dVec, bool colToDiag);
 
   // CRC32 code for java.util.zip.CRC32::update() intrinsic.
   void update_byte_crc32(Register crc, Register val, Register table);

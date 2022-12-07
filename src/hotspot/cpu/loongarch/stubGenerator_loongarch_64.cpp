@@ -4531,6 +4531,149 @@ class StubGenerator: public StubCodeGenerator {
     return start;
   }
 
+  // ChaCha20 block function.  This version parallelizes by loading
+  // individual 32-bit state elements into vectors for four blocks
+  //
+  // state (int[16]) = c_rarg0
+  // keystream (byte[1024]) = c_rarg1
+  // return - number of bytes of keystream (always 256)
+  address generate_chacha20Block_blockpar() {
+    Label L_twoRounds, L_cc20_const;
+    // Add masks for 4-block ChaCha20 Block calculations,
+    // creates a +0/+1/+2/+3 add overlay.
+    __ bind(L_cc20_const);
+    __ emit_int64(0x0000000000000001UL);
+    __ emit_int64(0x0000000000000000UL);
+
+    __ align(CodeEntryAlignment);
+    StubCodeMark mark(this, "StubRoutines", "chacha20Block");
+    address start = __ pc();
+    __ enter();
+
+    int i;
+    const Register state = c_rarg0;
+    const Register keystream = c_rarg1;
+    const Register loopCtr = SCR1;
+    const Register tmpAddr = SCR2;
+
+    const FloatRegister aState = F0;
+    const FloatRegister bState = F1;
+    const FloatRegister cState = F2;
+    const FloatRegister dState = F3;
+    const FloatRegister origCtrState = F20;
+    const FloatRegister dState1 = F21;
+    const FloatRegister dState2 = F22;
+    const FloatRegister dState3 = F23;
+
+    // Organize SIMD registers in four arrays that facilitates
+    // putting repetitive opcodes into loop structures.
+    const FloatRegister aVec[4] = {
+      F4, F5, F6, F7
+    };
+    const FloatRegister bVec[4] = {
+      F8, F9, F10, F11
+    };
+    const FloatRegister cVec[4] = {
+      F12, F13, F14, F15
+    };
+    const FloatRegister dVec[4] = {
+      F16, F17, F18, F19
+    };
+
+    // Load the initial state in columnar orientation and then copy
+    // that starting state to the working register set.
+    // Also load the address of the add mask for later use in handling
+    // multi-block counter increments.
+    __ vld(aState, state,  0);
+    __ vld(bState, state, 16);
+    __ vld(cState, state, 32);
+    __ vld(dState, state, 48);
+    __ lipc(tmpAddr, L_cc20_const);
+    __ vld(origCtrState, tmpAddr, 0);
+    __ vadd_w(dState1, dState, origCtrState);
+    __ vadd_w(dState2, dState1, origCtrState);
+    __ vadd_w(dState3, dState2, origCtrState);
+    for (i = 0; i < 4; i++) {
+      __ vori_b(aVec[i], aState, 0);
+      __ vori_b(bVec[i], bState, 0);
+      __ vori_b(cVec[i], cState, 0);
+    }
+    __ vori_b(dVec[0], dState, 0);
+    __ vori_b(dVec[1], dState1, 0);
+    __ vori_b(dVec[2], dState2, 0);
+    __ vori_b(dVec[3], dState3, 0);
+
+    // Set up the 10 iteration loop and perform all 8 quarter round ops
+    __ li(loopCtr, 10);
+    __ bind(L_twoRounds);
+
+    // The first quarter round macro call covers the first 4 QR operations:
+    //  Qround(state, 0, 4, 8,12)
+    //  Qround(state, 1, 5, 9,13)
+    //  Qround(state, 2, 6,10,14)
+    //  Qround(state, 3, 7,11,15)
+    __ cc20_quarter_round(aVec[0], bVec[0], cVec[0], dVec[0]);
+    __ cc20_quarter_round(aVec[1], bVec[1], cVec[1], dVec[1]);
+    __ cc20_quarter_round(aVec[2], bVec[2], cVec[2], dVec[2]);
+    __ cc20_quarter_round(aVec[3], bVec[3], cVec[3], dVec[3]);
+
+    // Shuffle the bVec/cVec/dVec to reorganize the state vectors
+    // to diagonals. The aVec does not need to change orientation.
+    __ cc20_shift_lane_org(bVec[0], cVec[0], dVec[0], true);
+    __ cc20_shift_lane_org(bVec[1], cVec[1], dVec[1], true);
+    __ cc20_shift_lane_org(bVec[2], cVec[2], dVec[2], true);
+    __ cc20_shift_lane_org(bVec[3], cVec[3], dVec[3], true);
+
+    // The second set of operations on the vectors covers the second 4 quarter
+    // round operations, now acting on the diagonals:
+    //  Qround(state, 0, 5,10,15)
+    //  Qround(state, 1, 6,11,12)
+    //  Qround(state, 2, 7, 8,13)
+    //  Qround(state, 3, 4, 9,14)
+    __ cc20_quarter_round(aVec[0], bVec[0], cVec[0], dVec[0]);
+    __ cc20_quarter_round(aVec[1], bVec[1], cVec[1], dVec[1]);
+    __ cc20_quarter_round(aVec[2], bVec[2], cVec[2], dVec[2]);
+    __ cc20_quarter_round(aVec[3], bVec[3], cVec[3], dVec[3]);
+
+    // Before we start the next iteration, we need to perform shuffles
+    // on the b/c/d vectors to move them back to columnar organizations
+    // from their current diagonal orientation.
+    __ cc20_shift_lane_org(bVec[0], cVec[0], dVec[0], false);
+    __ cc20_shift_lane_org(bVec[1], cVec[1], dVec[1], false);
+    __ cc20_shift_lane_org(bVec[2], cVec[2], dVec[2], false);
+    __ cc20_shift_lane_org(bVec[3], cVec[3], dVec[3], false);
+
+    // Decrement and iterate
+    __ addi_d(loopCtr, loopCtr, -1);
+    __ bnez(loopCtr, L_twoRounds);
+
+    // Add the original start state back into the current state.
+    for (i = 0; i < 4; i++) {
+      __ vadd_w(aVec[i], aVec[i], aState);
+      __ vadd_w(bVec[i], bVec[i], bState);
+      __ vadd_w(cVec[i], cVec[i], cState);
+    }
+    __ vadd_w(dVec[0], dVec[0], dState);
+    __ vadd_w(dVec[1], dVec[1], dState1);
+    __ vadd_w(dVec[2], dVec[2], dState2);
+    __ vadd_w(dVec[3], dVec[3], dState3);
+
+    // Write the data to the keystream array
+    for (i = 0; i < 4; i++) {
+        __ vst(aVec[i], keystream, 0);
+        __ vst(bVec[i], keystream, 16);
+        __ vst(cVec[i], keystream, 32);
+        __ vst(dVec[i], keystream, 48);
+        __ addi_d(keystream, keystream, 64);
+    }
+
+    __ li(A0, 256);             // Return length of output keystream
+    __ leave();
+    __ jr(RA);
+
+    return start;
+  }
+
   // Arguments:
   //
   // Input:
@@ -5597,6 +5740,10 @@ class StubGenerator: public StubCodeGenerator {
 
     if (UseSHA256Intrinsics) {
       generate_sha256_implCompress("sha256_implCompress", StubRoutines::_sha256_implCompress, StubRoutines::_sha256_implCompressMB);
+    }
+
+    if (UseChaCha20Intrinsics) {
+      StubRoutines::_chacha20Block = generate_chacha20Block_blockpar();
     }
 
     generate_string_indexof_stubs();

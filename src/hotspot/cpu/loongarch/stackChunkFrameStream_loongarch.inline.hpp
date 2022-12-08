@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -75,12 +75,6 @@ template <ChunkFrames frame_kind>
 inline intptr_t* StackChunkFrameStream<frame_kind>::unextended_sp_for_interpreter_frame() const {
   assert_is_interpreted_and_frame_type_mixed();
   return derelativize(frame::interpreter_frame_last_sp_offset);
-}
-
-template <ChunkFrames frame_kind>
-intptr_t* StackChunkFrameStream<frame_kind>::next_sp_for_interpreter_frame() const {
-  assert_is_interpreted_and_frame_type_mixed();
-  return (derelativize(frame::interpreter_frame_locals_offset) + 1 >= _end) ? _end : fp() + frame::sender_sp_offset;
 }
 
 template <ChunkFrames frame_kind>

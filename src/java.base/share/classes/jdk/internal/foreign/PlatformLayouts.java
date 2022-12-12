@@ -25,8 +25,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2022, These
- * modifications are Copyright (c) 2022, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2023, These
+ * modifications are Copyright (c) 2022, 2023, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 package jdk.internal.foreign;
@@ -217,8 +217,8 @@ public final class PlatformLayouts {
         public static final ValueLayout.OfAddress C_VA_LIST = AArch64.C_POINTER;
     }
 
-    public static final class LinuxLoongArch64 {
-        private LinuxLoongArch64() {
+    public static final class LoongArch64 {
+        private LoongArch64() {
             //just the one
         }
 
@@ -270,6 +270,6 @@ public final class PlatformLayouts {
         /**
          * The {@code va_list} native type, as it is passed to a function.
          */
-        public static final ValueLayout.OfAddress C_VA_LIST = LinuxLoongArch64.C_POINTER;
+        public static final ValueLayout.OfAddress C_VA_LIST = LoongArch64.C_POINTER;
     }
 }

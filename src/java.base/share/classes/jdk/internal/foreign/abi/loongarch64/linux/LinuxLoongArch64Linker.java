@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,41 +27,48 @@
 package jdk.internal.foreign.abi.loongarch64.linux;
 
 import jdk.internal.foreign.abi.AbstractLinker;
+import jdk.internal.foreign.abi.LinkerOptions;
 
-import java.lang.foreign.*;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.VaList;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.function.Consumer;
 
 public final class LinuxLoongArch64Linker extends AbstractLinker {
-    static LinuxLoongArch64Linker instance = null;
 
     public static LinuxLoongArch64Linker getInstance() {
-        if (instance == null) {
-            instance = new LinuxLoongArch64Linker();
+        final class Holder {
+            private static final LinuxLoongArch64Linker INSTANCE = new LinuxLoongArch64Linker();
         }
-        return instance;
+
+        return Holder.INSTANCE;
+    }
+
+    private LinuxLoongArch64Linker() {
+        // Ensure there is only one instance
     }
 
     @Override
-    protected MethodHandle arrangeDowncall(MethodType inferredMethodType, FunctionDescriptor function) {
-        return CallArranger.arrangeDowncall(inferredMethodType, function);
+    protected MethodHandle arrangeDowncall(MethodType inferredMethodType, FunctionDescriptor function, LinkerOptions options) {
+        return LinuxLoongArch64CallArranger.arrangeDowncall(inferredMethodType, function, options);
     }
 
     @Override
-    protected MemorySegment arrangeUpcall(MethodHandle target, MethodType targetType, FunctionDescriptor function, MemorySession scope) {
-        return CallArranger.arrangeUpcall(target, targetType, function, scope);
+    protected MemorySegment arrangeUpcall(MethodHandle target, MethodType targetType, FunctionDescriptor function, SegmentScope scope) {
+        return LinuxLoongArch64CallArranger.arrangeUpcall(target, targetType, function, scope);
     }
 
-    public static VaList newVaList(Consumer<VaList.Builder> actions, MemorySession scope) {
+    public static VaList newVaList(Consumer<VaList.Builder> actions, SegmentScope scope) {
         LinuxLoongArch64VaList.Builder builder = new LinuxLoongArch64VaList.Builder(scope);
         actions.accept(builder);
         return builder.build();
     }
 
-    public static VaList newVaListOfAddress(MemoryAddress ma, MemorySession session) {
-        MemorySegment segment = MemorySegment.ofAddress(ma, Long.MAX_VALUE, session); // size unknown
-        return new LinuxLoongArch64VaList(segment, 0);
+    public static VaList newVaListOfAddress(long address, SegmentScope scope) {
+        return LinuxLoongArch64VaList.ofAddress(address, scope);
     }
 
     public static VaList emptyVaList() {

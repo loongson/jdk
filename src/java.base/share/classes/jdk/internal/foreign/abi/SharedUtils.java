@@ -312,7 +312,7 @@ public final class SharedUtils {
             case SYS_V -> SysVx64Linker.newVaListOfAddress(address, session);
             case LINUX_AARCH_64 -> LinuxAArch64Linker.newVaListOfAddress(address, session);
             case MAC_OS_AARCH_64 -> MacOsAArch64Linker.newVaListOfAddress(address, session);
-            case LINUX_LOONGARCH_64 -> LinuxLoongArch64Linker.newVaListOfAddress(ma, session);
+            case LINUX_LOONGARCH_64 -> LinuxLoongArch64Linker.newVaListOfAddress(address, session);
         };
     }
 

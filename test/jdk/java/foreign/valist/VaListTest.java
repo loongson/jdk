@@ -23,8 +23,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2022, These
- * modifications are Copyright (c) 2022, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2023, These
+ * modifications are Copyright (c) 2022, 2023, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -42,6 +42,8 @@
  *          java.base/jdk.internal.foreign.abi.aarch64.linux
  *          java.base/jdk.internal.foreign.abi.aarch64.macos
  *          java.base/jdk.internal.foreign.abi.aarch64.windows
+ *          java.base/jdk.internal.foreign.abi.loongarch64
+ *          java.base/jdk.internal.foreign.abi.loongarch64.linux
  * @run testng/othervm --enable-native-access=ALL-UNNAMED VaListTest
  */
 
@@ -50,6 +52,7 @@ import java.lang.foreign.SegmentScope;
 import java.lang.foreign.VaList;
 import jdk.internal.foreign.abi.aarch64.linux.LinuxAArch64Linker;
 import jdk.internal.foreign.abi.aarch64.macos.MacOsAArch64Linker;
+import jdk.internal.foreign.abi.loongarch64.linux.LinuxLoongArch64Linker;
 import jdk.internal.foreign.abi.x64.sysv.SysVx64Linker;
 import jdk.internal.foreign.abi.x64.windows.Windowsx64Linker;
 import org.testng.annotations.DataProvider;
@@ -140,6 +143,8 @@ public class VaListTest extends NativeTestHelper {
             = actions -> LinuxAArch64Linker.newVaList(actions, SegmentScope.auto());
     private static final Function<Consumer<VaList.Builder>, VaList> macAArch64VaListFactory
             = actions -> MacOsAArch64Linker.newVaList(actions, SegmentScope.auto());
+    private static final Function<Consumer<VaList.Builder>, VaList> linuxLoongArch64VaListFactory
+            = actions -> LinuxLoongArch64Linker.newVaList(actions, SegmentScope.auto());
     private static final Function<Consumer<VaList.Builder>, VaList> platformVaListFactory
             = (builder) -> VaList.make(builder, SegmentScope.auto());
 
@@ -151,6 +156,8 @@ public class VaListTest extends NativeTestHelper {
             = LinuxAArch64Linker::newVaList;
     private static final BiFunction<Consumer<VaList.Builder>, SegmentScope, VaList> macAArch64VaListScopedFactory
             = MacOsAArch64Linker::newVaList;
+    private static final BiFunction<Consumer<VaList.Builder>, SegmentScope, VaList> linuxLoongArch64VaListScopedFactory
+            = LinuxLoongArch64Linker::newVaList;
     private static final BiFunction<Consumer<VaList.Builder>, SegmentScope, VaList> platformVaListScopedFactory
             = VaList::make;
 
@@ -166,6 +173,7 @@ public class VaListTest extends NativeTestHelper {
                 { sysvVaListFactory,         sumIntsJavaFact.apply(SysV.C_INT),    SysV.C_INT    },
                 { linuxAArch64VaListFactory, sumIntsJavaFact.apply(AArch64.C_INT), AArch64.C_INT },
                 { macAArch64VaListFactory,   sumIntsJavaFact.apply(AArch64.C_INT), AArch64.C_INT },
+                { linuxLoongArch64VaListFactory, sumIntsJavaFact.apply(LoongArch64.C_INT), LoongArch64.C_INT },
                 { platformVaListFactory,     sumIntsNative,                        C_INT         },
         };
     }
@@ -194,6 +202,7 @@ public class VaListTest extends NativeTestHelper {
                 { sysvVaListFactory,         sumDoublesJavaFact.apply(SysV.C_DOUBLE),    SysV.C_DOUBLE    },
                 { linuxAArch64VaListFactory, sumDoublesJavaFact.apply(AArch64.C_DOUBLE), AArch64.C_DOUBLE },
                 { macAArch64VaListFactory,   sumDoublesJavaFact.apply(AArch64.C_DOUBLE), AArch64.C_DOUBLE },
+                { linuxLoongArch64VaListFactory, sumDoublesJavaFact.apply(LoongArch64.C_DOUBLE), LoongArch64.C_DOUBLE },
                 { platformVaListFactory,     sumDoublesNative,                           C_DOUBLE         },
         };
     }
@@ -224,6 +233,7 @@ public class VaListTest extends NativeTestHelper {
                 { sysvVaListFactory,         getIntJavaFact.apply(SysV.C_POINTER),    SysV.C_POINTER    },
                 { linuxAArch64VaListFactory, getIntJavaFact.apply(AArch64.C_POINTER), AArch64.C_POINTER },
                 { macAArch64VaListFactory,   getIntJavaFact.apply(AArch64.C_POINTER), AArch64.C_POINTER },
+                { linuxLoongArch64VaListFactory, getIntJavaFact.apply(LoongArch64.C_POINTER), LoongArch64.C_POINTER },
                 { platformVaListFactory,     getIntNative,                            C_POINTER         },
         };
     }
@@ -279,6 +289,7 @@ public class VaListTest extends NativeTestHelper {
                 argsFact.apply(sysvVaListFactory,         SysV.C_INT,    sumStructJavaFact),
                 argsFact.apply(linuxAArch64VaListFactory, AArch64.C_INT, sumStructJavaFact),
                 argsFact.apply(macAArch64VaListFactory,   AArch64.C_INT, sumStructJavaFact),
+                argsFact.apply(linuxLoongArch64VaListFactory, LoongArch64.C_INT, sumStructJavaFact),
                 argsFact.apply(platformVaListFactory,     C_INT,         sumStructNativeFact),
         };
     }
@@ -332,6 +343,7 @@ public class VaListTest extends NativeTestHelper {
                 argsFact.apply(sysvVaListFactory,         SysV.C_LONG_LONG,    sumStructJavaFact),
                 argsFact.apply(linuxAArch64VaListFactory, AArch64.C_LONG_LONG, sumStructJavaFact),
                 argsFact.apply(macAArch64VaListFactory,   AArch64.C_LONG_LONG, sumStructJavaFact),
+                argsFact.apply(linuxLoongArch64VaListFactory, LoongArch64.C_LONG_LONG, sumStructJavaFact),
                 argsFact.apply(platformVaListFactory,     C_LONG_LONG,         sumStructNativeFact),
         };
     }
@@ -385,6 +397,7 @@ public class VaListTest extends NativeTestHelper {
                 argsFact.apply(sysvVaListFactory,         SysV.C_FLOAT,    sumStructJavaFact),
                 argsFact.apply(linuxAArch64VaListFactory, AArch64.C_FLOAT, sumStructJavaFact),
                 argsFact.apply(macAArch64VaListFactory,   AArch64.C_FLOAT, sumStructJavaFact),
+                argsFact.apply(linuxLoongArch64VaListFactory, LoongArch64.C_FLOAT, sumStructJavaFact),
                 argsFact.apply(platformVaListFactory,     C_FLOAT,         sumStructNativeFact),
         };
     }
@@ -447,6 +460,7 @@ public class VaListTest extends NativeTestHelper {
                 argsFact.apply(sysvVaListFactory,         SysV.C_LONG_LONG,    sumStructJavaFact),
                 argsFact.apply(linuxAArch64VaListFactory, AArch64.C_LONG_LONG, sumStructJavaFact),
                 argsFact.apply(macAArch64VaListFactory,   AArch64.C_LONG_LONG, sumStructJavaFact),
+                argsFact.apply(linuxLoongArch64VaListFactory, LoongArch64.C_LONG_LONG, sumStructJavaFact),
                 argsFact.apply(platformVaListFactory,     C_LONG_LONG,         sumStructNativeFact),
         };
     }
@@ -501,6 +515,7 @@ public class VaListTest extends NativeTestHelper {
                 { sysvVaListFactory,          sumStackJavaFact.apply(SysV.C_LONG_LONG, SysV.C_DOUBLE),       SysV.C_LONG_LONG,    SysV.C_DOUBLE    },
                 { linuxAArch64VaListFactory,  sumStackJavaFact.apply(AArch64.C_LONG_LONG, AArch64.C_DOUBLE), AArch64.C_LONG_LONG, AArch64.C_DOUBLE },
                 { macAArch64VaListFactory,    sumStackJavaFact.apply(AArch64.C_LONG_LONG, AArch64.C_DOUBLE), AArch64.C_LONG_LONG, AArch64.C_DOUBLE },
+                { linuxLoongArch64VaListFactory,  sumStackJavaFact.apply(LoongArch64.C_LONG_LONG, LoongArch64.C_DOUBLE), LoongArch64.C_LONG_LONG, LoongArch64.C_DOUBLE },
                 { platformVaListFactory,      sumStackNative,                                                C_LONG_LONG,         C_DOUBLE         },
         };
     }
@@ -555,6 +570,8 @@ public class VaListTest extends NativeTestHelper {
                 { linuxAArch64VaListFactory.apply(b -> {}) },
                 { MacOsAArch64Linker.emptyVaList()         },
                 { macAArch64VaListFactory.apply(b -> {})   },
+                { LinuxLoongArch64Linker.emptyVaList()         },
+                { linuxLoongArch64VaListFactory.apply(b -> {}) },
         };
     }
 
@@ -570,6 +587,7 @@ public class VaListTest extends NativeTestHelper {
                 { sysvVaListScopedFactory,         sumIntsJavaFact.apply(SysV.C_INT),    SysV.C_INT    },
                 { linuxAArch64VaListScopedFactory, sumIntsJavaFact.apply(AArch64.C_INT), AArch64.C_INT },
                 { macAArch64VaListScopedFactory,   sumIntsJavaFact.apply(AArch64.C_INT), AArch64.C_INT },
+                { linuxLoongArch64VaListScopedFactory, sumIntsJavaFact.apply(LoongArch64.C_INT), LoongArch64.C_INT },
                 { platformVaListScopedFactory,     sumIntsNative,                        C_INT         },
         };
     }
@@ -618,6 +636,7 @@ public class VaListTest extends NativeTestHelper {
                 { sysvVaListScopedFactory,         SysV.C_INT    },
                 { linuxAArch64VaListScopedFactory, AArch64.C_INT },
                 { macAArch64VaListScopedFactory,   AArch64.C_INT },
+                { linuxLoongArch64VaListScopedFactory, LoongArch64.C_INT },
         };
     }
 

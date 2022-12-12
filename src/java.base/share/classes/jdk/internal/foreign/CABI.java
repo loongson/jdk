@@ -66,7 +66,7 @@ public enum CABI {
                 ABI = LINUX_AARCH_64;
             }
         } else if (ARCH.equals("loongarch64")) {
-            ABI = LinuxLoongArch64;
+            ABI = LINUX_LOONGARCH_64;
         } else {
             // unsupported
             ABI = null;

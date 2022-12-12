@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,14 +23,20 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package jdk.internal.foreign.abi.loongarch64.linux;
 
-import jdk.internal.foreign.MemorySessionImpl;
-import jdk.internal.foreign.Scoped;
-import jdk.internal.foreign.Utils;
+import java.lang.foreign.GroupLayout;
+import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.ValueLayout;
+import java.lang.foreign.VaList;
 import jdk.internal.foreign.abi.SharedUtils;
+import jdk.internal.foreign.MemorySessionImpl;
+import jdk.internal.foreign.Utils;
 
-import java.lang.foreign.*;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,14 +46,25 @@ import static java.lang.foreign.ValueLayout.ADDRESS;
 import static jdk.internal.foreign.abi.SharedUtils.SimpleVaArg;
 import static jdk.internal.foreign.abi.SharedUtils.THROWING_ALLOCATOR;
 
-// In loongarch64, VaList just a void*.
-public non-sealed class LinuxLoongArch64VaList implements VaList, Scoped {
+/**
+ * Standard va_list implementation as defined by LoongArch ABI document and used on Linux.
+ * In the base integer calling convention, variadic arguments are passed in the same
+ * manner as named arguments, with one exception. Variadic arguments with 2 * XLEN-bit
+ * alignment and size at most 2 * XLEN bits are passed in an aligned register pair
+ * (i.e., the first register in the pair is even-numbered), or on the stack by value
+ * if none is available. After a variadic argument has been passed on the stack, all
+ * future arguments will also be passed on the stack (i.e. the last argument register
+ * may be left unused due to the aligned register pair rule).
+ */
+
+public non-sealed class LinuxLoongArch64VaList implements VaList {
+    // The va_list type is void* on LoongArch64.
     private final MemorySegment segment;
     private long offset;
 
     private static final long STACK_SLOT_SIZE = 8;
     private static final VaList EMPTY
-            = new SharedUtils.EmptyVaList(MemoryAddress.NULL);
+            = new SharedUtils.EmptyVaList(MemorySegment.NULL);
 
     public static VaList empty() {
         return EMPTY;
@@ -58,9 +75,9 @@ public non-sealed class LinuxLoongArch64VaList implements VaList, Scoped {
         this.offset = offset;
     }
 
-    @Override
-    public MemorySession session() {
-        return segment.session();
+    private static LinuxLoongArch64VaList readFromAddress(long address, SegmentScope scope) {
+        MemorySegment segment = MemorySegment.ofAddress(address, Long.MAX_VALUE, scope); // size unknown
+        return new LinuxLoongArch64VaList(segment, 0);
     }
 
     @Override
@@ -79,8 +96,8 @@ public non-sealed class LinuxLoongArch64VaList implements VaList, Scoped {
     }
 
     @Override
-    public MemoryAddress nextVarg(ValueLayout.OfAddress layout) {
-        return (MemoryAddress) read(layout);
+    public MemorySegment nextVarg(ValueLayout.OfAddress layout) {
+        return (MemorySegment) read(layout);
     }
 
     @Override
@@ -96,17 +113,19 @@ public non-sealed class LinuxLoongArch64VaList implements VaList, Scoped {
     private Object read(MemoryLayout layout, SegmentAllocator allocator) {
         Objects.requireNonNull(layout);
         TypeClass typeClass = TypeClass.classifyLayout(layout);
-        checkStackElement(layout);
-        preAlignStack();
+        preAlignStack(layout);
+
         return switch (typeClass) {
             case INTEGER, FLOAT, POINTER -> {
+                checkStackElement(layout);
                 VarHandle reader = layout.varHandle();
                 MemorySegment slice = segment.asSlice(offset, layout.byteSize());
                 Object res = reader.get(slice);
                 postAlignStack(layout);
                 yield res;
             }
-            case STRUCT_A, STRUCT_FA, STRUCT_BOTH -> {
+            case STRUCT_REGISTER_X, STRUCT_REGISTER_F, STRUCT_REGISTER_XF -> {
+                checkStackElement(layout);
                 // Struct is passed indirectly via a pointer in an integer register.
                 MemorySegment slice = segment.asSlice(offset, layout.byteSize());
                 MemorySegment seg = allocator.allocate(layout);
@@ -115,12 +134,13 @@ public non-sealed class LinuxLoongArch64VaList implements VaList, Scoped {
                 yield seg;
             }
             case STRUCT_REFERENCE -> {
+                checkStackElement(ADDRESS);
                 VarHandle addrReader = ADDRESS.varHandle();
                 MemorySegment slice = segment.asSlice(offset, ADDRESS.byteSize());
-                MemoryAddress addr = (MemoryAddress) addrReader.get(slice);
-                postAlignStack(ADDRESS);
+                MemorySegment addr = (MemorySegment) addrReader.get(slice);
                 MemorySegment seg = allocator.allocate(layout);
-                seg.copyFrom(MemorySegment.ofAddress(addr, layout.byteSize(), session()));
+                seg.copyFrom(MemorySegment.ofAddress(addr.address(), layout.byteSize(), segment.scope()));
+                postAlignStack(ADDRESS);
                 yield seg;
             }
         };
@@ -132,39 +152,56 @@ public non-sealed class LinuxLoongArch64VaList implements VaList, Scoped {
         }
     }
 
-    private void preAlignStack() {
-        offset = Utils.alignUp(offset, STACK_SLOT_SIZE);
+    private void preAlignStack(MemoryLayout layout) {
+        if (layout.byteSize() <= 16 && layout.byteAlignment() == 16) {
+            offset = Utils.alignUp(offset, 16);
+        } else {
+            offset = Utils.alignUp(offset, STACK_SLOT_SIZE);
+        }
     }
 
     private void postAlignStack(MemoryLayout layout) {
-        offset += Utils.alignUp(layout.byteSize(), STACK_SLOT_SIZE);
+        if (layout.byteSize() <= 16 && layout.byteAlignment() == 16) {
+            offset += 16;
+        } else {
+            offset += Utils.alignUp(layout.byteSize(), STACK_SLOT_SIZE);
+        }
     }
 
     @Override
     public void skip(MemoryLayout... layouts) {
         Objects.requireNonNull(layouts);
-        sessionImpl().checkValidState();
+        ((MemorySessionImpl) segment.scope()).checkValidState();
         for (MemoryLayout layout : layouts) {
             Objects.requireNonNull(layout);
-            TypeClass typeClass = TypeClass.classifyLayout(layout);
-            switch (typeClass) {
-                case INTEGER, FLOAT, POINTER, STRUCT_REFERENCE ->
-                        offset += 8;
-                case STRUCT_A, STRUCT_FA, STRUCT_BOTH -> offset += Utils.alignUp(layout.byteSize(), STACK_SLOT_SIZE);
-            }
+            preAlignStack(layout);
+            postAlignStack(layout);
         }
+    }
+
+    static LinuxLoongArch64VaList.Builder builder(SegmentScope scope) {
+        return new LinuxLoongArch64VaList.Builder(scope);
+    }
+
+    public static VaList ofAddress(long address, SegmentScope scope) {
+        return readFromAddress(address, scope);
     }
 
     @Override
     public VaList copy() {
-        MemorySessionImpl sessionImpl = MemorySessionImpl.toSessionImpl(segment.session());
+        MemorySessionImpl sessionImpl = (MemorySessionImpl) segment.scope();
         sessionImpl.checkValidState();
         return new LinuxLoongArch64VaList(segment, offset);
     }
 
     @Override
-    public MemoryAddress address() {
-        return segment.address().addOffset(offset);
+    public MemorySegment segment() {
+        // make sure that returned segment cannot be accessed
+        return segment.asSlice(0, 0);
+    }
+
+    public long address() {
+        return segment.address() + offset;
     }
 
     @Override
@@ -174,11 +211,11 @@ public non-sealed class LinuxLoongArch64VaList implements VaList, Scoped {
 
     public static non-sealed class Builder implements VaList.Builder {
 
-        private final MemorySession session;
+        private final SegmentScope scope;
         private final List<SimpleVaArg> stackArgs = new ArrayList<>();
 
-        Builder(MemorySession session) {
-            this.session = session;
+        Builder(SegmentScope scope) {
+            this.scope = scope;
         }
 
         @Override
@@ -197,8 +234,8 @@ public non-sealed class LinuxLoongArch64VaList implements VaList, Scoped {
         }
 
         @Override
-        public Builder addVarg(ValueLayout.OfAddress layout, Addressable value) {
-            return arg(layout, value.address());
+        public Builder addVarg(ValueLayout.OfAddress layout, MemorySegment value) {
+            return arg(layout, value);
         }
 
         @Override
@@ -218,40 +255,46 @@ public non-sealed class LinuxLoongArch64VaList implements VaList, Scoped {
         }
 
         public VaList build() {
-            if (isEmpty()) return EMPTY;
-            SegmentAllocator allocator = SegmentAllocator.newNativeArena(session);
-            long stackArgsSize = stackArgs.stream()
-                                          .reduce(0L, (acc, e) -> {
-                                              long elementSize = TypeClass.classifyLayout(e.layout) == TypeClass.STRUCT_REFERENCE ?
-                                                      ADDRESS.byteSize() : e.layout.byteSize();
-                                              return acc + Utils.alignUp(elementSize, STACK_SLOT_SIZE);
-                                          }, Long::sum);
-            MemorySegment argsSegment = allocator.allocate(stackArgsSize, 16);
+            if (isEmpty()) {
+                return EMPTY;
+            }
+            long stackArgsSize = 0;
+            for (SimpleVaArg arg : stackArgs) {
+                MemoryLayout layout = arg.layout;
+                long elementSize = TypeClass.classifyLayout(layout) == TypeClass.STRUCT_REFERENCE ?
+                    ADDRESS.byteSize() : layout.byteSize();
+                // arguments with 2 * XLEN-bit alignment and size at most 2 * XLEN bits
+                // are saved on memory aligned with 2 * XLEN (XLEN=64 for RISCV64).
+                if (layout.byteSize() <= 16 && layout.byteAlignment() == 16) {
+                    stackArgsSize = Utils.alignUp(stackArgsSize, 16);
+                    elementSize = 16;
+                }
+                stackArgsSize += Utils.alignUp(elementSize, STACK_SLOT_SIZE);
+            }
+            MemorySegment argsSegment = MemorySegment.allocateNative(stackArgsSize, 16, scope);
             MemorySegment writeCursor = argsSegment;
             for (SimpleVaArg arg : stackArgs) {
                 MemoryLayout layout;
-                Object value;
+                Object value = arg.value;
                 if (TypeClass.classifyLayout(arg.layout) == TypeClass.STRUCT_REFERENCE) {
                     layout = ADDRESS;
-                    value = ((MemorySegment) arg.value).address();
                 } else {
                     layout = arg.layout;
-                    value = arg.value;
                 }
-                int alignUp = layout.byteSize() > 8 ? 16 : 8;
-                writeCursor = Utils.alignUp(writeCursor, alignUp);
-                if (value instanceof MemorySegment) {
+                long alignedSize = Utils.alignUp(layout.byteSize(), STACK_SLOT_SIZE);
+                if (layout.byteSize() <= 16 && layout.byteAlignment() == 16) {
+                    writeCursor = Utils.alignUp(writeCursor, 16);
+                    alignedSize = 16;
+                }
+                if (layout instanceof GroupLayout) {
                     writeCursor.copyFrom((MemorySegment) value);
                 } else {
                     VarHandle writer = layout.varHandle();
                     writer.set(writeCursor, value);
                 }
-                long alignedSize = Utils.alignUp(layout.byteSize(), STACK_SLOT_SIZE);
                 writeCursor = writeCursor.asSlice(alignedSize);
             }
             return new LinuxLoongArch64VaList(argsSegment, 0L);
         }
-
     }
-
 }

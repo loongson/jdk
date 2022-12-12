@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, Red Hat, Inc. All rights reserved.
- * Copyright (c) 2021, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,8 +40,8 @@ struct ABIDescriptor {
   int32_t _stack_alignment_bytes;
   int32_t _shadow_space_bytes;
 
-  Register _target_addr_reg;
-  Register _ret_buf_addr_reg;
+  VMStorage _scratch1;
+  VMStorage _scratch2;
 
   bool is_volatile_reg(Register reg) const;
   bool is_volatile_reg(FloatRegister reg) const;

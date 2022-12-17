@@ -1146,22 +1146,22 @@ const int Matcher::min_vector_size(const BasicType bt) {
 
 // Register for DIVI projection of divmodI
 RegMask Matcher::divI_proj_mask() {
-  ShouldNotReachHere();
-  return RegMask();
+  return T1_REG_mask();
 }
 
 // Register for MODI projection of divmodI
 RegMask Matcher::modI_proj_mask() {
-  ShouldNotReachHere();
-  return RegMask();
+  return T2_REG_mask();
 }
 
 // Register for DIVL projection of divmodL
 RegMask Matcher::divL_proj_mask() {
-  ShouldNotReachHere();
-  return RegMask();
+  return T1_LONG_REG_mask();
 }
 
+RegMask Matcher::modL_proj_mask() {
+  return T2_LONG_REG_mask();
+}
 // Return whether or not this register is ever used as an argument.  This
 // function is used on startup to build the trampoline stubs in generateOptoStub.
 // Registers not mentioned will be killed by the VM call in the trampoline, and
@@ -1213,12 +1213,6 @@ uint Matcher::float_pressure_limit()
 
 bool Matcher::use_asm_for_ldiv_by_con( jlong divisor ) {
   return false;
-}
-
-// Register for MODL projection of divmodL
-RegMask Matcher::modL_proj_mask() {
-  ShouldNotReachHere();
-  return RegMask();
 }
 
 const RegMask Matcher::method_handle_invoke_SP_save_mask() {
@@ -3802,6 +3796,15 @@ operand t0RegL() %{
 
 operand t1RegL() %{
   constraint(ALLOC_IN_RC(t1_long_reg));
+  match(RegL);
+  match(mRegL);
+
+  format %{ %}
+  interface(REG_INTER);
+%}
+
+operand t2RegL() %{
+  constraint(ALLOC_IN_RC(t2_long_reg));
   match(RegL);
   match(mRegL);
 
@@ -9035,6 +9038,36 @@ instruct modI_Reg_Reg(mRegI dst, mRegIorL2I src1, mRegIorL2I src2) %{
   ins_pipe( ialu_regI_regI );
 %}
 
+instruct umodI_Reg_Reg(mRegI dst, mRegIorL2I src1, mRegIorL2I src2) %{
+  match(Set dst (UModI src1 src2));
+  format %{ "mod.wu   $dst, $src1, $src2 @ umodI_Reg_Reg" %}
+  ins_encode %{
+    Register  dst = $dst$$Register;
+    Register src1 = $src1$$Register;
+    Register src2 = $src2$$Register;
+
+    __ mod_wu(dst, src1, src2);
+  %}
+
+  //ins_pipe( ialu_mod );
+  ins_pipe( ialu_regI_regI );
+%}
+
+instruct umodL_Reg_Reg(mRegL dst, mRegLorI2L src1, mRegLorI2L src2) %{
+  match(Set dst (UModI src1 src2));
+  format %{ "mod.du   $dst, $src1, $src2 @ umodL_Reg_Reg" %}
+  ins_encode %{
+    Register  dst = $dst$$Register;
+    Register src1 = $src1$$Register;
+    Register src2 = $src2$$Register;
+
+    __ mod_du(dst, src1, src2);
+  %}
+
+  //ins_pipe( ialu_mod );
+  ins_pipe( ialu_regI_regI );
+%}
+
 instruct modL_reg_reg(mRegL dst, mRegLorI2L src1, mRegLorI2L src2) %{
   match(Set dst (ModL src1 src2));
   format %{ "modL  $dst, $src1, $src2 @modL_reg_reg" %}
@@ -9075,6 +9108,97 @@ instruct divI_Reg_Reg(mRegI dst, mRegI src1, mRegI src2) %{
      Register dst  = $dst$$Register;
 
     __ div_w(dst, src1, src2);
+
+  %}
+  ins_pipe( ialu_mod );
+%}
+
+instruct divmodI_Reg_Reg(mT1RegI div, mT2RegI mod, mRegI src1, mRegI src2) %{
+  match(DivModI src1 src2);
+  effect(TEMP_DEF div, TEMP_DEF mod);
+
+  format %{ "divmodI  $div..$mod, $src1, $src2 @ divmodI_Reg_Reg" %}
+
+  ins_encode %{
+     Register src1 = $src1$$Register;
+     Register src2 = $src2$$Register;
+     Register div  = $div$$Register;
+     Register mod  = $mod$$Register;
+
+    __ div_w(div, src1, src2);
+    __ mod_w(mod, src1, src2);
+
+  %}
+  ins_pipe( ialu_mod );
+%}
+
+instruct udivmodI_Reg_Reg(mT1RegI div, mT2RegI mod, mRegI src1, mRegI src2) %{
+  match(UDivModI src1 src2);
+  effect(TEMP_DEF div, TEMP_DEF mod);
+
+  format %{ "udivmodI  $div..$mod, $src1, $src2 @ udivmodI_Reg_Reg" %}
+
+  ins_encode %{
+     Register src1 = $src1$$Register;
+     Register src2 = $src2$$Register;
+     Register div  = $div$$Register;
+     Register mod  = $mod$$Register;
+
+    __ div_wu(div, src1, src2);
+    __ mod_wu(mod, src1, src2);
+
+  %}
+  ins_pipe( ialu_mod );
+%}
+
+instruct divmodL_Reg_Reg(t1RegL div, t2RegL mod, mRegL src1, mRegL src2) %{
+  match(DivModL src1 src2);
+  effect(TEMP_DEF div, TEMP_DEF mod);
+
+  format %{ "divmodL  $div..$mod, $src1, $src2 @ divmodL_Reg_Reg" %}
+
+  ins_encode %{
+     Register src1 = $src1$$Register;
+     Register src2 = $src2$$Register;
+     Register div  = $div$$Register;
+     Register mod  = $mod$$Register;
+
+    __ div_d(div, src1, src2);
+    __ mod_d(mod, src1, src2);
+
+  %}
+  ins_pipe( ialu_mod );
+%}
+
+instruct udivmodL_Reg_Reg(t1RegL div, t2RegL mod, mRegL src1, mRegL src2) %{
+  match(UDivModL src1 src2);
+  effect(TEMP_DEF div, TEMP_DEF mod);
+
+  format %{ "udivmodL $div..$mod, $src1, $src2 @ udivmodL_Reg_Reg" %}
+
+  ins_encode %{
+     Register src1 = $src1$$Register;
+     Register src2 = $src2$$Register;
+     Register div  = $div$$Register;
+     Register mod  = $mod$$Register;
+
+    __ div_du(div, src1, src2);
+    __ mod_du(mod, src1, src2);
+
+  %}
+  ins_pipe( ialu_mod );
+%}
+
+instruct udivI_Reg_Reg(mRegI dst, mRegI src1, mRegI src2) %{
+  match(Set dst (UDivI src1 src2));
+
+  format %{ "udivI   $dst, $src1, $src2 @ udivI_Reg_Reg" %}
+  ins_encode %{
+     Register src1 = $src1$$Register;
+     Register src2 = $src2$$Register;
+     Register dst  = $dst$$Register;
+
+    __ div_wu(dst, src1, src2);
 
   %}
   ins_pipe( ialu_mod );
@@ -9156,6 +9280,20 @@ instruct divL_reg_reg(mRegL dst, mRegL src1, mRegL src2) %{
     Register op2 = as_Register($src2$$reg);
 
     __ div_d(dst, op1, op2);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct udivL_reg_reg(mRegL dst, mRegLorI2L src1, mRegLorI2L src2) %{
+  match(Set dst (UDivL src1 src2));
+  format %{ "udivL  $dst, $src1, $src2 @udivL_reg_reg" %}
+
+  ins_encode %{
+    Register dst = as_Register($dst$$reg);
+    Register op1 = as_Register($src1$$reg);
+    Register op2 = as_Register($src2$$reg);
+
+    __ div_du(dst, op1, op2);
   %}
   ins_pipe( pipe_slow );
 %}

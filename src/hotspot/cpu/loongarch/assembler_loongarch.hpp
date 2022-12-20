@@ -110,9 +110,6 @@ constexpr Register SCR1           = T7;
 // SCR2 is allocable in C2 Compiler
 constexpr Register SCR2           = T4;
 
-
-class ArrayAddress;
-
 class Address {
  public:
   enum ScaleFactor {
@@ -135,12 +132,6 @@ class Address {
   Register         _index;
   ScaleFactor      _scale;
   int              _disp;
-  RelocationHolder _rspec;
-
-  // Easily misused constructors make them private
-  Address(address loc, RelocationHolder spec);
-  Address(int disp, address loc, relocInfo::relocType rtype);
-  Address(int disp, address loc, RelocationHolder spec);
 
  public:
 
@@ -188,8 +179,6 @@ class Address {
   ScaleFactor scale()            const { return _scale; }
   int         disp()             const { return _disp;  }
 
-  static Address make_array(ArrayAddress);
-
   friend class Assembler;
   friend class MacroAssembler;
   friend class LIR_Assembler; // base/index/scale/disp
@@ -205,12 +194,7 @@ class Address {
 // directories.
 //
 class AddressLiteral {
-  friend class ArrayAddress;
   RelocationHolder _rspec;
-  // Typically we use AddressLiterals we want to use their rval
-  // However in some situations we want the lval (effect address) of the item.
-  // We provide a special factory for making those lvals.
-  bool _is_lval;
 
   // If the target is far we'll need to load the ea of this to
   // a register to reach it. Otherwise if near we can do rip
@@ -221,8 +205,7 @@ class AddressLiteral {
  protected:
   // creation
   AddressLiteral()
-    : _is_lval(false),
-      _target(NULL)
+    : _target(NULL)
   {}
 
   public:
@@ -232,21 +215,12 @@ class AddressLiteral {
 
   AddressLiteral(address target, RelocationHolder const& rspec)
     : _rspec(rspec),
-      _is_lval(false),
       _target(target)
   {}
-
-  AddressLiteral addr() {
-    AddressLiteral ret = *this;
-    ret._is_lval = true;
-    return ret;
-  }
-
 
  private:
 
   address target() { return _target; }
-  bool is_lval() { return _is_lval; }
 
   relocInfo::relocType reloc() const { return _rspec.type(); }
   const RelocationHolder& rspec() const { return _rspec; }
@@ -315,25 +289,6 @@ class InternalAddress: public AddressLiteral {
   public:
 
   InternalAddress(address target) : AddressLiteral(target, relocInfo::internal_word_type) {}
-
-};
-
-// x86 can do array addressing as a single operation since disp can be an absolute
-// address amd64 can't. We create a class that expresses the concept but does extra
-// magic on amd64 to get the final result
-
-class ArrayAddress {
-  private:
-
-  AddressLiteral _base;
-  Address        _index;
-
-  public:
-
-  ArrayAddress() {};
-  ArrayAddress(AddressLiteral base, Address index): _base(base), _index(index) {};
-  AddressLiteral base() { return _base; }
-  Address index() { return _index; }
 
 };
 

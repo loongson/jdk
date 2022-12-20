@@ -49,29 +49,8 @@
 // Implementation of AddressLiteral
 
 AddressLiteral::AddressLiteral(address target, relocInfo::relocType rtype) {
-  _is_lval = false;
   _target = target;
   _rspec = rspec_from_rtype(rtype, target);
-}
-
-// Implementation of Address
-
-Address Address::make_array(ArrayAddress adr) {
-  AddressLiteral base = adr.base();
-  Address index = adr.index();
-  assert(index._disp == 0, "must not have disp"); // maybe it can?
-  Address array(index._base, index._index, index._scale, (intptr_t) base.target());
-  array._rspec = base._rspec;
-  return array;
-}
-
-// exceedingly dangerous constructor
-Address::Address(address loc, RelocationHolder spec) {
-  _base  = noreg;
-  _index = noreg;
-  _scale = no_scale;
-  _disp  = (intptr_t) loc;
-  _rspec = spec;
 }
 
 bool Assembler::is_vec_imm(float val) {

@@ -98,9 +98,6 @@ class MacroAssembler: public Assembler {
   virtual void check_and_handle_popframe(Register java_thread);
   virtual void check_and_handle_earlyret(Register java_thread);
 
-  Address as_Address(AddressLiteral adr);
-  Address as_Address(ArrayAddress adr);
-
   // Support for NULL-checks
   //
   // Generates code that causes a NULL OS exception if the content of reg is NULL.

@@ -373,14 +373,6 @@ void MacroAssembler::b_far(address entry) {
   }
 }
 
-Address MacroAssembler::as_Address(AddressLiteral adr) {
-  return Address(adr.target(), adr.rspec());
-}
-
-Address MacroAssembler::as_Address(ArrayAddress adr) {
-  return Address::make_array(adr);
-}
-
 // tmp_reg1 and tmp_reg2 should be saved outside of atomic_inc32 (caller saved).
 void MacroAssembler::atomic_inc32(address counter_addr, int inc, Register tmp_reg1, Register tmp_reg2) {
   li(tmp_reg1, inc);

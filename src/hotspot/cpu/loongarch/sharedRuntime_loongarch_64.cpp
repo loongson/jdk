@@ -505,26 +505,22 @@ static void gen_c2i_adapter(MacroAssembler *masm,
       if (!r_2->is_valid()) {
         __ ld_d(AT, Address(SP, ld_off));
         __ st_d(AT, Address(SP, st_off));
-
       } else {
-
-
         int next_off = st_off - Interpreter::stackElementSize;
         __ ld_d(AT, Address(SP, ld_off));
-        __ st_d(AT, Address(SP, st_off));
 
         // Ref to is_Register condition
-        if(sig_bt[i] == T_LONG || sig_bt[i] == T_DOUBLE)
+        if (sig_bt[i] == T_LONG || sig_bt[i] == T_DOUBLE) {
           __ st_d(AT, SP, st_off - 8);
+        } else {
+          __ st_d(AT, SP, st_off);
+        }
       }
     } else if (r_1->is_Register()) {
       Register r = r_1->as_Register();
       if (!r_2->is_valid()) {
           __ st_d(r, SP, st_off);
       } else {
-        //FIXME, LA will not enter here
-        // long/double in gpr
-        __ st_d(r, SP, st_off);
         // In [java/util/zip/ZipFile.java]
         //
         //    private static native long open(String name, int mode, long lastModified);
@@ -571,17 +567,19 @@ static void gen_c2i_adapter(MacroAssembler *masm,
         //
         // So I stored another 8 bytes in the T_VOID slot. It then can be accessed from generate_native_entry().
         //
-        if (sig_bt[i] == T_LONG)
+        if (sig_bt[i] == T_LONG) {
           __ st_d(r, SP, st_off - 8);
+        } else {
+          __ st_d(r, SP, st_off);
+        }
       }
     } else if (r_1->is_FloatRegister()) {
       assert(sig_bt[i] == T_FLOAT || sig_bt[i] == T_DOUBLE, "Must be a float register");
 
       FloatRegister fr = r_1->as_FloatRegister();
-      if (sig_bt[i] == T_FLOAT)
+      if (sig_bt[i] == T_FLOAT) {
         __ fst_s(fr, SP, st_off);
-      else {
-        __ fst_d(fr, SP, st_off);
+      } else {
         __ fst_d(fr, SP, st_off - 8);  // T_DOUBLE needs two slots
       }
     }
@@ -613,7 +611,6 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
   // race and use a c2i we will remain interpreted for the race loser(s).
   // This removes all sorts of headaches on the LA side and also eliminates
   // the possibility of having c2i -> i2c -> c2i -> ... endless transitions.
-
   __ move(T4, SP);
 
   // Cut-out for having no stack args.  Since up to 2 int/oop args are passed
@@ -707,9 +704,11 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
         //  int maskType);
         // Before this modification, Eclipse displays icons with solid black background.
         //
-        __ ld_d(AT, saved_sp, ld_off);
-        if (sig_bt[i] == T_LONG || sig_bt[i] == T_DOUBLE)
-          __ ld_d(AT, saved_sp, ld_off - 8);
+        if (sig_bt[i] == T_LONG || sig_bt[i] == T_DOUBLE) {
+          __ ld_d(AT, saved_sp, next_off);
+        } else {
+          __ ld_d(AT, saved_sp, ld_off);
+        }
         __ st_d(AT, SP, st_off);
       }
     } else if (r_1->is_Register()) {  // Register argument
@@ -718,8 +717,6 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
         // Remember r_1 is low address (and LSB on LA)
         // So r_2 gets loaded from high address regardless of the platform
         assert(r_2->as_Register() == r_1->as_Register(), "");
-        __ ld_d(r, saved_sp, ld_off);
-
         //
         // For T_LONG type, the real layout is as below:
         //
@@ -737,8 +734,11 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
         //
         // We should load the low-8 bytes.
         //
-        if (sig_bt[i] == T_LONG)
-          __ ld_d(r, saved_sp, ld_off - 8);
+        if (sig_bt[i] == T_LONG) {
+          __ ld_d(r, saved_sp, next_off);
+        } else {
+          __ ld_d(r, saved_sp, ld_off);
+        }
       } else {
         __ ld_w(r, saved_sp, ld_off);
       }
@@ -746,11 +746,10 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
       assert(sig_bt[i] == T_FLOAT || sig_bt[i] == T_DOUBLE, "Must be a float register");
 
       FloatRegister fr = r_1->as_FloatRegister();
-      if (sig_bt[i] == T_FLOAT)
-          __ fld_s(fr, saved_sp, ld_off);
-      else {
-          __ fld_d(fr, saved_sp, ld_off);
-          __ fld_d(fr, saved_sp, ld_off - 8);
+      if (sig_bt[i] == T_FLOAT) {
+        __ fld_s(fr, saved_sp, ld_off);
+      } else {
+        __ fld_d(fr, saved_sp, next_off);
       }
     }
   }
@@ -786,6 +785,7 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
                                                             AdapterFingerPrint* fingerprint) {
   address i2c_entry = __ pc();
 
+  __ block_comment("gen_i2c_adapter");
   gen_i2c_adapter(masm, total_args_passed, comp_args_on_stack, sig_bt, regs);
 
   // -------------------------------------------------------------------------
@@ -800,6 +800,7 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
   address c2i_unverified_entry = __ pc();
   Label skip_fixup;
   {
+    __ block_comment("c2i_unverified_entry {");
     Register holder = IC_Klass;
     Register receiver = T0;
     Register temp = T8;
@@ -821,6 +822,7 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
     __ bind(missed);
 
     __ jmp(ic_miss, relocInfo::runtime_call_type);
+    __ block_comment("} c2i_unverified_entry");
   }
   address c2i_entry = __ pc();
 
@@ -845,8 +847,10 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
   }
 
   BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
+  __ block_comment("c2i_entry_barrier");
   bs->c2i_entry_barrier(masm);
 
+  __ block_comment("gen_c2i_adapter");
   gen_c2i_adapter(masm, total_args_passed, comp_args_on_stack, sig_bt, regs, skip_fixup);
 
   __ flush();

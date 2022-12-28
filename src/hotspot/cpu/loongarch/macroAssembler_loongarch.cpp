@@ -1506,7 +1506,8 @@ void MacroAssembler::post_call_nop() {
   ori(R0, R0, 0);
 }
 
-static RegSet caller_saved_regset = RegSet::range(A0, A7) + RegSet::range(T0, T8) + RegSet::of(FP, RA) - RegSet::of(SCR1, SCR2);
+// SCR2 is allocable in C2 Compiler
+static RegSet caller_saved_regset = RegSet::range(A0, A7) + RegSet::range(T0, T8) + RegSet::of(FP, RA) - RegSet::of(SCR1);
 static FloatRegSet caller_saved_fpu_regset = FloatRegSet::range(F0, F23);
 
 void MacroAssembler::push_call_clobbered_registers_except(RegSet exclude) {

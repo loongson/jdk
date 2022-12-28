@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2018, 2021, Loongson Technology. All rights reserved.
+ * Copyright (c) 2018, 2022, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -100,6 +100,10 @@ public class LinuxLOONGARCH64JavaThreadPDAccess implements JavaThreadPDAccess {
     }
     if (guesser.getPC() == null) {
       return new LOONGARCH64Frame(guesser.getSP(), guesser.getFP());
+    } else if (VM.getVM().getInterpreter().contains(guesser.getPC())) {
+      // pass the value of S0 which contains the bcp for the top level frame
+      Address bcp = context.getRegisterAsAddress(LOONGARCH64ThreadContext.S0);
+      return new LOONGARCH64Frame(guesser.getSP(), guesser.getFP(), guesser.getPC(), null, bcp);
     } else {
       return new LOONGARCH64Frame(guesser.getSP(), guesser.getFP(), guesser.getPC());
     }

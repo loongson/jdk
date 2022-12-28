@@ -70,6 +70,7 @@ public class LOONGARCH64Frame extends Frame {
   // an additional field beyond sp and pc:
   Address raw_fp; // frame pointer
   private Address raw_unextendedSP;
+  private Address live_bcp;
 
   private LOONGARCH64Frame() {
   }
@@ -92,14 +93,28 @@ public class LOONGARCH64Frame extends Frame {
     }
   }
 
-  public LOONGARCH64Frame(Address raw_sp, Address raw_fp, Address pc) {
-    this.raw_sp = raw_sp;
-    this.raw_unextendedSP = raw_sp;
-    this.raw_fp = raw_fp;
-    this.pc = pc;
+  private void initFrame(Address raw_sp, Address raw_fp, Address pc, Address raw_unextendedSp, Address live_bcp) {
+     this.raw_sp = raw_sp;
+     this.raw_fp = raw_fp;
+     if (raw_unextendedSp == null) {
+         this.raw_unextendedSP = raw_sp;
+     } else {
+         this.raw_unextendedSP = raw_unextendedSp;
+     }
+     if (pc == null) {
+         this.pc = raw_sp.getAddressAt(-1 * VM.getVM().getAddressSize());
+     } else {
+        this.pc = pc;
+     }
+     this.live_bcp = live_bcp;
+     adjustUnextendedSP();
 
-    // Frame must be fully constructed before this call
-    adjustForDeopt();
+     // Frame must be fully constructed before this call
+     adjustForDeopt();
+  }
+
+  public LOONGARCH64Frame(Address raw_sp, Address raw_fp, Address pc) {
+    initFrame(raw_sp, raw_fp, pc, null, null);
 
     if (DEBUG) {
       System.out.println("LOONGARCH64Frame(sp, fp, pc): " + this);
@@ -108,18 +123,7 @@ public class LOONGARCH64Frame extends Frame {
   }
 
   public LOONGARCH64Frame(Address raw_sp, Address raw_fp) {
-    this.raw_sp = raw_sp;
-    this.raw_unextendedSP = raw_sp;
-    this.raw_fp = raw_fp;
-    Address savedPC = raw_sp.getAddressAt(-1 * VM.getVM().getAddressSize());
-
-    if (VM.getVM().isJavaPCDbg(savedPC)) {
-      this.pc = savedPC;
-    }
-    adjustUnextendedSP();
-
-    // Frame must be fully constructed before this call
-    adjustForDeopt();
+    initFrame(raw_sp, raw_fp, null, null, null);
 
     if (DEBUG) {
       System.out.println("LOONGARCH64Frame(sp, fp): " + this);
@@ -128,20 +132,22 @@ public class LOONGARCH64Frame extends Frame {
   }
 
   public LOONGARCH64Frame(Address raw_sp, Address raw_unextendedSp, Address raw_fp, Address pc) {
-    this.raw_sp = raw_sp;
-    this.raw_unextendedSP = raw_unextendedSp;
-    this.raw_fp = raw_fp;
-    this.pc = pc;
-    adjustUnextendedSP();
-
-    // Frame must be fully constructed before this call
-    adjustForDeopt();
+    initFrame(raw_sp, raw_fp, pc, raw_unextendedSp, null);
 
     if (DEBUG) {
       System.out.println("LOONGARCH64Frame(sp, unextendedSP, fp, pc): " + this);
       dumpStack();
     }
 
+  }
+
+  public LOONGARCH64Frame(Address raw_sp, Address raw_fp, Address pc, Address raw_unextendedSp, Address live_bcp) {
+    initFrame(raw_sp, raw_fp, pc, raw_unextendedSp, live_bcp);
+
+    if (DEBUG) {
+      System.out.println("LOONGARCH64Frame(sp, fp, pc, unextendedSP, live_bcp): " + this);
+      dumpStack();
+    }
   }
 
   public Object clone() {
@@ -151,6 +157,7 @@ public class LOONGARCH64Frame extends Frame {
     frame.raw_fp = raw_fp;
     frame.pc = pc;
     frame.deoptimized = deoptimized;
+    frame.live_bcp = live_bcp;
     return frame;
   }
 
@@ -415,9 +422,22 @@ public class LOONGARCH64Frame extends Frame {
     // FIXME: this is not atomic with respect to GC and is unsuitable
     // for use in a non-debugging, or reflective, system. Need to
     // figure out how to express this.
-    Address bcp = addressOfInterpreterFrameBCX().getAddressAt(0);
     Address methodHandle = addressOfInterpreterFrameMethod().getAddressAt(0);
     Method method = (Method)Metadata.instantiateWrapperFor(methodHandle);
+    Address bcp = addressOfInterpreterFrameBCX().getAddressAt(0);
+
+    // If we are in the top level frame then the bcp may have been set for us. If so then let it
+    // take priority. If we are in a top level interpreter frame, the bcp is live in S0 (on LA)
+    // and not saved in the BCX stack slot.
+    if (live_bcp != null) {
+        // Only use live_bcp if it points within the Method's bytecodes. Sometimes S0 is used
+        // for scratch purposes and is not a valid BCP. If it is not valid, then we stick with
+        // the bcp stored in the frame, which S0 should have been flushed to.
+        if (method.getConstMethod().isAddressInMethod(live_bcp)) {
+            bcp = live_bcp;
+        }
+    }
+
     return bcpToBci(bcp, method);
   }
 

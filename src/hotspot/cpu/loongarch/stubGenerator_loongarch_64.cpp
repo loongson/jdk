@@ -4103,6 +4103,7 @@ class StubGenerator: public StubCodeGenerator {
     Register limit = A3;
     Register kptr = T8;
     Register sa[4] = { T0, T1, T2, T3 };
+    Register sb[4] = { A4, A5, A6, A7 };
 
     // Entry
     entry = __ pc();
@@ -4115,12 +4116,17 @@ class StubGenerator: public StubCodeGenerator {
     // Load keys base address
     __ li(kptr, (intptr_t)round_consts);
 
-    __ bind(loop);
     // Load states
     __ ld_w(sa[0], state, 0);
     __ ld_w(sa[1], state, 4);
     __ ld_w(sa[2], state, 8);
     __ ld_w(sa[3], state, 12);
+
+    __ bind(loop);
+    __ move(sb[0], sa[0]);
+    __ move(sb[1], sa[1]);
+    __ move(sb[2], sa[2]);
+    __ move(sb[3], sa[3]);
 
     // 64 rounds of hashing
     for (int i = 0; i < 64; i++) {
@@ -4128,6 +4134,9 @@ class StubGenerator: public StubCodeGenerator {
       Register b = sa[(1 - i) & 3];
       Register c = sa[(2 - i) & 3];
       Register d = sa[(3 - i) & 3];
+
+      __ ld_w(t2, kptr, i * 4);
+      __ ld_w(t3, buf, round_offs[i] * 4);
 
       if (i < 16) {
         __ XOR(t0, c, d);
@@ -4145,33 +4154,28 @@ class StubGenerator: public StubCodeGenerator {
         __ XOR(t0, t0, c);
       }
 
-      __ ld_w(t1, kptr, i * 4);
-      __ ld_w(t2, buf, round_offs[i] * 4);
-      __ add_w(a, a, t1);
       __ add_w(a, a, t2);
+      __ add_w(a, a, t3);
       __ add_w(a, a, t0);
       __ rotri_w(a, a, round_shfs[i]);
       __ add_w(a, a, b);
     }
 
-    // Save updated state
-    __ ld_w(t0, state, 0);
-    __ ld_w(t1, state, 4);
-    __ ld_w(t2, state, 8);
-    __ ld_w(t3, state, 12);
-    __ add_w(sa[0], sa[0], t0);
-    __ add_w(sa[1], sa[1], t1);
-    __ add_w(sa[2], sa[2], t2);
-    __ add_w(sa[3], sa[3], t3);
-    __ st_w(sa[0], state, 0);
-    __ st_w(sa[1], state, 4);
-    __ st_w(sa[2], state, 8);
-    __ st_w(sa[3], state, 12);
+    __ add_w(sa[0], sa[0], sb[0]);
+    __ add_w(sa[1], sa[1], sb[1]);
+    __ add_w(sa[2], sa[2], sb[2]);
+    __ add_w(sa[3], sa[3], sb[3]);
 
     __ addi_w(ofs, ofs, 64);
     __ addi_d(buf, buf, 64);
     __ bge(limit, ofs, loop);
     __ move(V0, ofs); // return ofs
+
+    // Save updated state
+    __ st_w(sa[0], state, 0);
+    __ st_w(sa[1], state, 4);
+    __ st_w(sa[2], state, 8);
+    __ st_w(sa[3], state, 12);
 
     __ jr(RA);
   }

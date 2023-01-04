@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,7 +44,7 @@
   }
 
   // Whether code generation need accurate ConvI2L types.
-  static const bool convi2l_type_required = true;
+  static const bool convi2l_type_required = false;
 
   // Does the CPU require late expand (see block.cpp for description of late expand)?
   static const bool require_postalloc_expand = false;

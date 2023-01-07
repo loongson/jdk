@@ -5314,12 +5314,30 @@ instruct  jmpLoopEnd_long(cmpOp cop, mRegI src1, mRegI src2, label labl) %{
   ins_pc_relative(1);
 %}
 
+instruct  jmpLoopEnd_reg_imm12_long(cmpOp cop, mRegI src1, immI12 src2, label labl) %{
+  match(CountedLoopEnd cop (CmpI src1 src2));
+  effect(USE labl);
+
+  ins_cost(300);
+  format %{ "J$cop  $src1, $src2,  $labl\t# Loop end @ jmpLoopEnd_reg_imm12_long" %}
+  ins_encode %{
+    Register op1 = $src1$$Register;
+    Label*     L = $labl$$label;
+    int     flag = $cop$$cmpcode;
+
+    __ addi_d(AT, R0, $src2$$constant);
+    __ cmp_branch_long(flag, op1, AT, L, true /* signed */);
+  %}
+  ins_pipe( pipe_jump );
+  ins_pc_relative(1);
+%}
+
 instruct  jmpLoopEnd_reg_zero_long(cmpOp cop, mRegI src1, immI_0 zero, label labl) %{
   match(CountedLoopEnd cop (CmpI src1 zero));
   effect(USE labl);
 
   ins_cost(300);
-  format %{ "J$cop  $src1, $zero,  $labl\t# Loop end @ jmpLoopEnd_reg_immI_long" %}
+  format %{ "J$cop  $src1, $zero,  $labl\t# Loop end @ jmpLoopEnd_reg_zero_long" %}
   ins_encode %{
     Register op1 = $src1$$Register;
     Label*     L = $labl$$label;
@@ -5460,6 +5478,24 @@ instruct cmpN_reg_branch_long(cmpOp cmp, mRegN op1, mRegN op2, label labl) %{
   ins_pipe( pipe_alu_branch );
 %}
 
+instruct branchConIU_reg_imm12_long(cmpOp cmp, mRegI src1, immI12 src2, label labl) %{
+  match( If cmp (CmpU src1 src2) );
+  effect(USE labl);
+  format %{ "BR$cmp   $src1, $src2, $labl #@branchConIU_reg_imm12_long" %}
+
+  ins_encode %{
+    Register op1 = $src1$$Register;
+    Label*     L = $labl$$label;
+    int     flag = $cmp$$cmpcode;
+    int       imm = $src2$$constant;
+    __ addi_d(AT, R0, imm);
+    __ cmp_branch_long(flag, op1, AT, L, false /* unsigned*/);
+  %}
+
+  ins_pc_relative(1);
+  ins_pipe( pipe_alu_branch );
+%}
+
 instruct branchConIU_reg_reg_long(cmpOp cmp, mRegI src1, mRegI src2, label labl) %{
   match( If cmp (CmpU src1 src2) );
   effect(USE labl);
@@ -5482,7 +5518,7 @@ instruct branchConIU_reg_reg_long(cmpOp cmp, mRegI src1, mRegI src2, label labl)
 instruct branchConIU_reg_zero_long(cmpOp cmp, mRegI src1, immI_0 zero, label labl) %{
   match( If cmp (CmpU src1 zero) );
   effect(USE labl);
-  format %{ "BR$cmp   $src1, $zero, $labl #@branchConIU_reg_imm_long" %}
+  format %{ "BR$cmp   $src1, $zero, $labl #@branchConIU_reg_zero_long" %}
 
   ins_encode %{
     Register op1 = $src1$$Register;
@@ -5518,7 +5554,7 @@ instruct branchConI_reg_zero_long(cmpOp cmp, mRegI src1, immI_0 zero, label labl
   match( If cmp (CmpI src1 zero) );
   effect(USE labl);
   ins_cost(200);
-  format %{ "BR$cmp   $src1, $zero, $labl #@branchConI_reg_imm_long" %}
+  format %{ "BR$cmp   $src1, $zero, $labl #@branchConI_reg_zero_long" %}
 
   ins_encode %{
     Register op1 = $src1$$Register;

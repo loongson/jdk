@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,22 +24,41 @@
  */
 
 #include "precompiled.hpp"
-#include "asm/macroAssembler.hpp"
-#include "opto/compile.hpp"
-#include "opto/node.hpp"
-#include "opto/output.hpp"
+#include "opto/c2_MacroAssembler.hpp"
+#include "opto/c2_CodeStubs.hpp"
 #include "runtime/sharedRuntime.hpp"
+#include "runtime/stubRoutines.hpp"
 
 #define __ masm.
-void C2SafepointPollStubTable::emit_stub_impl(MacroAssembler& masm, C2SafepointPollStub* entry) const {
+
+int C2SafepointPollStub::max_size() const {
+  return 4 * 4;
+}
+
+void C2SafepointPollStub::emit(C2_MacroAssembler& masm) {
   assert(SharedRuntime::polling_page_return_handler_blob() != NULL,
          "polling page return stub not created yet");
   address stub = SharedRuntime::polling_page_return_handler_blob()->entry_point();
 
-  __ bind(entry->_stub_label);
-  InternalAddress safepoint_pc(masm.pc() - masm.offset() + entry->_safepoint_offset);
+  __ bind(entry());
+  InternalAddress safepoint_pc(masm.pc() - masm.offset() + _safepoint_offset);
   __ lea(AT, safepoint_pc);
   __ st_d(AT, Address(TREG, JavaThread::saved_exception_pc_offset()));
   __ jmp(stub, relocInfo::runtime_call_type);
 }
+
+int C2EntryBarrierStub::max_size() const {
+  return 5 * 4;
+}
+
+void C2EntryBarrierStub::emit(C2_MacroAssembler& masm) {
+  __ bind(entry());
+  __ call_long(StubRoutines::la::method_entry_barrier());
+  __ b(continuation());
+
+  __ bind(guard());
+  __ relocate(entry_guard_Relocation::spec());
+  __ emit_int32(0);  // nmethod guard value
+}
+
 #undef __

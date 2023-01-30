@@ -1756,7 +1756,7 @@ void MacroAssembler::encode_heap_oop(Register r) {
   if (CompressedOops::base() == NULL) {
     if (CompressedOops::shift() != 0) {
       assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
-      shr(r, LogMinObjAlignmentInBytes);
+      srli_d(r, r, LogMinObjAlignmentInBytes);
     }
     return;
   }
@@ -1765,7 +1765,7 @@ void MacroAssembler::encode_heap_oop(Register r) {
   maskeqz(r, AT, r);
   if (CompressedOops::shift() != 0) {
     assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
-    shr(r, LogMinObjAlignmentInBytes);
+    srli_d(r, r, LogMinObjAlignmentInBytes);
   }
 }
 
@@ -1790,7 +1790,7 @@ void MacroAssembler::encode_heap_oop(Register dst, Register src) {
   maskeqz(dst, AT, src);
   if (CompressedOops::shift() != 0) {
     assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
-    shr(dst, LogMinObjAlignmentInBytes);
+    srli_d(dst, dst, LogMinObjAlignmentInBytes);
   }
 }
 
@@ -1810,7 +1810,7 @@ void MacroAssembler::encode_heap_oop_not_null(Register r) {
   }
   if (CompressedOops::shift() != 0) {
     assert (LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
-    shr(r, LogMinObjAlignmentInBytes);
+    srli_d(r, r, LogMinObjAlignmentInBytes);
   }
 
 }
@@ -1841,7 +1841,7 @@ void MacroAssembler::encode_heap_oop_not_null(Register dst, Register src) {
   sub_d(dst, src, S5_heapbase);
   if (CompressedOops::shift() != 0) {
     assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
-    shr(dst, LogMinObjAlignmentInBytes);
+    srli_d(dst, dst, LogMinObjAlignmentInBytes);
   }
 }
 
@@ -1852,7 +1852,7 @@ void MacroAssembler::decode_heap_oop(Register r) {
   if (CompressedOops::base() == NULL) {
     if (CompressedOops::shift() != 0) {
       assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
-      shl(r, LogMinObjAlignmentInBytes);
+      slli_d(r, r, LogMinObjAlignmentInBytes);
     }
     return;
   }
@@ -1863,7 +1863,7 @@ void MacroAssembler::decode_heap_oop(Register r) {
     if (LogMinObjAlignmentInBytes <= 4) {
       alsl_d(r, r, S5_heapbase, LogMinObjAlignmentInBytes - 1);
     } else {
-      shl(r, LogMinObjAlignmentInBytes);
+      slli_d(r, r, LogMinObjAlignmentInBytes);
       add_d(r, r, S5_heapbase);
     }
   } else {
@@ -1924,11 +1924,11 @@ void MacroAssembler::decode_heap_oop_not_null(Register r) {
       if (LogMinObjAlignmentInBytes <= 4) {
         alsl_d(r, r, S5_heapbase, LogMinObjAlignmentInBytes - 1);
       } else {
-        shl(r, LogMinObjAlignmentInBytes);
+        slli_d(r, r, LogMinObjAlignmentInBytes);
         add_d(r, r, S5_heapbase);
       }
     } else {
-      shl(r, LogMinObjAlignmentInBytes);
+      slli_d(r, r, LogMinObjAlignmentInBytes);
     }
   } else {
     assert(CompressedOops::base() == NULL, "sanity");
@@ -1974,7 +1974,7 @@ void MacroAssembler::encode_klass_not_null(Register r) {
   }
   if (CompressedKlassPointers::shift() != 0) {
     assert (LogKlassAlignmentInBytes == CompressedKlassPointers::shift(), "decode alg wrong");
-    shr(r, LogKlassAlignmentInBytes);
+    srli_d(r, r, LogKlassAlignmentInBytes);
   }
 }
 
@@ -1992,7 +1992,7 @@ void MacroAssembler::encode_klass_not_null(Register dst, Register src) {
       sub_d(dst, src, dst);
       if (CompressedKlassPointers::shift() != 0) {
         assert (LogKlassAlignmentInBytes == CompressedKlassPointers::shift(), "decode alg wrong");
-        shr(dst, LogKlassAlignmentInBytes);
+        srli_d(dst, dst, LogKlassAlignmentInBytes);
       }
     } else {
       if (CompressedKlassPointers::shift() != 0) {
@@ -2028,7 +2028,7 @@ void MacroAssembler::decode_klass_not_null(Register r) {
   } else {
     if (CompressedKlassPointers::shift() != 0) {
       assert(LogKlassAlignmentInBytes == CompressedKlassPointers::shift(), "decode alg wrong");
-      shl(r, LogKlassAlignmentInBytes);
+      slli_d(r, r, LogKlassAlignmentInBytes);
     }
   }
 }

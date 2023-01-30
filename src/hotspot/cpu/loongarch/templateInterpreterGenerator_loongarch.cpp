@@ -1805,7 +1805,7 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
     __ get_method(A1);
     __ ld_d(A1, A1, in_bytes(Method::const_offset()));
     __ ld_hu(A1, A1, in_bytes(ConstMethod::size_of_parameters_offset()));
-    __ shl(A1, Interpreter::logStackElementSize);
+    __ slli_d(A1, A1, Interpreter::logStackElementSize);
     __ restore_locals();
     __ sub_d(A2, LVP, A1);
     __ addi_d(A2, A2, wordSize);

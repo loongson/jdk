@@ -2579,9 +2579,9 @@ void TemplateTable::jvmti_post_field_mod(Register cache, Register index, bool is
       // we must find the type to determine where the object is.
       Label two_word, valsize_known;
       __ alsl_d(AT, tmp4, tmp2, Address::times_8 - 1);
-      __ ld_d(tmp3, AT, in_bytes(cp_base_offset +
-                                 ConstantPoolCacheEntry::flags_offset()));
-      __ shr(tmp3, ConstantPoolCacheEntry::tos_state_shift);
+      __ ld_wu(tmp3, AT, in_bytes(cp_base_offset +
+                                  ConstantPoolCacheEntry::flags_offset()));
+      __ srli_d(tmp3, tmp3, ConstantPoolCacheEntry::tos_state_shift);
 
       ConstantPoolCacheEntry::verify_tos_state_shift();
       __ move(tmp1, SP);

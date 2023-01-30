@@ -440,9 +440,7 @@ class MacroAssembler: public Assembler {
   void decrement(Register reg, int imm);
   void increment(Address addr, int imm = 1);
   void decrement(Address addr, int imm = 1);
-  void shl(Register reg, int sa)        { slli_d(reg, reg, sa); }
-  void shr(Register reg, int sa)        { srli_d(reg, reg, sa); }
-  void sar(Register reg, int sa)        { srai_d(reg, reg, sa); }
+
   // Helper functions for statistics gathering.
   void atomic_inc32(address counter_addr, int inc, Register tmp_reg1, Register tmp_reg2);
 

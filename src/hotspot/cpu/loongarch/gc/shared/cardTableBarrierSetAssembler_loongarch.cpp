@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2018, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2018, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -61,8 +61,8 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 
   __ lea(end, Address(addr, count, TIMES_OOP, 0));  // end == addr+count*oop_size
   __ addi_d(end, end, -BytesPerHeapOop); // end - 1 to make inclusive
-  __ shr(addr, CardTable::card_shift());
-  __ shr(end, CardTable::card_shift());
+  __ srli_d(addr, addr, CardTable::card_shift());
+  __ srli_d(end, end, CardTable::card_shift());
   __ sub_d(end, end, addr); // end --> cards count
 
   __ add_d(addr, addr, tmp);
@@ -79,7 +79,7 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register obj, Register tmp) {
   assert_different_registers(obj, tmp, SCR1);
 
-  __ shr(obj, CardTable::card_shift());
+  __ srli_d(obj, obj, CardTable::card_shift());
 
   __ load_byte_map_base(tmp);
 

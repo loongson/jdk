@@ -264,7 +264,7 @@ void InterpreterMacroAssembler::get_cache_and_index_at_bcp(Register cache,
   ld_d(cache, FP, frame::interpreter_frame_cache_offset * wordSize);
   assert(sizeof(ConstantPoolCacheEntry) == 4 * wordSize, "adjust code below");
   assert(exact_log2(in_words(ConstantPoolCacheEntry::size())) == 2, "else change next line");
-  shl(index, 2);
+  slli_d(index, index, 2);
 }
 
 
@@ -304,7 +304,7 @@ void InterpreterMacroAssembler::get_cache_entry_pointer_at_bcp(Register cache,
   // convert from field index to ConstantPoolCacheEntry index
   // and from word offset to byte offset
   assert(exact_log2(in_bytes(ConstantPoolCacheEntry::size_in_bytes())) == 2 + LogBytesPerWord, "else change next line");
-  shl(tmp, 2 + LogBytesPerWord);
+  slli_d(tmp, tmp, 2 + LogBytesPerWord);
   ld_d(cache, FP, frame::interpreter_frame_cache_offset * wordSize);
   // skip past the header
   addi_d(cache, cache, in_bytes(ConstantPoolCache::base_offset()));
@@ -327,9 +327,6 @@ void InterpreterMacroAssembler::get_method_counters(Register method,
 void InterpreterMacroAssembler::load_resolved_reference_at_index(
                                            Register result, Register index, Register tmp) {
   assert_different_registers(result, index);
-  // convert from field index to resolved_references() index and from
-  // word index to byte offset. Since this is a java object, it can be compressed
-  shl(index, LogBytesPerHeapOop);
 
   get_constant_pool(result);
   // load pointer for resolved_references[] objArray
@@ -337,7 +334,7 @@ void InterpreterMacroAssembler::load_resolved_reference_at_index(
   ld_d(result, result, ConstantPoolCache::resolved_references_offset_in_bytes());
   resolve_oop_handle(result, tmp);
   // Add in the index
-  add_d(result, result, index);
+  alsl_d(result, index, result, LogBytesPerHeapOop - 1);
   load_heap_oop(result, Address(result, arrayOopDesc::base_offset_in_bytes(T_OBJECT)), tmp);
 }
 

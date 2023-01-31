@@ -411,29 +411,29 @@ int SharedRuntime::java_calling_convention(const BasicType *sig_bt,
 static void patch_callers_callsite(MacroAssembler *masm) {
   Label L;
   __ ld_d(AT, Address(Rmethod, Method::code_offset()));
-  __ beq(AT, R0, L);
+  __ beqz(AT, L);
 
-  // Schedule the branch target address early.
-  // Call into the VM to patch the caller, then jump to compiled callee
-  // T5 isn't live so capture return address while we easily can
-  __ move(T5, RA);
-
+  __ enter();
   __ push_call_clobbered_registers();
 
   // VM needs caller's callsite
   // VM needs target method
+  // This needs to be a long call since we will relocate this adapter to
+  // the codeBuffer and it may not reach
 
-  __ move(A0, Rmethod);
-  __ move(A1, T5);
-  // we should preserve the return address
-  __ move(TSR, SP);
+#ifndef PRODUCT
+  assert(frame::arg_reg_save_area_bytes == 0, "not expecting frame reg save area");
+#endif
+
+  __ move(c_rarg0, Rmethod);
+  __ move(c_rarg1, RA);
   assert(StackAlignmentInBytes == 16, "must be");
-  __ bstrins_d(SP, R0, 3, 0);   // align the stack
+  __ bstrins_d(SP, R0, 3, 0);  // align the stack
   __ call(CAST_FROM_FN_PTR(address, SharedRuntime::fixup_callers_callsite),
           relocInfo::runtime_call_type);
 
-  __ move(SP, TSR);
   __ pop_call_clobbered_registers();
+  __ leave();
   __ bind(L);
 }
 
@@ -443,39 +443,24 @@ static void gen_c2i_adapter(MacroAssembler *masm,
                             const BasicType *sig_bt,
                             const VMRegPair *regs,
                             Label& skip_fixup) {
-
   // Before we get into the guts of the C2I adapter, see if we should be here
   // at all.  We've come from compiled code and are attempting to jump to the
   // interpreter, which means the caller made a static call to get here
   // (vcalls always get a compiled target if there is one).  Check for a
   // compiled target.  If there is one, we need to patch the caller's call.
-  // However we will run interpreted if we come thru here. The next pass
-  // thru the call site will run compiled. If we ran compiled here then
-  // we can (theorectically) do endless i2c->c2i->i2c transitions during
-  // deopt/uncommon trap cycles. If we always go interpreted here then
-  // we can have at most one and don't need to play any tricks to keep
-  // from endlessly growing the stack.
-  //
-  // Actually if we detected that we had an i2c->c2i transition here we
-  // ought to be able to reset the world back to the state of the interpreted
-  // call and not bother building another interpreter arg area. We don't
-  // do that at this point.
-
   patch_callers_callsite(masm);
+
   __ bind(skip_fixup);
 
   // Since all args are passed on the stack, total_args_passed *
   // Interpreter::stackElementSize is the space we need.
   int extraspace = total_args_passed * Interpreter::stackElementSize;
 
-  // stack is aligned, keep it that way
-  extraspace = align_up(extraspace, 2*wordSize);
-
-  // Get return address
-  __ move(T5, RA);
-  // set senderSP value
-  //refer to interpreter_loongarch.cpp:generate_asm_entry
   __ move(Rsender, SP);
+
+  // stack is aligned, keep it that way
+  extraspace = align_up(extraspace, 2 * wordSize);
+
   __ addi_d(SP, SP, -extraspace);
 
   // Now write the args into the outgoing interpreter space
@@ -485,14 +470,23 @@ static void gen_c2i_adapter(MacroAssembler *masm,
       continue;
     }
 
-    // st_off points to lowest address on stack.
-    int st_off = ((total_args_passed - 1) - i) * Interpreter::stackElementSize;
+    // offset to start parameters
+    int st_off = (total_args_passed - i - 1) * Interpreter::stackElementSize;
+    int next_off = st_off - Interpreter::stackElementSize;
+
     // Say 4 args:
     // i   st_off
-    // 0   12 T_LONG
-    // 1    8 T_VOID
-    // 2    4 T_OBJECT
-    // 3    0 T_BOOL
+    // 0   32 T_LONG
+    // 1   24 T_VOID
+    // 2   16 T_OBJECT
+    // 3    8 T_BOOL
+    // -    0 return address
+    //
+    // However to make thing extra confusing. Because we can fit a Java long/double in
+    // a single slot on a 64 bt vm and it would be silly to break them up, the interpreter
+    // leaves one slot empty and only stores to a single slot. In this case the
+    // slot that is occupied is the T_VOID slot. See I said it was confusing.
+
     VMReg r_1 = regs[i].first();
     VMReg r_2 = regs[i].second();
     if (!r_1->is_valid()) {
@@ -500,96 +494,50 @@ static void gen_c2i_adapter(MacroAssembler *masm,
       continue;
     }
     if (r_1->is_stack()) {
-      // memory to memory use fpu stack top
+      // memory to memory
       int ld_off = r_1->reg2stack() * VMRegImpl::stack_slot_size + extraspace;
       if (!r_2->is_valid()) {
-        __ ld_d(AT, Address(SP, ld_off));
+        __ ld_wu(AT, Address(SP, ld_off));
         __ st_d(AT, Address(SP, st_off));
       } else {
-        int next_off = st_off - Interpreter::stackElementSize;
         __ ld_d(AT, Address(SP, ld_off));
 
-        // Ref to is_Register condition
+        // Two VMREgs|OptoRegs can be T_OBJECT, T_ADDRESS, T_DOUBLE, T_LONG
+        // T_DOUBLE and T_LONG use two slots in the interpreter
         if (sig_bt[i] == T_LONG || sig_bt[i] == T_DOUBLE) {
-          __ st_d(AT, SP, st_off - 8);
+          __ st_d(AT, Address(SP, next_off));
         } else {
-          __ st_d(AT, SP, st_off);
+          __ st_d(AT, Address(SP, st_off));
         }
       }
     } else if (r_1->is_Register()) {
       Register r = r_1->as_Register();
       if (!r_2->is_valid()) {
-          __ st_d(r, SP, st_off);
+        // must be only an int (or less ) so move only 32bits to slot
+        __ st_d(r, Address(SP, st_off));
       } else {
-        // In [java/util/zip/ZipFile.java]
-        //
-        //    private static native long open(String name, int mode, long lastModified);
-        //    private static native int getTotal(long jzfile);
-        //
-        // We need to transfer T_LONG parameters from a compiled method to a native method.
-        // It's a complex process:
-        //
-        // Caller -> lir_static_call -> gen_resolve_stub
-        //      -> -- resolve_static_call_C
-        //         `- gen_c2i_adapter()  [*]
-        //             |
-        //       `- AdapterHandlerLibrary::get_create_apapter_index
-        //      -> generate_native_entry
-        //      -> InterpreterRuntime::SignatureHandlerGenerator::pass_long [**]
-        //
-        // In [**], T_Long parameter is stored in stack as:
-        //
-        //   (high)
-        //    |         |
-        //    -----------
-        //    | 8 bytes |
-        //    | (void)  |
-        //    -----------
-        //    | 8 bytes |
-        //    | (long)  |
-        //    -----------
-        //    |         |
-        //   (low)
-        //
-        // However, the sequence is reversed here:
-        //
-        //   (high)
-        //    |         |
-        //    -----------
-        //    | 8 bytes |
-        //    | (long)  |
-        //    -----------
-        //    | 8 bytes |
-        //    | (void)  |
-        //    -----------
-        //    |         |
-        //   (low)
-        //
-        // So I stored another 8 bytes in the T_VOID slot. It then can be accessed from generate_native_entry().
-        //
-        if (sig_bt[i] == T_LONG) {
-          __ st_d(r, SP, st_off - 8);
+        // Two VMREgs|OptoRegs can be T_OBJECT, T_ADDRESS, T_DOUBLE, T_LONG
+        // T_DOUBLE and T_LONG use two slots in the interpreter
+        if (sig_bt[i] == T_LONG || sig_bt[i] == T_DOUBLE) {
+          __ st_d(r, Address(SP, next_off));
         } else {
-          __ st_d(r, SP, st_off);
+          __ st_d(r, Address(SP, st_off));
         }
       }
-    } else if (r_1->is_FloatRegister()) {
-      assert(sig_bt[i] == T_FLOAT || sig_bt[i] == T_DOUBLE, "Must be a float register");
-
+    } else {
+      assert(r_1->is_FloatRegister(), "");
       FloatRegister fr = r_1->as_FloatRegister();
-      if (sig_bt[i] == T_FLOAT) {
-        __ fst_s(fr, SP, st_off);
+      if (!r_2->is_valid()) {
+        // only a float use just part of the slot
+        __ fst_s(fr, Address(SP, st_off));
       } else {
-        __ fst_d(fr, SP, st_off - 8);  // T_DOUBLE needs two slots
+        __ fst_d(fr, Address(SP, next_off));
       }
     }
   }
 
-  // Schedule the branch target address early.
   __ ld_d(AT, Address(Rmethod, Method::interpreter_entry_offset()));
-  // And repush original return address
-  __ move(RA, T5);
-  __ jr (AT);
+  __ jr(AT);
 }
 
 void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
@@ -597,51 +545,26 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
                                     int comp_args_on_stack,
                                     const BasicType *sig_bt,
                                     const VMRegPair *regs) {
+  // Note: Rsender contains the senderSP on entry. We must preserve
+  // it since we may do a i2c -> c2i transition if we lose a race
+  // where compiled code goes non-entrant while we get args ready.
+  const Register saved_sp = T5;
+  __ move(saved_sp, SP);
 
-  // Generate an I2C adapter: adjust the I-frame to make space for the C-frame
-  // layout.  Lesp was saved by the calling I-frame and will be restored on
-  // return.  Meanwhile, outgoing arg space is all owned by the callee
-  // C-frame, so we can mangle it at will.  After adjusting the frame size,
-  // hoist register arguments and repack other args according to the compiled
-  // code convention.  Finally, end in a jump to the compiled code.  The entry
-  // point address is the start of the buffer.
-
-  // We will only enter here from an interpreted frame and never from after
-  // passing thru a c2i. Azul allowed this but we do not. If we lose the
-  // race and use a c2i we will remain interpreted for the race loser(s).
-  // This removes all sorts of headaches on the LA side and also eliminates
-  // the possibility of having c2i -> i2c -> c2i -> ... endless transitions.
-  __ move(T4, SP);
-
-  // Cut-out for having no stack args.  Since up to 2 int/oop args are passed
-  // in registers, we will occasionally have no stack args.
-  int comp_words_on_stack = 0;
-  if (comp_args_on_stack) {
-    // Sig words on the stack are greater-than VMRegImpl::stack0.  Those in
-    // registers are below.  By subtracting stack0, we either get a negative
-    // number (all values in registers) or the maximum stack slot accessed.
-    // int comp_args_on_stack = VMRegImpl::reg2stack(max_arg);
-    // Convert 4-byte stack slots to words.
-    // did LA need round? FIXME
-    comp_words_on_stack = align_up(comp_args_on_stack*4, wordSize)>>LogBytesPerWord;
-    // Round up to miminum stack alignment, in wordSize
-    comp_words_on_stack = align_up(comp_words_on_stack, 2);
-    __ addi_d(SP, SP, -comp_words_on_stack * wordSize);
+  // Cut-out for having no stack args.
+  int comp_words_on_stack = align_up(comp_args_on_stack * VMRegImpl::stack_slot_size, wordSize) >> LogBytesPerWord;
+  if (comp_args_on_stack != 0) {
+    __ addi_d(SP, SP, -1 * comp_words_on_stack * wordSize);
   }
 
   // Align the outgoing SP
   assert(StackAlignmentInBytes == 16, "must be");
   __ bstrins_d(SP, R0, 3, 0);
-  // push the return address on the stack (note that pushing, rather
-  // than storing it, yields the correct frame alignment for the callee)
-  // Put saved SP in another register
-  const Register saved_sp = T5;
-  __ move(saved_sp, T4);
-
 
   // Will jump to the compiled code just as if compiled code was doing it.
   // Pre-load the register-jump target early, to schedule it better.
-  __ ld_d(T4, Rmethod, in_bytes(Method::from_compiled_offset()));
+  const Register comp_code_target = TSR;
+  __ ld_d(comp_code_target, Rmethod, in_bytes(Method::from_compiled_offset()));
 
 #if INCLUDE_JVMCI
   if (EnableJVMCI) {
@@ -649,19 +572,16 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
     __ ld_d(AT, Address(TREG, in_bytes(JavaThread::jvmci_alternate_call_target_offset())));
     Label no_alternative_target;
     __ beqz(AT, no_alternative_target);
-    __ move(T4, AT);
+    __ move(comp_code_target, AT);
     __ st_d(R0, Address(TREG, in_bytes(JavaThread::jvmci_alternate_call_target_offset())));
     __ bind(no_alternative_target);
   }
 #endif // INCLUDE_JVMCI
 
-  // Now generate the shuffle code.  Pick up all register args and move the
-  // rest through the floating point stack top.
+  // Now generate the shuffle code.
   for (int i = 0; i < total_args_passed; i++) {
     if (sig_bt[i] == T_VOID) {
-      // Longs and doubles are passed in native word order, but misaligned
-      // in the 32-bit build.
-      assert(i > 0 && (sig_bt[i-1] == T_LONG || sig_bt[i-1] == T_DOUBLE), "missing half");
+      assert(i > 0 && (sig_bt[i - 1] == T_LONG || sig_bt[i - 1] == T_DOUBLE), "missing half");
       continue;
     }
 
@@ -669,9 +589,10 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
 
     assert(!regs[i].second()->is_valid() || regs[i].first()->next() == regs[i].second(), "scrambled load targets?");
     // Load in argument order going down.
-    int ld_off = (total_args_passed -1 - i)*Interpreter::stackElementSize;
+    int ld_off = (total_args_passed - i - 1) * Interpreter::stackElementSize;
     // Point to interpreter value (vs. tag)
     int next_off = ld_off - Interpreter::stackElementSize;
+
     VMReg r_1 = regs[i].first();
     VMReg r_2 = regs[i].second();
     if (!r_1->is_valid()) {
@@ -679,77 +600,47 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
       continue;
     }
     if (r_1->is_stack()) {
-      // Convert stack slot to an SP offset (+ wordSize to
-      // account for return address )
-      // NOTICE HERE!!!! I sub a wordSize here
-      int st_off = regs[i].first()->reg2stack()*VMRegImpl::stack_slot_size;
-      //+ wordSize;
-
+      // Convert stack slot to an SP offset (+ wordSize to account for return address )
+      int st_off = regs[i].first()->reg2stack() * VMRegImpl::stack_slot_size;
       if (!r_2->is_valid()) {
-        __ ld_d(AT, saved_sp, ld_off);
-        __ st_d(AT, SP, st_off);
+        __ ld_w(AT, Address(saved_sp, ld_off));
+        __ st_d(AT, Address(SP, st_off));
       } else {
-        // Interpreter local[n] == MSW, local[n+1] == LSW however locals
-        // are accessed as negative so LSW is at LOW address
-
-        // ld_off is MSW so get LSW
-        // st_off is LSW (i.e. reg.first())
-
-        // [./org/eclipse/swt/graphics/GC.java]
-        // void drawImageXRender(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight,
-        //  int destX, int destY, int destWidth, int destHeight,
-        //  boolean simple,
-        //  int imgWidth, int imgHeight,
-        //  long maskPixmap,  <-- Pass T_LONG in stack
-        //  int maskType);
-        // Before this modification, Eclipse displays icons with solid black background.
-        //
+        // We are using two optoregs. This can be either T_OBJECT,
+        // T_ADDRESS, T_LONG, or T_DOUBLE the interpreter allocates
+        // two slots but only uses one for thr T_LONG or T_DOUBLE case
+        // So we must adjust where to pick up the data to match the
+        // interpreter.
         if (sig_bt[i] == T_LONG || sig_bt[i] == T_DOUBLE) {
-          __ ld_d(AT, saved_sp, next_off);
+          __ ld_d(AT, Address(saved_sp, next_off));
         } else {
-          __ ld_d(AT, saved_sp, ld_off);
+          __ ld_d(AT, Address(saved_sp, ld_off));
         }
-        __ st_d(AT, SP, st_off);
+        __ st_d(AT, Address(SP, st_off));
       }
     } else if (r_1->is_Register()) {  // Register argument
       Register r = r_1->as_Register();
       if (r_2->is_valid()) {
-        // Remember r_1 is low address (and LSB on LA)
-        // So r_2 gets loaded from high address regardless of the platform
-        assert(r_2->as_Register() == r_1->as_Register(), "");
-        //
-        // For T_LONG type, the real layout is as below:
-        //
-        //   (high)
-        //    |         |
-        //    -----------
-        //    | 8 bytes |
-        //    | (void)  |
-        //    -----------
-        //    | 8 bytes |
-        //    | (long)  |
-        //    -----------
-        //    |         |
-        //   (low)
-        //
-        // We should load the low-8 bytes.
-        //
+        // We are using two VMRegs. This can be either T_OBJECT,
+        // T_ADDRESS, T_LONG, or T_DOUBLE the interpreter allocates
+        // two slots but only uses one for thr T_LONG or T_DOUBLE case
+        // So we must adjust where to pick up the data to match the
+        // interpreter.
         if (sig_bt[i] == T_LONG) {
-          __ ld_d(r, saved_sp, next_off);
+          __ ld_d(r, Address(saved_sp, next_off));
         } else {
-          __ ld_d(r, saved_sp, ld_off);
+          __ ld_d(r, Address(saved_sp, ld_off));
         }
       } else {
-        __ ld_w(r, saved_sp, ld_off);
+        __ ld_w(r, Address(saved_sp, ld_off));
       }
-    } else if (r_1->is_FloatRegister()) { // Float Register
-      assert(sig_bt[i] == T_FLOAT || sig_bt[i] == T_DOUBLE, "Must be a float register");
-
+    } else {
+      assert(sig_bt[i] == T_FLOAT || sig_bt[i] == T_DOUBLE, "Must be float regs");
       FloatRegister fr = r_1->as_FloatRegister();
-      if (sig_bt[i] == T_FLOAT) {
-        __ fld_s(fr, saved_sp, ld_off);
+      if (!r_2->is_valid()) {
+        __ fld_s(fr, Address(saved_sp, ld_off));
       } else {
-        __ fld_d(fr, saved_sp, next_off);
+        __ fld_d(fr, Address(saved_sp, next_off));
       }
     }
   }
@@ -766,14 +657,10 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
   // is possible. So we stash the desired callee in the thread
   // and the vm will find there should this case occur.
 
-  __ st_d(Rmethod, TREG, in_bytes(JavaThread::callee_target_offset()));
+  __ st_d(Rmethod, Address(TREG, JavaThread::callee_target_offset()));
 
-  // move Method* to T5 in case we end up in an c2i adapter.
-  // the c2i adapters expect Method* in T5 (c2) because c2's
-  // resolve stubs return the result (the method) in T5.
-  // I'd love to fix this.
-  __ move(T5, Rmethod);
-  __ jr(T4);
+  // Jump to the compiled code just as if compiled code was doing it.
+  __ jr(comp_code_target);
 }
 
 // ---------------------------------------------------------------

@@ -2053,7 +2053,7 @@ void MachPrologNode::format( PhaseRegAlloc *ra_, outputStream* st ) const {
     st->print("\n\t");
     st->print("ld_d  T1, guard, 0\n\t");
     st->print("dbar  0\n\t");
-    st->print("ld_d  T2, TREG, thread_disarmed_offset\n\t");
+    st->print("ld_d  T2, TREG, thread_disarmed_guard_value_offset\n\t");
     st->print("beq   T1, T2, skip\n\t");
     st->print("\n\t");
     st->print("jalr  #nmethod_entry_barrier_stub\n\t");

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2018, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2018, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -261,7 +261,7 @@ void BarrierSetAssembler::nmethod_entry_barrier(MacroAssembler* masm, Label* slo
         // instruction patching is synchronized with global icache_flush() by
         // the write hart on riscv. So here we can do a plain conditional
         // branch with no fencing.
-        Address thread_disarmed_addr(TREG, in_bytes(bs_nm->thread_disarmed_offset()));
+        Address thread_disarmed_addr(TREG, in_bytes(bs_nm->thread_disarmed_guard_value_offset()));
         __ ld_wu(SCR2, thread_disarmed_addr);
         break;
       }
@@ -286,7 +286,7 @@ void BarrierSetAssembler::nmethod_entry_barrier(MacroAssembler* masm, Label* slo
         __ slli_d(SCR2, SCR2, 32);
         __ orr(SCR1, SCR1, SCR2);
         // Compare the global values with the thread-local values
-        Address thread_disarmed_and_epoch_addr(TREG, in_bytes(bs_nm->thread_disarmed_offset()));
+        Address thread_disarmed_and_epoch_addr(TREG, in_bytes(bs_nm->thread_disarmed_guard_value_offset()));
         __ ld_d(SCR2, thread_disarmed_and_epoch_addr);
         break;
       }

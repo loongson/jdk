@@ -3120,7 +3120,7 @@ class StubGenerator: public StubCodeGenerator {
 
     if (bs_asm->nmethod_patching_type() == NMethodPatchingType::conc_instruction_and_data_patch) {
       BarrierSetNMethod* bs_nm = BarrierSet::barrier_set()->barrier_set_nmethod();
-      Address thread_epoch_addr(TREG, in_bytes(bs_nm->thread_disarmed_offset()) + 4);
+      Address thread_epoch_addr(TREG, in_bytes(bs_nm->thread_disarmed_guard_value_offset()) + 4);
       __ lea(SCR1, ExternalAddress(bs_asm->patching_epoch_addr()));
       __ ld_wu(SCR1, SCR1, 0);
       __ st_w(SCR1, thread_epoch_addr);

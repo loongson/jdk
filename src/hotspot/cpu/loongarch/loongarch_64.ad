@@ -16672,6 +16672,7 @@ instruct storemask16S(vecX dst, vecY src, immI_2 size, vecX tmp) %{
 
 // ----------------------------- VectorTest -----------------------------------
 
+/*
 instruct anytrue_in_maskV16(mRegI dst, vecX src1, vecX src2)
 %{
   predicate(UseCF2GR && static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::ne);
@@ -16783,6 +16784,7 @@ instruct alltrue_in_maskV32_indir(mRegI dst, vecY src1, vecY src2, regF tmp)
   %}
   ins_pipe( pipe_slow );
 %}
+*/
 
 // ----------------------------- VectorMaskTrueCount ----------------------------
 

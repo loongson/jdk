@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -74,6 +74,10 @@ enum {
 // LoongArch64 where floats and doubles are stored in their native form.
 enum {
   pd_float_saved_as_double = false
+};
+
+enum {
+  pd_two_operand_lir_form = false
 };
 
 #endif // CPU_LOONGARCH_C1_DEFS_LOONGARCH_HPP

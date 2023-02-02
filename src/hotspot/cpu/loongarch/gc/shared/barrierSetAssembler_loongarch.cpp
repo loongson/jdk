@@ -167,7 +167,9 @@ void BarrierSetAssembler::obj_equals(MacroAssembler* masm,
 
 void BarrierSetAssembler::try_resolve_jobject_in_native(MacroAssembler* masm, Register jni_env,
                                                         Register obj, Register tmp, Label& slowpath) {
-  __ clear_jweak_tag(obj);
+  STATIC_ASSERT(JNIHandles::tag_mask == 3);
+  __ addi_d(AT, R0, ~(int)JNIHandles::tag_mask);
+  __ andr(obj, obj, AT);
   __ ld_d(obj, Address(obj, 0));
 }
 

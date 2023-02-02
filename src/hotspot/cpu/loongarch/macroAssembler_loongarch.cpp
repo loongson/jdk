@@ -2447,32 +2447,62 @@ void MacroAssembler::load_byte_map_base(Register reg) {
   li(reg, (uint64_t)byte_map_base);
 }
 
-void MacroAssembler::clear_jweak_tag(Register possibly_jweak) {
-  const int32_t inverted_jweak_mask = ~static_cast<int32_t>(JNIHandles::weak_tag_mask);
-  STATIC_ASSERT(inverted_jweak_mask == -2); // otherwise check this code
-  // The inverted mask is sign-extended
-  li(AT, inverted_jweak_mask);
-  andr(possibly_jweak, AT, possibly_jweak);
-}
-
 void MacroAssembler::resolve_jobject(Register value,
                                      Register thread,
                                      Register tmp) {
   assert_different_registers(value, thread, tmp);
-  Label done, not_weak;
-  beq(value, R0, done);                // Use NULL as-is.
-  li(AT, JNIHandles::weak_tag_mask); // Test for jweak tag.
-  andr(AT, value, AT);
-  beq(AT, R0, not_weak);
-  // Resolve jweak.
-  access_load_at(T_OBJECT, IN_NATIVE | ON_PHANTOM_OOP_REF,
-                 value, Address(value, -JNIHandles::weak_tag_value), tmp, thread);
+  Label done, tagged, weak_tagged;
+
+  beqz(value, done);                // Use NULL as-is.
+  // Test for tag.
+  andi(AT, value, JNIHandles::tag_mask);
+  bnez(AT, tagged);
+
+  // Resolve local handle
+  access_load_at(T_OBJECT, IN_NATIVE | AS_RAW, value, Address(value, 0), tmp, thread);
   verify_oop(value);
   b(done);
-  bind(not_weak);
-  // Resolve (untagged) jobject.
-  access_load_at(T_OBJECT, IN_NATIVE, value, Address(value, 0), tmp, thread);
+
+  bind(tagged);
+  // Test for jweak tag.
+  andi(AT, value, JNIHandles::TypeTag::weak_global);
+  bnez(AT, weak_tagged);
+
+  // Resolve global handle
+  access_load_at(T_OBJECT, IN_NATIVE, value,
+                 Address(value, -JNIHandles::TypeTag::global), tmp, thread);
   verify_oop(value);
+  b(done);
+
+  bind(weak_tagged);
+  // Resolve jweak.
+  access_load_at(T_OBJECT, IN_NATIVE | ON_PHANTOM_OOP_REF,
+                 value, Address(value, -JNIHandles::TypeTag::weak_global), tmp, thread);
+  verify_oop(value);
+  bind(done);
+}
+
+void MacroAssembler::resolve_global_jobject(Register value, Register tmp1, Register tmp2) {
+  assert_different_registers(value, tmp1, tmp2);
+  Label done;
+
+  beqz(value, done);           // Use NULL as-is.
+
+#ifdef ASSERT
+  {
+    Label valid_global_tag;
+    andi(AT, value, JNIHandles::TypeTag::global); // Test for global tag.
+    bnez(AT, valid_global_tag);
+    stop("non global jobject using resolve_global_jobject");
+    bind(valid_global_tag);
+  }
+#endif
+
+  // Resolve global handle
+  access_load_at(T_OBJECT, IN_NATIVE, value,
+                 Address(value, -JNIHandles::TypeTag::global), tmp1, tmp2);
+  verify_oop(value);
+
   bind(done);
 }
 

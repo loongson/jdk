@@ -4936,17 +4936,9 @@ class StubGenerator: public StubCodeGenerator {
     __ move(c_rarg0, TREG);
     __ call_VM_leaf(CAST_FROM_FN_PTR(address, JfrIntrinsicSupport::write_checkpoint), 1);
     __ reset_last_Java_frame(true);
-
     // A0 is jobject handle result, unpack and process it through a barrier.
-    Label null_jobject;
-    __ beqz(A0, null_jobject);
-
-    DecoratorSet decorators = ACCESS_READ | IN_NATIVE;
-    BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
     // For zBarrierSet, tmp1 shall not be SCR1 or same as dst
-    bs->load_at(_masm, decorators, T_OBJECT, A0, Address(A0, 0), /* tmp1 */ SCR2, noreg);
-
-    __ bind(null_jobject);
+    __ resolve_global_jobject(A0, SCR2, noreg);
 
     __ leave();
     __ jr(RA);

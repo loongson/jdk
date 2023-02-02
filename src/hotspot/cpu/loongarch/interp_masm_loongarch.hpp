@@ -83,6 +83,7 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   void restore_locals() {
     ld_d(LVP, FP, frame::interpreter_frame_locals_offset * wordSize);
+    alsl_d(LVP, LVP, FP, LogBytesPerWord-1);
   }
 
   void get_dispatch();

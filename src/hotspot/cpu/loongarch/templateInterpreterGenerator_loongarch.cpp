@@ -864,7 +864,10 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
   __ addi_d(FP, SP, (frame_size) * wordSize);
   __ st_d(Rsender, FP, (-++i) * wordSize);  // save sender's sp
   __ st_d(R0, FP,(-++i) * wordSize);       //save last_sp as null
-  __ st_d(LVP, FP, (-++i) * wordSize);  // save locals offset
+  __ sub_d(AT, LVP, FP);
+  __ srli_d(AT, AT, Interpreter::logStackElementSize);
+  // Store relativized LVP, see frame::interpreter_frame_locals().
+  __ st_d(AT, FP, (-++i) * wordSize);  // save locals offset
   __ ld_d(BCP, Rmethod, in_bytes(Method::const_offset())); // get constMethodOop
   __ addi_d(BCP, BCP, in_bytes(ConstMethod::codes_offset())); // get codebase
   __ st_d(Rmethod, FP, (-++i) * wordSize);                              // save Method*

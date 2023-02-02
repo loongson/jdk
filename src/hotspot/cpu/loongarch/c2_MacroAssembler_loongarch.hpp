@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,9 +29,6 @@
 // C2_MacroAssembler contains high-level macros for C2
 
 public:
-  void emit_entry_barrier_stub(C2EntryBarrierStub* stub);
-  static int entry_barrier_stub_size();
-
   void cmp_branch_short(int flag, Register op1, Register op2, Label& L, bool is_signed);
   void cmp_branch_long(int flag, Register op1, Register op2, Label* L, bool is_signed);
   void cmp_branchEqNe_off21(int flag, Register op1, Label& L);

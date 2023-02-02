@@ -1303,6 +1303,14 @@ static void gen_continuation_yield(MacroAssembler* masm,
 
   __ bind(pinned); // pinned -- return to caller
 
+  // handle pending exception thrown by freeze
+  __ ld_d(AT, Address(TREG, in_bytes(Thread::pending_exception_offset())));
+  Label ok;
+  __ beqz(AT, ok);
+  __ leave();
+  __ jmp(StubRoutines::forward_exception_entry(), relocInfo::runtime_call_type);
+  __ bind(ok);
+
   __ leave();
   __ jr(RA);
 

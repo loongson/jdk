@@ -66,11 +66,13 @@ import java.util.function.Predicate;
  * @run testng/othervm
  *      -Djdk.httpclient.HttpClient.log=frames,ssl,requests,responses,errors
  *      -Djdk.internal.httpclient.debug=true
+ *      -Dsun.net.httpserver.idleInterval=50000
  *      HttpClientLocalAddrTest
  *
  * @run testng/othervm/java.security.policy=httpclient-localaddr-security.policy
  *      -Djdk.httpclient.HttpClient.log=frames,ssl,requests,responses,errors
  *      -Djdk.internal.httpclient.debug=true
+ *      -Dsun.net.httpserver.idleInterval=50000
  *      HttpClientLocalAddrTest
  *
  */

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,7 +32,6 @@
 // a description of how to extend it, see the stubRoutines.hpp file.
 
 //find the last fp value
-address StubRoutines::la::_call_stub_compiled_return = NULL;
 address StubRoutines::la::_method_entry_barrier      = NULL;
 address StubRoutines::la::_vector_iota_indices       = NULL;
 address StubRoutines::la::_string_indexof_linear_ll  = NULL;

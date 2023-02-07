@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,8 +30,8 @@
 // definition. See stubRoutines.hpp for a description on how to
 // extend it.
 
-static bool    returns_to_call_stub(address return_pc){
-  return return_pc == _call_stub_return_address||return_pc == la::get_call_stub_compiled_return();
+static bool returns_to_call_stub(address return_pc){
+  return return_pc == _call_stub_return_address;
 }
 
 enum platform_dependent_constants {
@@ -47,7 +47,6 @@ class la {
   // need to adjust the return back to the call stub to a specialized
   // piece of code that can handle compiled results and cleaning the fpu
   // stack. The variable holds that location.
-  static address _call_stub_compiled_return;
   static address _vector_iota_indices;
   static juint   _crc_table[];
   static address _method_entry_barrier;
@@ -66,8 +65,6 @@ class la {
 
 public:
   // Call back points for traps in compiled code
-  static address get_call_stub_compiled_return()    { return _call_stub_compiled_return; }
-  static void set_call_stub_compiled_return(address ret){ _call_stub_compiled_return = ret; }
   static address vector_iota_indices()              { return _vector_iota_indices; }
 
   static address method_entry_barrier() {

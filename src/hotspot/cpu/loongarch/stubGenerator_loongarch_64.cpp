@@ -258,9 +258,6 @@ class StubGenerator: public StubCodeGenerator {
     __ jalr(A4);
     return_address = __ pc();
 
-    Label common_return;
-    __ bind(common_return);
-
     // store result depending on type (everything that is not
     // T_OBJECT, T_LONG, T_FLOAT or T_DOUBLE is treated as T_INT)
     // n.b. this assumes Java returns an integral result in V0
@@ -323,9 +320,6 @@ class StubGenerator: public StubCodeGenerator {
     __ bind(is_double);
     __ fst_d(FA0, T0, 0);
     __ b(exit);
-
-    StubRoutines::la::set_call_stub_compiled_return(__ pc());
-    __ b(common_return);
 
     return start;
   }

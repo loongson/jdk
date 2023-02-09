@@ -750,7 +750,7 @@ void TemplateInterpreterGenerator::generate_stack_overflow_check(void) {
   const int overhead_size = -(frame::interpreter_frame_initial_sp_offset*wordSize)
     + entry_size;
 
-  const int page_size = os::vm_page_size();
+  const size_t page_size = os::vm_page_size();
   Label after_frame_check;
 
   // see if the frame is greater than one page in size. If so,
@@ -1516,7 +1516,7 @@ void TemplateInterpreterGenerator::bang_stack_shadow_pages(bool native_call) {
   // Bang each page in the shadow zone. We can't assume it's been done for
   // an interpreter frame with greater than a page of locals, so each page
   // needs to be checked.  Only true for non-native.
-  const int page_size = os::vm_page_size();
+  const int page_size = (int)os::vm_page_size();
   const int n_shadow_pages = ((int)StackOverflow::stack_shadow_zone_size()) / page_size;
   const int start_page = native_call ? n_shadow_pages : 1;
   BLOCK_COMMENT("bang_stack_shadow_pages:");

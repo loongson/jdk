@@ -389,7 +389,7 @@ void MacroAssembler::bang_stack_size(Register size, Register tmp) {
   // Bang one page at a time because large size can bang beyond yellow and
   // red zones.
   Label loop;
-  li(AT, os::vm_page_size());
+  li(AT, (int)os::vm_page_size());
   bind(loop);
   sub_d(tmp, tmp, AT);
   sub_d(size, size, AT);
@@ -402,7 +402,7 @@ void MacroAssembler::bang_stack_size(Register size, Register tmp) {
   // was post-decremented.)  Skip this address by starting at i=1, and
   // touch a few more pages below.  N.B.  It is important to touch all
   // the way down to and including i=StackShadowPages.
-  for (int i = 0; i < (int)(StackOverflow::stack_shadow_zone_size() / os::vm_page_size()) - 1; i++) {
+  for (int i = 0; i < (int)(StackOverflow::stack_shadow_zone_size() / (int)os::vm_page_size()) - 1; i++) {
     // this could be any sized move but this is can be a debugging crumb
     // so the bigger the better.
     sub_d(tmp, tmp, AT);

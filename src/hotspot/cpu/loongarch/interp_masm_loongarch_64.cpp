@@ -830,7 +830,7 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
     // least significant 2 bits clear.
     // NOTE: the oopMark is in tmp_reg as the result of cmpxchg
     sub_d(tmp_reg, tmp_reg, SP);
-    li(AT, 7 - os::vm_page_size());
+    li(AT, 7 - (int)os::vm_page_size());
     andr(tmp_reg, tmp_reg, AT);
     // Save the test result, for recursive case, the result is zero
     st_d(tmp_reg, lock_reg, mark_offset);

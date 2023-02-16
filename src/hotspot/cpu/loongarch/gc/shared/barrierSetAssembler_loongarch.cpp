@@ -344,3 +344,16 @@ void BarrierSetAssembler::c2i_entry_barrier(MacroAssembler* masm) {
   __ bind(method_live);
 }
 
+void BarrierSetAssembler::check_oop(MacroAssembler* masm, Register obj, Register tmp1, Register tmp2, Label& error) {
+  // Check if the oop is in the right area of memory
+  __ li(tmp2, (intptr_t) Universe::verify_oop_mask());
+  __ andr(tmp1, obj, tmp2);
+  __ li(tmp2, (intptr_t) Universe::verify_oop_bits());
+
+  // Compare tmp1 and tmp2.
+  __ bne(tmp1, tmp2, error);
+
+  // make sure klass is 'reasonable', which is not zero.
+  __ load_klass(obj, obj); // get klass
+  __ beqz(obj, error);     // if klass is NULL it is broken
+}

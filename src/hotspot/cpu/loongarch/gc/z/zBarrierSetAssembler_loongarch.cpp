@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -456,3 +456,17 @@ void ZBarrierSetAssembler::generate_c2_load_barrier_stub(MacroAssembler* masm, Z
 #undef __
 
 #endif // COMPILER2
+
+#define __ masm->
+
+void ZBarrierSetAssembler::check_oop(MacroAssembler* masm, Register obj, Register tmp1, Register tmp2, Label& error) {
+  // Check if mask is good.
+  // verifies that ZAddressBadMask & obj == 0
+  __ ld_d(tmp2, Address(TREG, ZThreadLocalData::address_bad_mask_offset()));
+  __ andr(tmp1, obj, tmp2);
+  __ bnez(tmp1, error);
+
+  BarrierSetAssembler::check_oop(masm, obj, tmp1, tmp2, error);
+}
+
+#undef __

@@ -80,4 +80,9 @@ enum {
   pd_two_operand_lir_form = false
 };
 
+// the number of stack required by ArrayCopyStub
+enum {
+  pd_arraycopystub_reserved_argument_area_size = 2
+};
+
 #endif // CPU_LOONGARCH_C1_DEFS_LOONGARCH_HPP

@@ -5299,12 +5299,12 @@ instruct jmpDir_long(label labl) %{
 %}
 
 // Jump Direct Conditional - Label defines a relative address from Jcc+1
-instruct  jmpLoopEnd_long(cmpOp cop, mRegI src1, mRegI src2, label labl) %{
+instruct  CountedLoopEnd_reg_reg_long(cmpOp cop, mRegI src1, mRegI src2, label labl) %{
   match(CountedLoopEnd cop (CmpI src1 src2));
   effect(USE labl);
 
   ins_cost(300);
-  format %{ "J$cop  $src1, $src2,  $labl\t# Loop end @ jmpLoopEnd_long" %}
+  format %{ "J$cop  $src1, $src2,  $labl\t# Loop end @ CountedLoopEnd_reg_reg_long" %}
   ins_encode %{
     Register op1 = $src1$$Register;
     Register op2 = $src2$$Register;
@@ -5317,30 +5317,53 @@ instruct  jmpLoopEnd_long(cmpOp cop, mRegI src1, mRegI src2, label labl) %{
   ins_pc_relative(1);
 %}
 
-instruct  jmpLoopEnd_reg_imm12_long(cmpOp cop, mRegI src1, immI12 src2, label labl) %{
-  match(CountedLoopEnd cop (CmpI src1 src2));
+// Note: LA does not have a branching instruction with an immediate number
+// The purpose of retaining CountedLoopEnd_reg_imm12_short/long、branchConIU_reg_imm12_short/long
+// is reduce the long lifecycle of shared nodes.
+// see #29437
+instruct  CountedLoopEnd_reg_imm12_short(cmpOp cop, mRegI src1, immI12 imm, label labl) %{
+  match(CountedLoopEnd cop (CmpI src1 imm));
   effect(USE labl);
 
   ins_cost(300);
-  format %{ "J$cop  $src1, $src2,  $labl\t# Loop end @ jmpLoopEnd_reg_imm12_long" %}
+  format %{ "J$cop  $src1, $imm,  $labl\t# Loop end @ CountedLoopEnd_reg_imm12_short" %}
+  ins_encode %{
+    Register op1 = $src1$$Register;
+    Label     &L = *($labl$$label);
+    int     flag = $cop$$cmpcode;
+
+    __ addi_d(AT, R0, $imm$$constant);
+    __ cmp_branch_short(flag, op1, AT, L, true /* signed */);
+  %}
+  ins_pipe( pipe_jump );
+  ins_pc_relative(1);
+  ins_short_branch(1);
+%}
+
+instruct  CountedLoopEnd_reg_imm12_long(cmpOp cop, mRegI src1, immI12 imm, label labl) %{
+  match(CountedLoopEnd cop (CmpI src1 imm));
+  effect(USE labl);
+
+  ins_cost(300);
+  format %{ "J$cop  $src1, $imm,  $labl\t# Loop end @ CountedLoopEnd_reg_imm12_long" %}
   ins_encode %{
     Register op1 = $src1$$Register;
     Label*     L = $labl$$label;
     int     flag = $cop$$cmpcode;
 
-    __ addi_d(AT, R0, $src2$$constant);
+    __ addi_d(AT, R0, $imm$$constant);
     __ cmp_branch_long(flag, op1, AT, L, true /* signed */);
   %}
   ins_pipe( pipe_jump );
   ins_pc_relative(1);
 %}
 
-instruct  jmpLoopEnd_reg_zero_long(cmpOp cop, mRegI src1, immI_0 zero, label labl) %{
+instruct  CountedLoopEnd_reg_zero_long(cmpOp cop, mRegI src1, immI_0 zero, label labl) %{
   match(CountedLoopEnd cop (CmpI src1 zero));
   effect(USE labl);
 
   ins_cost(300);
-  format %{ "J$cop  $src1, $zero,  $labl\t# Loop end @ jmpLoopEnd_reg_zero_long" %}
+  format %{ "J$cop  $src1, $zero,  $labl\t# Loop end @ CountedLoopEnd_reg_zero_long" %}
   ins_encode %{
     Register op1 = $src1$$Register;
     Label*     L = $labl$$label;
@@ -5477,6 +5500,25 @@ instruct cmpN_reg_branch_long(cmpOp cmp, mRegN op1, mRegN op2, label labl) %{
 
     __ cmp_branch_long(flag, op1, op2, L, false /* unsigned */);
   %}
+  ins_pc_relative(1);
+  ins_pipe( pipe_alu_branch );
+%}
+
+instruct branchConIU_reg_imm12_short(cmpOp cmp, mRegI src1, immI12 imm, label labl) %{
+  match( If cmp (CmpU src1 imm) );
+  effect(USE labl);
+  format %{ "BR$cmp   $src1, $imm, $labl #@branchConIU_reg_imm12_short" %}
+
+  ins_encode %{
+    Register op1 = $src1$$Register;
+    Label     &L = *($labl$$label);
+    int     flag = $cmp$$cmpcode;
+    int       imm = $imm$$constant;
+    __ addi_d(AT, R0, imm);
+    __ cmp_branch_short(flag, op1, AT, L, false /* unsigned*/);
+  %}
+
+  ins_short_branch(1);
   ins_pc_relative(1);
   ins_pipe( pipe_alu_branch );
 %}
@@ -5768,12 +5810,12 @@ instruct jmpDir_short(label labl) %{
 %}
 
 // Jump Direct Conditional - Label defines a relative address from Jcc+1
-instruct  jmpLoopEnd_short(cmpOp cop, mRegI src1, mRegI src2, label labl) %{
+instruct  CountedLoopEnd_reg_reg_short(cmpOp cop, mRegI src1, mRegI src2, label labl) %{
   match(CountedLoopEnd cop (CmpI src1 src2));
   effect(USE labl);
 
   ins_cost(300);
-  format %{ "J$cop  $src1, $src2,  $labl\t# Loop end @ jmpLoopEnd_short" %}
+  format %{ "J$cop  $src1, $src2,  $labl\t# Loop end @ CountedLoopEnd_reg_reg_short" %}
   ins_encode %{
     Register op1 = $src1$$Register;
     Register op2 = $src2$$Register;
@@ -5787,12 +5829,12 @@ instruct  jmpLoopEnd_short(cmpOp cop, mRegI src1, mRegI src2, label labl) %{
   ins_short_branch(1);
 %}
 
-instruct  jmpLoopEnd_reg_zero_short(cmpOp cop, mRegI src1, immI_0 zero, label labl) %{
+instruct  CountedLoopEnd_reg_zero_short(cmpOp cop, mRegI src1, immI_0 zero, label labl) %{
   match(CountedLoopEnd cop (CmpI src1 zero));
   effect(USE labl);
 
   ins_cost(300);
-  format %{ "J$cop  $src1, $zero,  $labl\t# Loop end @ jmpLoopEnd_reg_immI_short" %}
+  format %{ "J$cop  $src1, $zero,  $labl\t# Loop end @ CountedLoopEnd_reg_zero_short" %}
   ins_encode %{
     Register op1 = $src1$$Register;
     Label     &L = *($labl$$label);

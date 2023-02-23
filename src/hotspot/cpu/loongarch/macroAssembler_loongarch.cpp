@@ -1680,6 +1680,11 @@ void MacroAssembler::load_klass(Register dst, Register src) {
   }
 }
 
+void MacroAssembler::load_klass_check_null(Register dst, Register src) {
+  null_check(src, oopDesc::klass_offset_in_bytes());
+  load_klass(dst, src);
+}
+
 void MacroAssembler::store_klass(Register dst, Register src) {
   if(UseCompressedClassPointers){
     encode_klass_not_null(src);

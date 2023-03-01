@@ -31,6 +31,7 @@
 #include "runtime/java.hpp"
 #include "runtime/stubCodeGenerator.hpp"
 #include "runtime/vm_version.hpp"
+#include "os_linux.hpp"
 #ifdef TARGET_OS_FAMILY_linux
 # include "os_linux.inline.hpp"
 #endif
@@ -419,6 +420,17 @@ void VM_Version::get_processor_features() {
     if (!FLAG_IS_DEFAULT(UseBigIntegerShiftIntrinsic))
       warning("Intrinsic for BigInteger.shiftLeft/Right() employs LASX.");
     FLAG_SET_DEFAULT(UseBigIntegerShiftIntrinsic, false);
+  }
+
+  if (UseActiveCoresMP) {
+    if (os::Linux::sched_active_processor_count() != 1) {
+      if (!FLAG_IS_DEFAULT(UseActiveCoresMP))
+        warning("UseActiveCoresMP disabled because active processors are more than one.");
+      FLAG_SET_DEFAULT(UseActiveCoresMP, false);
+    }
+  } else {
+    if (!os::is_MP())
+      FLAG_SET_DEFAULT(UseActiveCoresMP, true);
   }
 }
 

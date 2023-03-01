@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,10 +31,8 @@
 // Included in orderAccess.hpp header file.
 
 // Implementation of class OrderAccess.
-#define inlasm_sync() if (os::is_ActiveCoresMP()) \
-                        __asm__ __volatile__ ("nop"   : : : "memory"); \
-                      else \
-                        __asm__ __volatile__ ("dbar 0"   : : : "memory");
+#define inlasm_sync() if (!UseActiveCoresMP) \
+                       __asm__ __volatile__ ("dbar 0"   : : : "memory");
 #define inlasm_synci() __asm__ __volatile__ ("ibar 0"   : : : "memory");
 
 inline void OrderAccess::loadload()   { inlasm_sync(); }

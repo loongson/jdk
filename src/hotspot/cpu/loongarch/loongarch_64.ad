@@ -16737,119 +16737,213 @@ instruct storemask16S(vecX dst, vecY src, immI_2 size, vecX tmp) %{
 
 // ----------------------------- VectorTest -----------------------------------
 
-/*
-instruct anytrue_in_maskV16(mRegI dst, vecX src1, vecX src2)
-%{
-  predicate(UseCF2GR && static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::ne);
-  match(Set dst (VectorTest src1 src2));
-  format %{ "vtest    $dst, $src1, $src2(not used)\t# @anytrue_in_maskV16" %}
+instruct anytrue_in_maskV16_branch(cmpOp cop, vecX op1, vecX op2, label labl) %{
+  predicate(static_cast<const VectorTestNode*>(n->in(2))->get_predicate() == BoolTest::ne);
+  match(If cop (VectorTest op1 op2));
+  effect(USE labl);
+  format %{ "b$cop   $op1, $op2(not used), $labl\t# @anytrue_in_maskV16__branch" %}
+
   ins_encode %{
-    // No need to use src2, src2 is all ones.
-    __ vsetnez_v(FCC0, $src1$$FloatRegister);
-    __ movcf2gr($dst$$Register, FCC0);
+    Label    &L  = *($labl$$label);
+    // No need to use op2, op2 is all ones.
+    __ vseteqz_v(FCC0, $op1$$FloatRegister);
+    switch($cop$$cmpcode) {
+      case 0x01: // EQ
+        __ bcnez(FCC0, L);
+        break;
+      case 0x02: // NE
+        __ bceqz(FCC0, L);
+        break;
+      default:
+        Unimplemented();
+    }
+  %}
+
+  ins_pc_relative(1);
+  ins_pipe( pipe_slow );
+%}
+
+instruct alltrue_in_maskV16_branch(cmpOp cop, vecX op1, vecX op2, label labl) %{
+  predicate(static_cast<const VectorTestNode*>(n->in(2))->get_predicate() == BoolTest::overflow);
+  match(If cop (VectorTest op1 op2));
+  effect(USE labl);
+  format %{ "b$cop   $op1, $op2(not used), $labl\t# @alltrue_in_maskV16__branch" %}
+
+  ins_encode %{
+    Label    &L  = *($labl$$label);
+    // No need to use op2, op2 is all ones.
+    __ vsetallnez_b(FCC0, $op1$$FloatRegister);
+    switch($cop$$cmpcode) {
+      case 0x01: // EQ
+        __ bcnez(FCC0, L);
+        break;
+      case 0x02: // NE
+        __ bceqz(FCC0, L);
+        break;
+      default:
+        Unimplemented();
+    }
+  %}
+
+  ins_pc_relative(1);
+  ins_pipe( pipe_slow );
+%}
+
+instruct CMoveI_anytrue_in_maskV16(mRegI dst, mRegIorL2I src1, mRegIorL2I src2, vecX op1, vecX op2, cmpOp cop, regF tmp1, regF tmp2)
+%{
+  predicate(static_cast<const VectorTestNode*>(n->in(1)->in(2))->get_predicate() == BoolTest::ne);
+  match(Set dst (CMoveI (Binary cop (VectorTest op1 op2)) (Binary src1 src2)));
+  effect(TEMP tmp1, TEMP tmp2);
+  format %{ "cmovei_vtest($cop)    $dst, $src1, $src2, $op1, $op2(not used)\t# TEMP($tmp1, $tmp2) @CMoveI_anytrue_in_maskV16" %}
+  ins_encode %{
+    // No need to use op2, op2 is all ones.
+    __ vseteqz_v(FCC0, $op1$$FloatRegister);
+    __ movgr2fr_w($tmp1$$FloatRegister, $src1$$Register);
+    __ movgr2fr_w($tmp2$$FloatRegister, $src2$$Register);
+    switch($cop$$cmpcode) {
+      case 0x01: // EQ
+        __ fsel($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister, FCC0);
+        break;
+      case 0x02: // NE
+        __ fsel($tmp1$$FloatRegister, $tmp2$$FloatRegister, $tmp1$$FloatRegister, FCC0);
+        break;
+      default:
+        Unimplemented();
+    }
+    __ movfr2gr_s($dst$$Register, $tmp1$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct anytrue_in_maskV16_indir(mRegI dst, vecX src1, vecX src2, regF tmp)
+instruct CMoveI_alltrue_in_maskV16(mRegI dst, mRegIorL2I src1, mRegIorL2I src2, vecX op1, vecX op2, cmpOp cop, regF tmp1, regF tmp2)
 %{
-  predicate(!UseCF2GR && static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::ne);
-  match(Set dst (VectorTest src1 src2));
-  effect(TEMP tmp);
-  format %{ "vtest    $dst, $src1, $src2(not used)\t# TEMP($tmp) @anytrue_in_maskV16" %}
+  predicate(static_cast<const VectorTestNode*>(n->in(1)->in(2))->get_predicate() == BoolTest::overflow);
+  match(Set dst (CMoveI (Binary cop (VectorTest op1 op2)) (Binary src1 src2)));
+  effect(TEMP tmp1, TEMP tmp2);
+  format %{ "cmovei_vtest($cop)    $dst, $src1, $src2, $op1, $op2(not used)\t# TEMP($tmp1, $tmp2) @CMoveI_alltrue_in_maskV16" %}
   ins_encode %{
-    // No need to use src2, src2 is all ones.
-    __ vsetnez_v(FCC0, $src1$$FloatRegister);
-    __ movcf2fr($tmp$$FloatRegister, FCC0);
-    __ movfr2gr_s($dst$$Register, $tmp$$FloatRegister);
+    // No need to use op2, op2 is all ones.
+    __ vsetallnez_b(FCC0, $op1$$FloatRegister);
+    __ movgr2fr_w($tmp1$$FloatRegister, $src1$$Register);
+    __ movgr2fr_w($tmp2$$FloatRegister, $src2$$Register);
+    switch($cop$$cmpcode) {
+      case 0x01: // EQ
+        __ fsel($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister, FCC0);
+        break;
+      case 0x02: // NE
+        __ fsel($tmp1$$FloatRegister, $tmp2$$FloatRegister, $tmp1$$FloatRegister, FCC0);
+        break;
+      default:
+        Unimplemented();
+    }
+    __ movfr2gr_s($dst$$Register, $tmp1$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct alltrue_in_maskV16(mRegI dst, vecX src1, vecX src2)
-%{
-  predicate(UseCF2GR && static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::overflow);
-  match(Set dst (VectorTest src1 src2));
-  format %{ "vtest    $dst, $src1, $src2(not used)\t# @alltrue_in_maskV16" %}
+instruct anytrue_in_maskV32_branch(cmpOp cop, vecY op1, vecY op2, label labl) %{
+  predicate(static_cast<const VectorTestNode*>(n->in(2))->get_predicate() == BoolTest::ne);
+  match(If cop (VectorTest op1 op2));
+  effect(USE labl);
+  format %{ "b$cop   $op1, $op2(not used), $labl\t# @anytrue_in_maskV32__branch" %}
+
   ins_encode %{
-    // No need to use src2, src2 is all ones.
-    __ vsetallnez_b(FCC0, $src1$$FloatRegister);
-    __ movcf2gr($dst$$Register, FCC0);
+    Label &L  = *($labl$$label);
+    // No need to use op2, op2 is all ones.
+    __ xvseteqz_v(FCC0, $op1$$FloatRegister);
+    switch($cop$$cmpcode) {
+      case 0x01: // EQ
+        __ bcnez(FCC0, L);
+        break;
+      case 0x02: // NE
+        __ bceqz(FCC0, L);
+        break;
+      default:
+        Unimplemented();
+    }
+  %}
+
+  ins_pc_relative(1);
+  ins_pipe( pipe_slow );
+%}
+
+instruct alltrue_in_maskV32_branch(cmpOp cop, vecY op1, vecY op2, label labl) %{
+  predicate(static_cast<const VectorTestNode*>(n->in(2))->get_predicate() == BoolTest::overflow);
+  match(If cop (VectorTest op1 op2));
+  effect(USE labl);
+  format %{ "b$cop   $op1, $op2(not used), $labl\t# @alltrue_in_maskV32__branch" %}
+
+  ins_encode %{
+    Label &L  = *($labl$$label);
+    // No need to use op2, op2 is all ones.
+    __ xvsetallnez_b(FCC0, $op1$$FloatRegister);
+    switch($cop$$cmpcode) {
+      case 0x01: // EQ
+        __ bcnez(FCC0, L);
+        break;
+      case 0x02: // NE
+        __ bceqz(FCC0, L);
+        break;
+      default:
+        Unimplemented();
+    }
+  %}
+
+  ins_pc_relative(1);
+  ins_pipe( pipe_slow );
+%}
+
+instruct CMoveI_anytrue_in_maskV32(mRegI dst, mRegIorL2I src1, mRegIorL2I src2, vecY op1, vecY op2, cmpOp cop, regF tmp1, regF tmp2)
+%{
+  predicate(static_cast<const VectorTestNode*>(n->in(1)->in(2))->get_predicate() == BoolTest::ne);
+  match(Set dst (CMoveI (Binary cop (VectorTest op1 op2)) (Binary src1 src2)));
+  effect(TEMP tmp1, TEMP tmp2);
+  format %{ "cmovei_xvtest($cop)    $dst, $src1, $src2, $op1, $op2(not used)\t# TEMP($tmp1, $tmp2) @CMoveI_anytrue_in_maskV32" %}
+  ins_encode %{
+    // No need to use op2, op2 is all ones.
+    __ xvseteqz_v(FCC0, $op1$$FloatRegister);
+    __ movgr2fr_w($tmp1$$FloatRegister, $src1$$Register);
+    __ movgr2fr_w($tmp2$$FloatRegister, $src2$$Register);
+    switch($cop$$cmpcode) {
+      case 0x01: // EQ
+        __ fsel($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister, FCC0);
+        break;
+      case 0x02: // NE
+        __ fsel($tmp1$$FloatRegister, $tmp2$$FloatRegister, $tmp1$$FloatRegister, FCC0);
+        break;
+      default:
+        Unimplemented();
+    }
+    __ movfr2gr_s($dst$$Register, $tmp1$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct alltrue_in_maskV16_indir(mRegI dst, vecX src1, vecX src2, regF tmp)
+instruct CMoveI_alltrue_in_maskV32(mRegI dst, mRegIorL2I src1, mRegIorL2I src2, vecY op1, vecY op2, cmpOp cop, regF tmp1, regF tmp2)
 %{
-  predicate(!UseCF2GR && static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::overflow);
-  match(Set dst (VectorTest src1 src2));
-  effect(TEMP tmp);
-  format %{ "vtest    $dst, $src1, $src2(not used)\t# TEMP($tmp) @alltrue_in_maskV16" %}
+  predicate(static_cast<const VectorTestNode*>(n->in(1)->in(2))->get_predicate() == BoolTest::overflow);
+  match(Set dst (CMoveI (Binary cop (VectorTest op1 op2)) (Binary src1 src2)));
+  effect(TEMP tmp1, TEMP tmp2);
+  format %{ "cmovei_xvtest($cop)    $dst, $src1, $src2, $op1, $op2(not used)\t# TEMP($tmp1, $tmp2) @CMoveI_alltrue_in_maskV32" %}
   ins_encode %{
-    // No need to use src2, src2 is all ones.
-    __ vsetallnez_b(FCC0, $src1$$FloatRegister);
-    __ movcf2fr($tmp$$FloatRegister, FCC0);
-    __ movfr2gr_s($dst$$Register, $tmp$$FloatRegister);
+    // No need to use op2, op2 is all ones.
+    __ xvsetallnez_b(FCC0, $op1$$FloatRegister);
+    __ movgr2fr_w($tmp1$$FloatRegister, $src1$$Register);
+    __ movgr2fr_w($tmp2$$FloatRegister, $src2$$Register);
+    switch($cop$$cmpcode) {
+      case 0x01: // EQ
+        __ fsel($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister, FCC0);
+        break;
+      case 0x02: // NE
+        __ fsel($tmp1$$FloatRegister, $tmp2$$FloatRegister, $tmp1$$FloatRegister, FCC0);
+        break;
+      default:
+        Unimplemented();
+    }
+    __ movfr2gr_s($dst$$Register, $tmp1$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}
-
-instruct anytrue_in_maskV32(mRegI dst, vecY src1, vecY src2)
-%{
-  predicate(UseCF2GR && static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::ne);
-  match(Set dst (VectorTest src1 src2));
-  format %{ "xvtest    $dst, $src1, $src2(not used)\t# @anytrue_in_maskV32" %}
-  ins_encode %{
-    // No need to use src2, src2 is all ones.
-    __ xvsetnez_v(FCC0, $src1$$FloatRegister);
-    __ movcf2gr($dst$$Register, FCC0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct anytrue_in_maskV32_indir(mRegI dst, vecY src1, vecY src2, regF tmp)
-%{
-  predicate(!UseCF2GR && static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::ne);
-  match(Set dst (VectorTest src1 src2));
-  effect(TEMP tmp);
-  format %{ "xvtest    $dst, $src1, $src2(not used)\t# TEMP($tmp) @anytrue_in_maskV32" %}
-  ins_encode %{
-    // No need to use src2, src2 is all ones.
-    __ xvsetnez_v(FCC0, $src1$$FloatRegister);
-    __ movcf2fr($tmp$$FloatRegister, FCC0);
-    __ movfr2gr_s($dst$$Register, $tmp$$FloatRegister);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct alltrue_in_maskV32(mRegI dst, vecY src1, vecY src2)
-%{
-  predicate(UseCF2GR && static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::overflow);
-  match(Set dst (VectorTest src1 src2));
-  format %{ "xvtest    $dst, $src1, $src2(not used)\t# @alltrue_in_maskV32" %}
-  ins_encode %{
-    // No need to use src2, src2 is all ones.
-    __ xvsetallnez_b(FCC0, $src1$$FloatRegister);
-    __ movcf2gr($dst$$Register, FCC0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct alltrue_in_maskV32_indir(mRegI dst, vecY src1, vecY src2, regF tmp)
-%{
-  predicate(!UseCF2GR && static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::overflow);
-  match(Set dst (VectorTest src1 src2));
-  effect(TEMP tmp);
-  format %{ "xvtest    $dst, $src1, $src2(not used)\t# TEMP($tmp) @alltrue_in_maskV32" %}
-  ins_encode %{
-    // No need to use src2, src2 is all ones.
-    __ xvsetallnez_b(FCC0, $src1$$FloatRegister);
-    __ movcf2fr($tmp$$FloatRegister, FCC0);
-    __ movfr2gr_s($dst$$Register, $tmp$$FloatRegister);
-  %}
-  ins_pipe( pipe_slow );
-%}
-*/
 
 // ----------------------------- VectorMaskTrueCount ----------------------------
 

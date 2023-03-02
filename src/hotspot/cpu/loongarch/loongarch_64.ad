@@ -9141,7 +9141,7 @@ instruct umodI_Reg_Reg(mRegI dst, mRegIorL2I src1, mRegIorL2I src2) %{
 %}
 
 instruct umodL_Reg_Reg(mRegL dst, mRegLorI2L src1, mRegLorI2L src2) %{
-  match(Set dst (UModI src1 src2));
+  match(Set dst (UModL src1 src2));
   format %{ "mod.du   $dst, $src1, $src2 @ umodL_Reg_Reg" %}
   ins_encode %{
     Register  dst = $dst$$Register;

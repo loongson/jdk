@@ -5318,8 +5318,8 @@ instruct  CountedLoopEnd_reg_reg_long(cmpOp cop, mRegI src1, mRegI src2, label l
 %}
 
 // Note: LA does not have a branching instruction with an immediate number
-// The purpose of retaining CountedLoopEnd_reg_imm12_short/long、branchConIU_reg_imm12_short/long
-// is reduce the long lifecycle of shared nodes.
+// The purpose of retaining CountedLoopEnd_reg_imm12_short/long and branchConIU_reg_imm12_short/long
+// is to reduce the long lifecycle of shared nodes.
 // see #29437
 instruct  CountedLoopEnd_reg_imm12_short(cmpOp cop, mRegI src1, immI12 imm, label labl) %{
   match(CountedLoopEnd cop (CmpI src1 imm));

@@ -22,10 +22,16 @@
  */
 
 /*
+ * This file has been modified by Loongson Technology in 2023. These
+ * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
+/*
  * @test
  * @bug 8302976
  * @summary Verify conversion between float and the binary16 format
- * @requires (vm.cpu.features ~= ".*avx512vl.*" | vm.cpu.features ~= ".*f16c.*") | os.arch == "aarch64"
+ * @requires (vm.cpu.features ~= ".*avx512vl.*" | vm.cpu.features ~= ".*f16c.*") | os.arch == "aarch64" | os.arch == "loongarch64"
  * @requires vm.compiler1.enabled & vm.compiler2.enabled
  * @requires vm.compMode != "Xcomp"
  * @comment default run:

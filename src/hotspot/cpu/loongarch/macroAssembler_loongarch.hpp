@@ -123,6 +123,16 @@ class MacroAssembler: public Assembler {
   void push_cont_fastpath(Register java_thread);
   void pop_cont_fastpath(Register java_thread);
 
+  void flt_to_flt16(Register dst, FloatRegister src, FloatRegister tmp) {
+    vfcvt_h_s(tmp, src, src);
+    vpickve2gr_h(dst, tmp, 0);
+  }
+
+  void flt16_to_flt(FloatRegister dst, Register src, FloatRegister tmp) {
+    vinsgr2vr_h(tmp, src, 0);
+    vfcvtl_s_h(dst, tmp);
+  }
+
   // Alignment
   void align(int modulus);
 

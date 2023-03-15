@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -730,21 +730,37 @@ void LIRGenerator::do_MathIntrinsic(Intrinsic* x) {
   switch (x->id()) {
     case vmIntrinsics::_dabs:
     case vmIntrinsics::_dsqrt:
-    case vmIntrinsics::_dsqrt_strict: {
+    case vmIntrinsics::_dsqrt_strict:
+    case vmIntrinsics::_floatToFloat16:
+    case vmIntrinsics::_float16ToFloat: {
       assert(x->number_of_arguments() == 1, "wrong type");
       LIRItem value(x->argument_at(0), this);
       value.load_item();
+      LIR_Opr src = value.result();
       LIR_Opr dst = rlock_result(x);
 
       switch (x->id()) {
         case vmIntrinsics::_dsqrt:
         case vmIntrinsics::_dsqrt_strict: {
-          __ sqrt(value.result(), dst, LIR_OprFact::illegalOpr);
+          __ sqrt(src, dst, LIR_OprFact::illegalOpr);
           break;
         }
-        case vmIntrinsics::_dabs:
-          __ abs(value.result(), dst, LIR_OprFact::illegalOpr);
+        case vmIntrinsics::_dabs: {
+          __ abs(src, dst, LIR_OprFact::illegalOpr);
           break;
+        }
+        case vmIntrinsics::_floatToFloat16: {
+          LIR_Opr tmp = new_register(T_FLOAT);
+          __ move(LIR_OprFact::floatConst(-0.0), tmp);
+          __ f2hf(src, dst, tmp);
+          break;
+        }
+        case vmIntrinsics::_float16ToFloat: {
+          LIR_Opr tmp = new_register(T_FLOAT);
+          __ move(LIR_OprFact::floatConst(-0.0), tmp);
+          __ hf2f(src, dst, tmp);
+          break;
+        }
         default:
           ShouldNotReachHere();
       }

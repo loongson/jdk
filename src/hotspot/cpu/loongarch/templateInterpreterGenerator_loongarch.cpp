@@ -358,6 +358,46 @@ address TemplateInterpreterGenerator::generate_math_entry(AbstractInterpreter::M
   return entry_point;
 }
 
+/**
+ * Method entry for static method:
+ *    java.lang.Float.float16ToFloat(short floatBinary16)
+ */
+address TemplateInterpreterGenerator::generate_Float_float16ToFloat_entry() {
+  // vmIntrinsics checks InlineIntrinsics flag, no need to check it here.
+  if (!VM_Version::supports_float16() ||
+      vmIntrinsics::is_disabled_by_flags(vmIntrinsics::_float16ToFloat) ||
+      vmIntrinsics::is_disabled_by_flags(vmIntrinsics::_floatToFloat16)) {
+    return nullptr;
+  }
+
+  address entry_point = __ pc();
+  __ ld_w(A0, SP, 0);
+  __ flt16_to_flt(F0, A0, F1);
+  __ move(SP, Rsender); // Restore caller's SP
+  __ jr(RA);
+  return entry_point;
+}
+
+/**
+ * Method entry for static method:
+ *    java.lang.Float.floatToFloat16(float value)
+ */
+address TemplateInterpreterGenerator::generate_Float_floatToFloat16_entry() {
+  // vmIntrinsics checks InlineIntrinsics flag, no need to check it here.
+  if (!VM_Version::supports_float16() ||
+      vmIntrinsics::is_disabled_by_flags(vmIntrinsics::_float16ToFloat) ||
+      vmIntrinsics::is_disabled_by_flags(vmIntrinsics::_floatToFloat16)) {
+    return nullptr;
+  }
+
+  address entry_point = __ pc();
+  __ fld_s(F0, SP, 0);
+  __ flt_to_flt16(A0, F0, F1);
+  __ move(SP, Rsender); // Restore caller's SP
+  __ jr(RA);
+  return entry_point;
+}
+
 // Method entry for java.lang.Thread.currentThread
 address TemplateInterpreterGenerator::generate_currentThread() {
 

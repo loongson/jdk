@@ -125,44 +125,42 @@ address TemplateInterpreterGenerator::generate_slow_signature_handler() {
  *   int java.util.zip.CRC32.update(int crc, int b)
  */
 address TemplateInterpreterGenerator::generate_CRC32_update_entry() {
-  if (UseCRC32Intrinsics) {
-    address entry = __ pc();
+  assert(UseCRC32Intrinsics, "this intrinsic is not supported");
+  address entry = __ pc();
 
-    // rmethod: Method*
-    // Rsender: senderSP must preserved for slow path
-    // SP: args
+  // rmethod: Method*
+  // Rsender: senderSP must preserved for slow path
+  // SP: args
 
-    Label slow_path;
-    // If we need a safepoint check, generate full interpreter entry.
-    __ safepoint_poll(slow_path, TREG, false /* at_return */, false /* acquire */, false /* in_nmethod */);
+  Label slow_path;
+  // If we need a safepoint check, generate full interpreter entry.
+  __ safepoint_poll(slow_path, TREG, false /* at_return */, false /* acquire */, false /* in_nmethod */);
 
-    // We don't generate local frame and don't align stack because
-    // we call stub code and there is no safepoint on this path.
+  // We don't generate local frame and don't align stack because
+  // we call stub code and there is no safepoint on this path.
 
-    const Register crc = A0;  // crc
-    const Register val = A1;  // source java byte value
-    const Register tbl = A2;  // scratch
+  const Register crc = A0;  // crc
+  const Register val = A1;  // source java byte value
+  const Register tbl = A2;  // scratch
 
-    // Arguments are reversed on java expression stack
-    __ ld_w(val, SP, 0);              // byte value
-    __ ld_w(crc, SP, wordSize);       // Initial CRC
+  // Arguments are reversed on java expression stack
+  __ ld_w(val, SP, 0);              // byte value
+  __ ld_w(crc, SP, wordSize);       // Initial CRC
 
-    __ li(tbl, (long)StubRoutines::crc_table_addr());
+  __ li(tbl, (long)StubRoutines::crc_table_addr());
 
-    __ nor(crc, crc, R0); // ~crc
-    __ update_byte_crc32(crc, val, tbl);
-    __ nor(crc, crc, R0); // ~crc
+  __ nor(crc, crc, R0); // ~crc
+  __ update_byte_crc32(crc, val, tbl);
+  __ nor(crc, crc, R0); // ~crc
 
-    // restore caller SP
-    __ move(SP, Rsender);
-    __ jr(RA);
+  // restore caller SP
+  __ move(SP, Rsender);
+  __ jr(RA);
 
-    // generate a vanilla native entry as the slow path
-    __ bind(slow_path);
-    __ jump_to_entry(Interpreter::entry_for_kind(Interpreter::native));
-    return entry;
-  }
-  return NULL;
+  // generate a vanilla native entry as the slow path
+  __ bind(slow_path);
+  __ jump_to_entry(Interpreter::entry_for_kind(Interpreter::native));
+  return entry;
 }
 
 /**
@@ -171,54 +169,52 @@ address TemplateInterpreterGenerator::generate_CRC32_update_entry() {
  *   int java.util.zip.CRC32.updateByteBuffer(int crc, long buf, int off, int len)
  */
 address TemplateInterpreterGenerator::generate_CRC32_updateBytes_entry(AbstractInterpreter::MethodKind kind) {
-  if (UseCRC32Intrinsics) {
-    address entry = __ pc();
+  assert(UseCRC32Intrinsics, "this intrinsic is not supported");
+  address entry = __ pc();
 
-    // rmethod: Method*
-    // Rsender: senderSP must preserved for slow path
-    // SP: args
+  // rmethod: Method*
+  // Rsender: senderSP must preserved for slow path
+  // SP: args
 
-    Label slow_path;
-    // If we need a safepoint check, generate full interpreter entry.
-    __ safepoint_poll(slow_path, TREG, false /* at_return */, false /* acquire */, false /* in_nmethod */);
+  Label slow_path;
+  // If we need a safepoint check, generate full interpreter entry.
+  __ safepoint_poll(slow_path, TREG, false /* at_return */, false /* acquire */, false /* in_nmethod */);
 
-    // We don't generate local frame and don't align stack because
-    // we call stub code and there is no safepoint on this path.
+  // We don't generate local frame and don't align stack because
+  // we call stub code and there is no safepoint on this path.
 
-    const Register crc = A0;  // crc
-    const Register buf = A1;  // source java byte array address
-    const Register len = A2;  // length
-    const Register tmp = A3;
+  const Register crc = A0;  // crc
+  const Register buf = A1;  // source java byte array address
+  const Register len = A2;  // length
+  const Register tmp = A3;
 
-    const Register off = len; // offset (never overlaps with 'len')
+  const Register off = len; // offset (never overlaps with 'len')
 
-    // Arguments are reversed on java expression stack
-    // Calculate address of start element
-    __ ld_w(off, SP, wordSize);       // int offset
-    __ ld_d(buf, SP, 2 * wordSize);   // byte[] buf | long buf
-    __ add_d(buf, buf, off);          // + offset
-    if (kind == Interpreter::java_util_zip_CRC32_updateByteBuffer) {
-      __ ld_w(crc, SP, 4 * wordSize); // long crc
-    } else {
-      __ addi_d(buf, buf, arrayOopDesc::base_offset_in_bytes(T_BYTE)); // + header size
-      __ ld_w(crc, SP, 3 * wordSize); // long crc
-    }
-
-    // Can now load 'len' since we're finished with 'off'
-    __ ld_w(len, SP, 0); // length
-
-    __ kernel_crc32(crc, buf, len, tmp);
-
-    // restore caller SP
-    __ move(SP, Rsender);
-    __ jr(RA);
-
-    // generate a vanilla native entry as the slow path
-    __ bind(slow_path);
-    __ jump_to_entry(Interpreter::entry_for_kind(Interpreter::native));
-    return entry;
+  // Arguments are reversed on java expression stack
+  // Calculate address of start element
+  __ ld_w(off, SP, wordSize);       // int offset
+  __ ld_d(buf, SP, 2 * wordSize);   // byte[] buf | long buf
+  __ add_d(buf, buf, off);          // + offset
+  if (kind == Interpreter::java_util_zip_CRC32_updateByteBuffer) {
+    __ ld_w(crc, SP, 4 * wordSize); // long crc
+  } else {
+    __ addi_d(buf, buf, arrayOopDesc::base_offset_in_bytes(T_BYTE)); // + header size
+    __ ld_w(crc, SP, 3 * wordSize); // long crc
   }
-  return NULL;
+
+  // Can now load 'len' since we're finished with 'off'
+  __ ld_w(len, SP, 0); // length
+
+  __ kernel_crc32(crc, buf, len, tmp);
+
+  // restore caller SP
+  __ move(SP, Rsender);
+  __ jr(RA);
+
+  // generate a vanilla native entry as the slow path
+  __ bind(slow_path);
+  __ jump_to_entry(Interpreter::entry_for_kind(Interpreter::native));
+  return entry;
 }
 
 /**
@@ -229,38 +225,36 @@ address TemplateInterpreterGenerator::generate_CRC32_updateBytes_entry(AbstractI
  * CRC32C also uses an "end" variable instead of the length variable CRC32 uses
  */
 address TemplateInterpreterGenerator::generate_CRC32C_updateBytes_entry(AbstractInterpreter::MethodKind kind) {
-  if (UseCRC32CIntrinsics) {
-    address entry = __ pc();
+  assert(UseCRC32CIntrinsics, "this intrinsic is not supported");
+  address entry = __ pc();
 
-    const Register crc = A0; // initial crc
-    const Register buf = A1; // source java byte array address
-    const Register len = A2; // len argument to the kernel
-    const Register tmp = A3;
+  const Register crc = A0; // initial crc
+  const Register buf = A1; // source java byte array address
+  const Register len = A2; // len argument to the kernel
+  const Register tmp = A3;
 
-    const Register end = len; // index of last element to process
-    const Register off = crc; // offset
+  const Register end = len; // index of last element to process
+  const Register off = crc; // offset
 
-    __ ld_w(end, SP, 0);              // int end
-    __ ld_w(off, SP, wordSize);       // int offset
-    __ sub_w(len, end, off);          // calculate length
-    __ ld_d(buf, SP, 2 * wordSize);   // byte[] buf | long buf
-    __ add_d(buf, buf, off);          // + offset
-    if (kind == Interpreter::java_util_zip_CRC32C_updateDirectByteBuffer) {
-      __ ld_w(crc, SP, 4 * wordSize); // int crc
-    } else {
-      __ addi_d(buf, buf, arrayOopDesc::base_offset_in_bytes(T_BYTE)); // + header size
-      __ ld_w(crc, SP, 3 * wordSize); // int crc
-    }
-
-    __ kernel_crc32c(crc, buf, len, tmp);
-
-    // restore caller SP
-    __ move(SP, Rsender);
-    __ jr(RA);
-
-    return entry;
+  __ ld_w(end, SP, 0);              // int end
+  __ ld_w(off, SP, wordSize);       // int offset
+  __ sub_w(len, end, off);          // calculate length
+  __ ld_d(buf, SP, 2 * wordSize);   // byte[] buf | long buf
+  __ add_d(buf, buf, off);          // + offset
+  if (kind == Interpreter::java_util_zip_CRC32C_updateDirectByteBuffer) {
+    __ ld_w(crc, SP, 4 * wordSize); // int crc
+  } else {
+    __ addi_d(buf, buf, arrayOopDesc::base_offset_in_bytes(T_BYTE)); // + header size
+    __ ld_w(crc, SP, 3 * wordSize); // int crc
   }
-  return NULL;
+
+  __ kernel_crc32c(crc, buf, len, tmp);
+
+  // restore caller SP
+  __ move(SP, Rsender);
+  __ jr(RA);
+
+  return entry;
 }
 
 //
@@ -268,8 +262,6 @@ address TemplateInterpreterGenerator::generate_CRC32C_updateBytes_entry(Abstract
 //
 
 address TemplateInterpreterGenerator::generate_math_entry(AbstractInterpreter::MethodKind kind) {
-  if (!InlineIntrinsics) return NULL; // Generate a vanilla entry
-
   // These don't need a safepoint check because they aren't virtually
   // callable. We won't enter these intrinsics from compiled code.
   // If in the future we added an intrinsic which was virtually callable
@@ -363,13 +355,7 @@ address TemplateInterpreterGenerator::generate_math_entry(AbstractInterpreter::M
  *    java.lang.Float.float16ToFloat(short floatBinary16)
  */
 address TemplateInterpreterGenerator::generate_Float_float16ToFloat_entry() {
-  // vmIntrinsics checks InlineIntrinsics flag, no need to check it here.
-  if (!VM_Version::supports_float16() ||
-      vmIntrinsics::is_disabled_by_flags(vmIntrinsics::_float16ToFloat) ||
-      vmIntrinsics::is_disabled_by_flags(vmIntrinsics::_floatToFloat16)) {
-    return nullptr;
-  }
-
+  assert(VM_Version::supports_float16(), "this intrinsic is not supported");
   address entry_point = __ pc();
   __ ld_w(A0, SP, 0);
   __ flt16_to_flt(F0, A0, F1);
@@ -383,13 +369,7 @@ address TemplateInterpreterGenerator::generate_Float_float16ToFloat_entry() {
  *    java.lang.Float.floatToFloat16(float value)
  */
 address TemplateInterpreterGenerator::generate_Float_floatToFloat16_entry() {
-  // vmIntrinsics checks InlineIntrinsics flag, no need to check it here.
-  if (!VM_Version::supports_float16() ||
-      vmIntrinsics::is_disabled_by_flags(vmIntrinsics::_float16ToFloat) ||
-      vmIntrinsics::is_disabled_by_flags(vmIntrinsics::_floatToFloat16)) {
-    return nullptr;
-  }
-
+  assert(VM_Version::supports_float16(), "this intrinsic is not supported");
   address entry_point = __ pc();
   __ fld_s(F0, SP, 0);
   __ flt_to_flt16(A0, F0, F1);
@@ -397,6 +377,12 @@ address TemplateInterpreterGenerator::generate_Float_floatToFloat16_entry() {
   __ jr(RA);
   return entry_point;
 }
+
+// Not supported
+address TemplateInterpreterGenerator::generate_Float_intBitsToFloat_entry() { return nullptr; }
+address TemplateInterpreterGenerator::generate_Float_floatToRawIntBits_entry() { return nullptr; }
+address TemplateInterpreterGenerator::generate_Double_longBitsToDouble_entry() { return nullptr; }
+address TemplateInterpreterGenerator::generate_Double_doubleToRawLongBits_entry() { return nullptr; }
 
 // Method entry for java.lang.Thread.currentThread
 address TemplateInterpreterGenerator::generate_currentThread() {

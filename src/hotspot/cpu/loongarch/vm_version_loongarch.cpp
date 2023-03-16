@@ -26,6 +26,7 @@
 #include "precompiled.hpp"
 #include "asm/macroAssembler.hpp"
 #include "asm/macroAssembler.inline.hpp"
+#include "classfile/vmIntrinsics.hpp"
 #include "memory/resourceArea.hpp"
 #include "runtime/arguments.hpp"
 #include "runtime/java.hpp"
@@ -462,4 +463,19 @@ void VM_Version::initialize_cpu_information(void) {
   snprintf(_cpu_name, CPU_TYPE_DESC_BUF_SIZE - 1, "LoongArch");
   snprintf(_cpu_desc, CPU_DETAILED_DESC_BUF_SIZE, "LoongArch %s", features_string());
   _initialized = true;
+}
+
+bool VM_Version::is_intrinsic_supported(vmIntrinsicID id) {
+  assert(id != vmIntrinsics::_none, "must be a VM intrinsic");
+  switch (id) {
+  case vmIntrinsics::_floatToFloat16:
+  case vmIntrinsics::_float16ToFloat:
+    if (!supports_float16()) {
+      return false;
+    }
+    break;
+  default:
+    break;
+  }
+  return true;
 }

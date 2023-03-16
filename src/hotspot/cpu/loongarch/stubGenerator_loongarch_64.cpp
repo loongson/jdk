@@ -799,7 +799,7 @@ class StubGenerator: public StubCodeGenerator {
       __ ld_d(A6, A0, 0);
       __ ld_d(A7, A2, -8);
 
-      __ andi(T1, A0, 7);
+      __ andi(T1, A1, 7);
       __ sub_d(T0, R0, T1);
       __ addi_d(T0, T0, 8);
 
@@ -884,7 +884,7 @@ class StubGenerator: public StubCodeGenerator {
       __ vld(F0, A0, 0);
       __ vld(F1, A2, -16);
 
-      __ andi(T1, A0, 15);
+      __ andi(T1, A1, 15);
       __ sub_d(T0, R0, T1);
       __ addi_d(T0, T0, 16);
 
@@ -969,7 +969,7 @@ class StubGenerator: public StubCodeGenerator {
       __ xvld(F0, A0, 0);
       __ xvld(F1, A2, -32);
 
-      __ andi(T1, A0, 31);
+      __ andi(T1, A1, 31);
       __ sub_d(T0, R0, T1);
       __ addi_d(T0, T0, 32);
 
@@ -1054,7 +1054,7 @@ class StubGenerator: public StubCodeGenerator {
       __ ld_d(A6, A0, 0);
       __ ld_d(A7, A2, -8);
 
-      __ andi(T1, A2, 7);
+      __ andi(T1, A3, 7);
       __ sub_d(A2, A2, T1);
       __ sub_d(A5, A3, T1);
 
@@ -1136,7 +1136,7 @@ class StubGenerator: public StubCodeGenerator {
       __ vld(F0, A0, 0);
       __ vld(F1, A2, -16);
 
-      __ andi(T1, A2, 15);
+      __ andi(T1, A3, 15);
       __ sub_d(A2, A2, T1);
       __ sub_d(A5, A3, T1);
 
@@ -1218,7 +1218,7 @@ class StubGenerator: public StubCodeGenerator {
       __ xvld(F0, A0, 0);
       __ xvld(F1, A2, -32);
 
-      __ andi(T1, A2, 31);
+      __ andi(T1, A3, 31);
       __ sub_d(A2, A2, T1);
       __ sub_d(A5, A3, T1);
 
@@ -1652,7 +1652,7 @@ class StubGenerator: public StubCodeGenerator {
   //   used by generate_conjoint_byte_copy().
   //
   address generate_disjoint_byte_copy(bool aligned, Label &small, Label &large,
-                                      Label &large_aligned, const char * name) {
+                                      const char * name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
     address start = __ pc();
@@ -1664,12 +1664,6 @@ class StubGenerator: public StubCodeGenerator {
     else
       __ sltui(T0, A2, 9);
     __ bnez(T0, small);
-
-    if (large_aligned.is_bound()) {
-      __ orr(T0, A0, A1);
-      __ andi(T0, T0, 7);
-      __ beqz(T0, large_aligned);
-    }
 
     __ b(large);
 
@@ -1692,7 +1686,7 @@ class StubGenerator: public StubCodeGenerator {
   // and stored atomically.
   //
   address generate_conjoint_byte_copy(bool aligned, Label &small, Label &large,
-                                      Label &large_aligned, const char *name) {
+                                      const char *name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
     address start = __ pc();
@@ -1706,12 +1700,6 @@ class StubGenerator: public StubCodeGenerator {
     else
       __ sltui(T0, A2, 9);
     __ bnez(T0, small);
-
-    if (large_aligned.is_bound()) {
-      __ orr(T0, A0, A1);
-      __ andi(T0, T0, 7);
-      __ beqz(T0, large_aligned);
-    }
 
     __ b(large);
 
@@ -1931,7 +1919,7 @@ class StubGenerator: public StubCodeGenerator {
   //   used by generate_conjoint_short_copy().
   //
   address generate_disjoint_short_copy(bool aligned, Label &small, Label &large,
-                                       Label &large_aligned, const char * name) {
+                                       const char * name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
     address start = __ pc();
@@ -1943,12 +1931,6 @@ class StubGenerator: public StubCodeGenerator {
     __ bnez(T0, small);
 
     __ slli_d(A2, A2, 1);
-
-    if (large_aligned.is_bound()) {
-      __ orr(T0, A0, A1);
-      __ andi(T0, T0, 7);
-      __ beqz(T0, large_aligned);
-    }
 
     __ b(large);
 
@@ -1971,7 +1953,7 @@ class StubGenerator: public StubCodeGenerator {
   // and stored atomically.
   //
   address generate_conjoint_short_copy(bool aligned, Label &small, Label &large,
-                                       Label &large_aligned, const char *name) {
+                                       const char *name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
     address start = __ pc();
@@ -1985,12 +1967,6 @@ class StubGenerator: public StubCodeGenerator {
     __ bnez(T0, small);
 
     __ slli_d(A2, A2, 1);
-
-    if (large_aligned.is_bound()) {
-      __ orr(T0, A0, A1);
-      __ andi(T0, T0, 7);
-      __ beqz(T0, large_aligned);
-    }
 
     __ b(large);
 
@@ -2133,8 +2109,8 @@ class StubGenerator: public StubCodeGenerator {
 
   // Generate maybe oop copy
   void gen_maybe_oop_copy(bool is_oop, bool disjoint, bool aligned, Label &small,
-                          Label &large, Label &large_aligned, const char *name,
-                          int small_limit, int log2_elem_size, bool dest_uninitialized = false) {
+                          Label &large, const char *name, int small_limit,
+                          int log2_elem_size, bool dest_uninitialized = false) {
     Label post, _large;
     DecoratorSet decorators = DECORATORS_NONE;
     BarrierSetAssembler *bs = nullptr;
@@ -2174,20 +2150,6 @@ class StubGenerator: public StubCodeGenerator {
     __ bind(_large);
     __ slli_d(A2, A2, log2_elem_size);
 
-    if (large_aligned.is_bound()) {
-      __ orr(T0, A0, A1);
-      __ andi(T0, T0, (1 << (log2_elem_size + 1)) - 1);
-      if (is_oop) {
-        Label skip;
-        __ bnez(T0, skip);
-        __ bl(large_aligned);
-        __ b(post);
-        __ bind(skip);
-      } else {
-        __ beqz(T0, large_aligned);
-      }
-    }
-
     if (is_oop) {
       __ bl(large);
     } else {
@@ -2226,14 +2188,14 @@ class StubGenerator: public StubCodeGenerator {
   //   used by generate_conjoint_int_oop_copy().
   //
   address generate_disjoint_int_oop_copy(bool aligned, bool is_oop, Label &small,
-                                         Label &large, Label &large_aligned, const char *name,
-                                         int small_limit, bool dest_uninitialized = false) {
+                                         Label &large, const char *name, int small_limit,
+                                         bool dest_uninitialized = false) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
     address start = __ pc();
 
-    gen_maybe_oop_copy(is_oop, true, aligned, small, large, large_aligned,
-                       name, small_limit, 2, dest_uninitialized);
+    gen_maybe_oop_copy(is_oop, true, aligned, small, large, name,
+                       small_limit, 2, dest_uninitialized);
 
     return start;
   }
@@ -2254,8 +2216,8 @@ class StubGenerator: public StubCodeGenerator {
   // cache line boundaries will still be loaded and stored atomically.
   //
   address generate_conjoint_int_oop_copy(bool aligned, bool is_oop, Label &small,
-                                         Label &large, Label &large_aligned, const char *name,
-                                         int small_limit, bool dest_uninitialized = false) {
+                                         Label &large, const char *name, int small_limit,
+                                         bool dest_uninitialized = false) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
     address start = __ pc();
@@ -2266,8 +2228,8 @@ class StubGenerator: public StubCodeGenerator {
       array_overlap_test(StubRoutines::jint_disjoint_arraycopy(), 2);
     }
 
-    gen_maybe_oop_copy(is_oop, false, aligned, small, large, large_aligned,
-                       name, small_limit, 2, dest_uninitialized);
+    gen_maybe_oop_copy(is_oop, false, aligned, small, large, name,
+                       small_limit, 2, dest_uninitialized);
 
     return start;
   }
@@ -2378,14 +2340,14 @@ class StubGenerator: public StubCodeGenerator {
   //   used by generate_conjoint_int_oop_copy().
   //
   address generate_disjoint_long_oop_copy(bool aligned, bool is_oop, Label &small,
-                                          Label &large, Label &large_aligned, const char *name,
-                                          int small_limit, bool dest_uninitialized = false) {
+                                          Label &large, const char *name, int small_limit,
+                                          bool dest_uninitialized = false) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
     address start = __ pc();
 
-    gen_maybe_oop_copy(is_oop, true, aligned, small, large, large_aligned,
-                       name, small_limit, 3, dest_uninitialized);
+    gen_maybe_oop_copy(is_oop, true, aligned, small, large, name,
+                       small_limit, 3, dest_uninitialized);
 
     return start;
   }
@@ -2406,8 +2368,8 @@ class StubGenerator: public StubCodeGenerator {
   // cache line boundaries will still be loaded and stored atomically.
   //
   address generate_conjoint_long_oop_copy(bool aligned, bool is_oop, Label &small,
-                                          Label &large, Label &large_aligned, const char *name,
-                                          int small_limit, bool dest_uninitialized = false) {
+                                          Label &large, const char *name, int small_limit,
+                                          bool dest_uninitialized = false) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
     address start = __ pc();
@@ -2418,8 +2380,8 @@ class StubGenerator: public StubCodeGenerator {
       array_overlap_test(StubRoutines::jlong_disjoint_arraycopy(), 3);
     }
 
-    gen_maybe_oop_copy(is_oop, false, aligned, small, large, large_aligned,
-                       name, small_limit, 3, dest_uninitialized);
+    gen_maybe_oop_copy(is_oop, false, aligned, small, large, name,
+                       small_limit, 3, dest_uninitialized);
 
     return start;
   }
@@ -2939,20 +2901,24 @@ class StubGenerator: public StubCodeGenerator {
 
   void generate_arraycopy_stubs() {
     Label disjoint_large_copy, conjoint_large_copy;
-    Label disjoint_large_copy_lsx, conjoint_large_copy_lsx;
-    Label disjoint_large_copy_lasx, conjoint_large_copy_lasx;
     Label byte_small_copy, short_small_copy, int_small_copy, long_small_copy;
-    Label none;
+    int int_oop_small_limit, long_oop_small_limit;
 
-    generate_disjoint_large_copy(disjoint_large_copy, "disjoint_large_copy");
-    generate_conjoint_large_copy(conjoint_large_copy, "conjoint_large_copy");
-    if (UseLSX) {
-      generate_disjoint_large_copy_lsx(disjoint_large_copy_lsx, "disjoint_large_copy_lsx");
-      generate_conjoint_large_copy_lsx(conjoint_large_copy_lsx, "conjoint_large_copy_lsx");
-    }
     if (UseLASX) {
-      generate_disjoint_large_copy_lasx(disjoint_large_copy_lasx, "disjoint_large_copy_lasx");
-      generate_conjoint_large_copy_lasx(conjoint_large_copy_lasx, "conjoint_large_copy_lasx");
+      int_oop_small_limit = 9;
+      long_oop_small_limit = 5;
+      generate_disjoint_large_copy_lasx(disjoint_large_copy, "disjoint_large_copy_lasx");
+      generate_conjoint_large_copy_lasx(conjoint_large_copy, "conjoint_large_copy_lasx");
+    } else if (UseLSX) {
+      int_oop_small_limit = 7;
+      long_oop_small_limit = 4;
+      generate_disjoint_large_copy_lsx(disjoint_large_copy, "disjoint_large_copy_lsx");
+      generate_conjoint_large_copy_lsx(conjoint_large_copy, "conjoint_large_copy_lsx");
+    } else {
+      int_oop_small_limit = 7;
+      long_oop_small_limit = 4;
+      generate_disjoint_large_copy(disjoint_large_copy, "disjoint_large_copy_int");
+      generate_conjoint_large_copy(conjoint_large_copy, "conjoint_large_copy_int");
     }
     generate_byte_small_copy(byte_small_copy, "jbyte_small_copy");
     generate_short_small_copy(short_small_copy, "jshort_small_copy");
@@ -2960,78 +2926,39 @@ class StubGenerator: public StubCodeGenerator {
     generate_long_small_copy(long_small_copy, "jlong_small_copy");
 
     if (UseCompressedOops) {
-      if (UseLSX) {
-        StubRoutines::_oop_disjoint_arraycopy        = generate_disjoint_int_oop_copy(false, true, int_small_copy, disjoint_large_copy_lsx, disjoint_large_copy, "oop_disjoint_arraycopy", 7);
-        StubRoutines::_oop_disjoint_arraycopy_uninit = generate_disjoint_int_oop_copy(false, true, int_small_copy, disjoint_large_copy_lsx, disjoint_large_copy, "oop_disjoint_arraycopy_uninit", 7, true);
-      } else {
-        StubRoutines::_oop_disjoint_arraycopy        = generate_disjoint_int_oop_copy(false, true, int_small_copy, disjoint_large_copy, none, "oop_disjoint_arraycopy", 7);
-        StubRoutines::_oop_disjoint_arraycopy_uninit = generate_disjoint_int_oop_copy(false, true, int_small_copy, disjoint_large_copy, none, "oop_disjoint_arraycopy_uninit", 7, true);
-      }
-      if (UseLASX) {
-        StubRoutines::_oop_arraycopy                 = generate_conjoint_int_oop_copy(false, true, int_small_copy, conjoint_large_copy_lasx, conjoint_large_copy, "oop_arraycopy", 9);
-        StubRoutines::_oop_arraycopy_uninit          = generate_conjoint_int_oop_copy(false, true, int_small_copy, conjoint_large_copy_lasx, conjoint_large_copy, "oop_arraycopy_uninit", 9, true);
-      } else if (UseLSX) {
-        StubRoutines::_oop_arraycopy                 = generate_conjoint_int_oop_copy(false, true, int_small_copy, conjoint_large_copy_lsx, conjoint_large_copy, "oop_arraycopy", 7);
-        StubRoutines::_oop_arraycopy_uninit          = generate_conjoint_int_oop_copy(false, true, int_small_copy, conjoint_large_copy_lsx, conjoint_large_copy, "oop_arraycopy_uninit", 7, true);
-      } else {
-        StubRoutines::_oop_arraycopy                 = generate_conjoint_int_oop_copy(false, true, int_small_copy, conjoint_large_copy, none, "oop_arraycopy", 7);
-        StubRoutines::_oop_arraycopy_uninit          = generate_conjoint_int_oop_copy(false, true, int_small_copy, conjoint_large_copy, none, "oop_arraycopy_uninit", 7, true);
-      }
+      StubRoutines::_oop_disjoint_arraycopy        = generate_disjoint_int_oop_copy(false, true, int_small_copy, disjoint_large_copy,
+                                                                                    "oop_disjoint_arraycopy", int_oop_small_limit);
+      StubRoutines::_oop_disjoint_arraycopy_uninit = generate_disjoint_int_oop_copy(false, true, int_small_copy, disjoint_large_copy,
+                                                                                    "oop_disjoint_arraycopy_uninit", int_oop_small_limit, true);
+      StubRoutines::_oop_arraycopy                 = generate_conjoint_int_oop_copy(false, true, int_small_copy, conjoint_large_copy,
+                                                                                    "oop_arraycopy", int_oop_small_limit);
+      StubRoutines::_oop_arraycopy_uninit          = generate_conjoint_int_oop_copy(false, true, int_small_copy, conjoint_large_copy,
+                                                                                    "oop_arraycopy_uninit", int_oop_small_limit, true);
     } else {
-      if (UseLASX) {
-        StubRoutines::_oop_disjoint_arraycopy        = generate_disjoint_long_oop_copy(false, true, long_small_copy, disjoint_large_copy, disjoint_large_copy_lasx, "oop_disjoint_arraycopy", 5);
-        StubRoutines::_oop_disjoint_arraycopy_uninit = generate_disjoint_long_oop_copy(false, true, long_small_copy, disjoint_large_copy, disjoint_large_copy_lasx, "oop_disjoint_arraycopy_uninit", 5, true);
-        StubRoutines::_oop_arraycopy                 = generate_conjoint_long_oop_copy(false, true, long_small_copy, conjoint_large_copy, conjoint_large_copy_lasx, "oop_arraycopy", 5);
-        StubRoutines::_oop_arraycopy_uninit          = generate_conjoint_long_oop_copy(false, true, long_small_copy, conjoint_large_copy, conjoint_large_copy_lasx, "oop_arraycopy_uninit", 5, true);
-      } else if (UseLSX) {
-        StubRoutines::_oop_disjoint_arraycopy        = generate_disjoint_long_oop_copy(false, true, long_small_copy, disjoint_large_copy, disjoint_large_copy_lsx, "oop_disjoint_arraycopy", 4);
-        StubRoutines::_oop_disjoint_arraycopy_uninit = generate_disjoint_long_oop_copy(false, true, long_small_copy, disjoint_large_copy, disjoint_large_copy_lsx, "oop_disjoint_arraycopy_uninit", 4, true);
-        StubRoutines::_oop_arraycopy                 = generate_conjoint_long_oop_copy(false, true, long_small_copy, conjoint_large_copy, conjoint_large_copy_lsx, "oop_arraycopy", 4);
-        StubRoutines::_oop_arraycopy_uninit          = generate_conjoint_long_oop_copy(false, true, long_small_copy, conjoint_large_copy, conjoint_large_copy_lsx, "oop_arraycopy_uninit", 4, true);
-      } else {
-        StubRoutines::_oop_disjoint_arraycopy        = generate_disjoint_long_oop_copy(false, true, long_small_copy, disjoint_large_copy, none, "oop_disjoint_arraycopy", 4);
-        StubRoutines::_oop_disjoint_arraycopy_uninit = generate_disjoint_long_oop_copy(false, true, long_small_copy, disjoint_large_copy, none, "oop_disjoint_arraycopy_uninit", 4, true);
-        StubRoutines::_oop_arraycopy                 = generate_conjoint_long_oop_copy(false, true, long_small_copy, conjoint_large_copy, none, "oop_arraycopy", 4);
-        StubRoutines::_oop_arraycopy_uninit          = generate_conjoint_long_oop_copy(false, true, long_small_copy, conjoint_large_copy, conjoint_large_copy_lsx, "oop_arraycopy_uninit", 4, true);
-      }
+      StubRoutines::_oop_disjoint_arraycopy        = generate_disjoint_long_oop_copy(false, true, long_small_copy, disjoint_large_copy,
+                                                                                     "oop_disjoint_arraycopy", long_oop_small_limit);
+      StubRoutines::_oop_disjoint_arraycopy_uninit = generate_disjoint_long_oop_copy(false, true, long_small_copy, disjoint_large_copy,
+                                                                                     "oop_disjoint_arraycopy_uninit", long_oop_small_limit, true);
+      StubRoutines::_oop_arraycopy                 = generate_conjoint_long_oop_copy(false, true, long_small_copy, conjoint_large_copy,
+                                                                                     "oop_arraycopy", long_oop_small_limit);
+      StubRoutines::_oop_arraycopy_uninit          = generate_conjoint_long_oop_copy(false, true, long_small_copy, conjoint_large_copy,
+                                                                                     "oop_arraycopy_uninit", long_oop_small_limit, true);
     }
 
-    if (UseLASX) {
-      StubRoutines::_jbyte_disjoint_arraycopy        = generate_disjoint_byte_copy(false, byte_small_copy, disjoint_large_copy_lasx, disjoint_large_copy_lsx, "jbyte_disjoint_arraycopy");
-      StubRoutines::_jshort_disjoint_arraycopy       = generate_disjoint_short_copy(false, short_small_copy, disjoint_large_copy_lasx, disjoint_large_copy, "jshort_disjoint_arraycopy");
-      StubRoutines::_jint_disjoint_arraycopy         = generate_disjoint_int_oop_copy(false, false, int_small_copy, disjoint_large_copy_lasx, disjoint_large_copy, "jint_disjoint_arraycopy", 9);
+    StubRoutines::_jbyte_disjoint_arraycopy        = generate_disjoint_byte_copy(false, byte_small_copy, disjoint_large_copy, "jbyte_disjoint_arraycopy");
+    StubRoutines::_jshort_disjoint_arraycopy       = generate_disjoint_short_copy(false, short_small_copy, disjoint_large_copy, "jshort_disjoint_arraycopy");
+    StubRoutines::_jint_disjoint_arraycopy         = generate_disjoint_int_oop_copy(false, false, int_small_copy, disjoint_large_copy,
+                                                                                    "jint_disjoint_arraycopy", int_oop_small_limit);
 
-      StubRoutines::_jbyte_arraycopy                 = generate_conjoint_byte_copy(false, byte_small_copy, conjoint_large_copy_lasx, conjoint_large_copy_lsx, "jbyte_arraycopy");
-      StubRoutines::_jshort_arraycopy                = generate_conjoint_short_copy(false, short_small_copy, conjoint_large_copy_lasx, conjoint_large_copy, "jshort_arraycopy");
-      StubRoutines::_jint_arraycopy                  = generate_conjoint_int_oop_copy(false, false, int_small_copy, conjoint_large_copy_lasx, conjoint_large_copy, "jint_arraycopy", 9);
-    } else if (UseLSX) {
-      StubRoutines::_jbyte_disjoint_arraycopy        = generate_disjoint_byte_copy(false, byte_small_copy, disjoint_large_copy_lsx, none, "jbyte_disjoint_arraycopy");
-      StubRoutines::_jshort_disjoint_arraycopy       = generate_disjoint_short_copy(false, short_small_copy, disjoint_large_copy_lsx, disjoint_large_copy, "jshort_disjoint_arraycopy");
-      StubRoutines::_jint_disjoint_arraycopy         = generate_disjoint_int_oop_copy(false, false, int_small_copy, disjoint_large_copy_lsx, disjoint_large_copy, "jint_disjoint_arraycopy", 7);
+    StubRoutines::_jbyte_arraycopy                 = generate_conjoint_byte_copy(false, byte_small_copy, conjoint_large_copy, "jbyte_arraycopy");
+    StubRoutines::_jshort_arraycopy                = generate_conjoint_short_copy(false, short_small_copy, conjoint_large_copy, "jshort_arraycopy");
+    StubRoutines::_jint_arraycopy                  = generate_conjoint_int_oop_copy(false, false, int_small_copy, conjoint_large_copy,
+                                                                                    "jint_arraycopy", int_oop_small_limit);
 
-      StubRoutines::_jbyte_arraycopy                 = generate_conjoint_byte_copy(false, byte_small_copy, conjoint_large_copy_lsx, none, "jbyte_arraycopy");
-      StubRoutines::_jshort_arraycopy                = generate_conjoint_short_copy(false, short_small_copy, conjoint_large_copy_lsx, conjoint_large_copy, "jshort_arraycopy");
-      StubRoutines::_jint_arraycopy                  = generate_conjoint_int_oop_copy(false, false, int_small_copy, conjoint_large_copy_lsx, conjoint_large_copy, "jint_arraycopy", 7);
-    } else {
-      StubRoutines::_jbyte_disjoint_arraycopy        = generate_disjoint_byte_copy(false, byte_small_copy, disjoint_large_copy, none, "jbyte_disjoint_arraycopy");
-      StubRoutines::_jshort_disjoint_arraycopy       = generate_disjoint_short_copy(false, short_small_copy, disjoint_large_copy, none, "jshort_disjoint_arraycopy");
-      StubRoutines::_jint_disjoint_arraycopy         = generate_disjoint_int_oop_copy(false, false, int_small_copy, disjoint_large_copy, none, "jint_disjoint_arraycopy", 7);
-
-      StubRoutines::_jbyte_arraycopy                 = generate_conjoint_byte_copy(false, byte_small_copy, conjoint_large_copy, none, "jbyte_arraycopy");
-      StubRoutines::_jshort_arraycopy                = generate_conjoint_short_copy(false, short_small_copy, conjoint_large_copy, none, "jshort_arraycopy");
-      StubRoutines::_jint_arraycopy                  = generate_conjoint_int_oop_copy(false, false, int_small_copy, conjoint_large_copy, none, "jint_arraycopy", 7);
-    }
-
-    if (UseLASX) {
-      StubRoutines::_jlong_disjoint_arraycopy        = generate_disjoint_long_oop_copy(false, false, long_small_copy, disjoint_large_copy, disjoint_large_copy_lasx, "jlong_disjoint_arraycopy", 5);
-      StubRoutines::_jlong_arraycopy                 = generate_conjoint_long_oop_copy(false, false, long_small_copy, conjoint_large_copy, conjoint_large_copy_lasx, "jlong_arraycopy", 5);
-    } else if (UseLSX) {
-      StubRoutines::_jlong_disjoint_arraycopy        = generate_disjoint_long_oop_copy(false, false, long_small_copy, disjoint_large_copy, disjoint_large_copy_lsx, "jlong_disjoint_arraycopy", 4);
-      StubRoutines::_jlong_arraycopy                 = generate_conjoint_long_oop_copy(false, false, long_small_copy, conjoint_large_copy, conjoint_large_copy_lsx, "jlong_arraycopy", 4);
-    } else {
-      StubRoutines::_jlong_disjoint_arraycopy        = generate_disjoint_long_oop_copy(false, false, long_small_copy, disjoint_large_copy, none, "jlong_disjoint_arraycopy", 4);
-      StubRoutines::_jlong_arraycopy                 = generate_conjoint_long_oop_copy(false, false, long_small_copy, conjoint_large_copy, none, "jlong_arraycopy", 4);
-    }
+    StubRoutines::_jlong_disjoint_arraycopy        = generate_disjoint_long_oop_copy(false, false, long_small_copy, disjoint_large_copy,
+                                                                                     "jlong_disjoint_arraycopy", long_oop_small_limit);
+    StubRoutines::_jlong_arraycopy                 = generate_conjoint_long_oop_copy(false, false, long_small_copy, conjoint_large_copy,
+                                                                                     "jlong_arraycopy", long_oop_small_limit);
 
     // We don't generate specialized code for HeapWord-aligned source
     // arrays, so just use the code we've already generated

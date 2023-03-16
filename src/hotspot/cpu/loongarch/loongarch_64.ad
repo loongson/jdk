@@ -16429,6 +16429,32 @@ instruct cvt4Dto4L(vecY dst, vecY src) %{
   ins_pipe( pipe_slow );
 %}
 
+// ---------------------------- Vector Cast HF2F -------------------------------
+
+instruct cvt8HFto8F(vecY dst, vecX src) %{
+  predicate(Matcher::vector_length(n) == 8);
+  match(Set dst (VectorCastHF2F src));
+  format %{ "vconvert    $dst, $src\t# @cvt8HFto8F" %}
+  ins_encode %{
+    __ xvpermi_d($dst$$FloatRegister, $src$$FloatRegister, 0b01010000);
+    __ xvfcvtl_s_h($dst$$FloatRegister, $dst$$FloatRegister);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+// ---------------------------- Vector Cast F2HF -------------------------------
+
+instruct cvt8Fto8HF(vecX dst, vecY src) %{
+  predicate(Matcher::vector_length(n) == 8);
+  match(Set dst (VectorCastF2HF src));
+  format %{ "vconvert    $dst, $src\t# @cvt8Fto8HF" %}
+  ins_encode %{
+    __ xvfcvt_h_s($dst$$FloatRegister, $src$$FloatRegister, $src$$FloatRegister);
+    __ xvpermi_d($dst$$FloatRegister, $dst$$FloatRegister, 0b11011000);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 // ------------------------------ VectorReinterpret ---------------------------
 
 instruct reinterpretX(vecX dst)

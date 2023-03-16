@@ -16293,14 +16293,14 @@ instruct cvt4Lto4I(vecX dst, vecY src) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct cvt4Lto4F(vecX dst, vecY src, vecY tmp) %{
+instruct cvt4Lto4F(vecX dst, vecY src) %{
   predicate(Matcher::vector_length(n) == 4 && Matcher::vector_element_basic_type(n) == T_FLOAT);
   match(Set dst (VectorCastL2X src));
-  effect(TEMP tmp);
-  format %{ "vconvert    $dst, $src\t# TEMP($tmp) @cvt4Lto4F" %}
+  effect(TEMP_DEF dst);
+  format %{ "vconvert    $dst, $src\t# @cvt4Lto4F" %}
   ins_encode %{
-    __ xvpermi_q($tmp$$FloatRegister, $src$$FloatRegister, 0x01);
-    __ xvffint_s_l($dst$$FloatRegister, $tmp$$FloatRegister, $src$$FloatRegister);
+    __ xvpermi_q($dst$$FloatRegister, $src$$FloatRegister, 0x01);
+    __ xvffint_s_l($dst$$FloatRegister, $dst$$FloatRegister, $src$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -16333,7 +16333,7 @@ instruct cvt8Fto8S(vecX dst, vecY src, vecY tmp) %{
   effect(TEMP_DEF dst, TEMP tmp);
   format %{ "vconvert    $dst, $src\t# TEMP($tmp) @cvt8Fto8S" %}
   ins_encode %{
-    __ vftintrz_w_s($tmp$$FloatRegister, $src$$FloatRegister);
+    __ xvftintrz_w_s($tmp$$FloatRegister, $src$$FloatRegister);
     __ xvpermi_q($dst$$FloatRegister, $tmp$$FloatRegister, 0x01);
     __ vsrlni_h_w($dst$$FloatRegister, $tmp$$FloatRegister, 0);
   %}
@@ -16343,7 +16343,7 @@ instruct cvt8Fto8S(vecX dst, vecY src, vecY tmp) %{
 instruct cvt4Fto4I(vecX dst, vecX src) %{
   predicate(Matcher::vector_length(n) == 4 && Matcher::vector_element_basic_type(n) == T_INT);
   match(Set dst (VectorCastF2X src));
-  format %{ "vftint.w.s    $dst, $src\t# @cvt2Fto2I" %}
+  format %{ "vftintrz.w.s    $dst, $src\t# @cvt2Fto2I" %}
   ins_encode %{
     __ vftintrz_w_s($dst$$FloatRegister, $src$$FloatRegister);
   %}
@@ -16353,7 +16353,7 @@ instruct cvt4Fto4I(vecX dst, vecX src) %{
 instruct cvt8Fto8I(vecY dst, vecY src) %{
   predicate(Matcher::vector_length(n) == 8 && Matcher::vector_element_basic_type(n) == T_INT);
   match(Set dst (VectorCastF2X src));
-  format %{ "xvftint.w.s    $dst, $src\t# @cvt4Fto4I" %}
+  format %{ "xvftintrz.w.s    $dst, $src\t# @cvt4Fto4I" %}
   ins_encode %{
     __ xvftintrz_w_s($dst$$FloatRegister, $src$$FloatRegister);
   %}
@@ -16363,7 +16363,6 @@ instruct cvt8Fto8I(vecY dst, vecY src) %{
 instruct cvt4Fto4L(vecY dst, vecX src) %{
   predicate(Matcher::vector_length(n) == 4 && Matcher::vector_element_basic_type(n) == T_LONG);
   match(Set dst (VectorCastF2X src));
-  effect(TEMP_DEF dst);
   format %{ "vconvert    $dst, $src\t# @cvt4Fto4L" %}
   ins_encode %{
     __ xvpermi_d($dst$$FloatRegister, $src$$FloatRegister, 0b01010000);
@@ -16385,26 +16384,24 @@ instruct cvt4Fto4D(vecY dst, vecX src) %{
 
 // ---------------------------- Vector Cast D2X -------------------------------
 
-instruct cvt4Dto4I(vecX dst, vecY src, vecY tmp) %{
+instruct cvt4Dto4I(vecX dst, vecY src) %{
   predicate(Matcher::vector_length(n) == 4 && Matcher::vector_element_basic_type(n) == T_INT);
   match(Set dst (VectorCastD2X src));
-  effect(TEMP tmp);
-  format %{ "vconvert    $dst, $src\t# TEMP($tmp) @cvt4Dto4I" %}
+  format %{ "vconvert    $dst, $src\t# @cvt4Dto4I" %}
   ins_encode %{
-    __ xvftintrz_w_d($tmp$$FloatRegister, $src$$FloatRegister, $src$$FloatRegister);
-    __ xvpermi_d($dst$$FloatRegister, $tmp$$FloatRegister, 0b11011000);
+    __ xvftintrz_w_d($dst$$FloatRegister, $src$$FloatRegister, $src$$FloatRegister);
+    __ xvpermi_d($dst$$FloatRegister, $dst$$FloatRegister, 0b11011000);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct cvt4Dto4F(vecX dst, vecY src, vecY tmp) %{
+instruct cvt4Dto4F(vecX dst, vecY src) %{
   predicate(Matcher::vector_length(n) == 4 && Matcher::vector_element_basic_type(n) == T_FLOAT);
   match(Set dst (VectorCastD2X src));
-  effect(TEMP tmp);
-  format %{ "vconvert    $dst, $src\t# TEMP($tmp) @cvt4Dto4F" %}
+  format %{ "vconvert    $dst, $src\t# @cvt4Dto4F" %}
   ins_encode %{
-    __ xvfcvt_s_d($tmp$$FloatRegister, $src$$FloatRegister, $src$$FloatRegister);
-    __ xvpermi_d($dst$$FloatRegister, $tmp$$FloatRegister, 0b11011000);
+    __ xvfcvt_s_d($dst$$FloatRegister, $src$$FloatRegister, $src$$FloatRegister);
+    __ xvpermi_d($dst$$FloatRegister, $dst$$FloatRegister, 0b11011000);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -16412,7 +16409,7 @@ instruct cvt4Dto4F(vecX dst, vecY src, vecY tmp) %{
 instruct cvt2Dto2L(vecX dst, vecX src) %{
   predicate(Matcher::vector_length(n) == 2 && Matcher::vector_element_basic_type(n) == T_LONG);
   match(Set dst (VectorCastD2X src));
-  format %{ "vftint.l.d    $dst, $src\t# @cvt2Dto2L" %}
+  format %{ "vftintrz.l.d    $dst, $src\t# @cvt2Dto2L" %}
   ins_encode %{
     __ vftintrz_l_d($dst$$FloatRegister, $src$$FloatRegister);
   %}
@@ -16422,7 +16419,7 @@ instruct cvt2Dto2L(vecX dst, vecX src) %{
 instruct cvt4Dto4L(vecY dst, vecY src) %{
   predicate(Matcher::vector_length(n) == 4 && Matcher::vector_element_basic_type(n) == T_LONG);
   match(Set dst (VectorCastD2X src));
-  format %{ "xvftint.l.d    $dst, $src\t# @cvt4Dto4L" %}
+  format %{ "xvftintrz.l.d    $dst, $src\t# @cvt4Dto4L" %}
   ins_encode %{
     __ xvftintrz_l_d($dst$$FloatRegister, $src$$FloatRegister);
   %}

@@ -17063,6 +17063,60 @@ instruct cmpV32(vecY dst, vecY src1, vecY src2, immI cond)
   ins_pipe( pipe_slow );
 %}
 
+// ------------------------- Vector conditional move --------------------------
+
+instruct cmove4F(vecX dst, vecX src1, vecX src2, immI cond, cmpOp copnd)
+%{
+  match(Set dst (CMoveVF (Binary copnd cond) (Binary src1 src2)));
+  effect(TEMP_DEF dst);
+  format %{ "vcmove_$copnd    $dst, $src1, $src2, $cond\t# @cmove4F" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ vector_compare($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, bt, $cond$$constant, 16);
+    __ vbitsel_v($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, $dst$$FloatRegister);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct cmove2D(vecX dst, vecX src1, vecX src2, immI cond, cmpOp copnd)
+%{
+  match(Set dst (CMoveVD (Binary copnd cond) (Binary src1 src2)));
+  effect(TEMP_DEF dst);
+  format %{ "vcmove_$copnd    $dst, $src1, $src2, $cond\t# @cmove2D" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ vector_compare($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, bt, $cond$$constant, 16);
+    __ vbitsel_v($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, $dst$$FloatRegister);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct cmove8F(vecY dst, vecY src1, vecY src2, immI cond, cmpOp copnd)
+%{
+  match(Set dst (CMoveVF (Binary copnd cond) (Binary src1 src2)));
+  effect(TEMP_DEF dst);
+  format %{ "vcmove_$copnd    $dst, $src1, $src2, $cond\t# @cmove8F" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ vector_compare($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, bt, $cond$$constant, 32);
+    __ xvbitsel_v($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, $dst$$FloatRegister);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct cmove4D(vecY dst, vecY src1, vecY src2, immI cond, cmpOp copnd)
+%{
+  match(Set dst (CMoveVD (Binary copnd cond) (Binary src1 src2)));
+  effect(TEMP_DEF dst);
+  format %{ "vcmove_$copnd    $dst, $src1, $src2, $cond\t# @cmove4D" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ vector_compare($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, bt, $cond$$constant, 32);
+    __ xvbitsel_v($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, $dst$$FloatRegister);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 // ---------------------------- LOAD_IOTA_INDICES -----------------------------
 
 instruct loadconV16(vecX dst, immI_0 src) %{

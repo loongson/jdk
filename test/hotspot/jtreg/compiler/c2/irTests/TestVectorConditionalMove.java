@@ -21,6 +21,12 @@
  * questions.
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2023. These
+ * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 package compiler.c2.irTests;
 
 import compiler.lib.ir_framework.*;
@@ -33,7 +39,7 @@ import jdk.test.lib.Utils;
  * @bug 8289422
  * @key randomness
  * @summary Auto-vectorization enhancement to support vector conditional move on AArch64
- * @requires os.arch=="aarch64"
+ * @requires os.arch=="aarch64" | os.arch == "loongarch64"
  * @library /test/lib /
  * @run driver compiler.c2.irTests.TestVectorConditionalMove
  */

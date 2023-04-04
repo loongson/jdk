@@ -5505,7 +5505,7 @@ class StubGenerator: public StubCodeGenerator {
   };
 
   // Initialization
-  void generate_initial() {
+  void generate_initial_stubs() {
     // Generates all stubs and initializes the entry points
 
     //-------------------------------------------------------------
@@ -5529,6 +5529,11 @@ class StubGenerator: public StubCodeGenerator {
                                CAST_FROM_FN_PTR(address,
                                  SharedRuntime::throw_delayed_StackOverflowError));
 
+    // Initialize table for copy memory (arraycopy) check.
+    if (UnsafeCopyMemory::_table == nullptr) {
+      UnsafeCopyMemory::create_table(8);
+    }
+
     if (UseCRC32Intrinsics) {
       // set table address before stub generation which use it
       StubRoutines::_crc_table_adr = (address)StubRoutines::la::_crc_table;
@@ -5540,7 +5545,7 @@ class StubGenerator: public StubCodeGenerator {
     }
  }
 
-  void generate_phase1() {
+  void generate_continuation_stubs() {
     // Continuation stubs:
     StubRoutines::_cont_thaw             = generate_cont_thaw();
     StubRoutines::_cont_returnBarrier    = generate_cont_returnBarrier();
@@ -5550,7 +5555,7 @@ class StubGenerator: public StubCodeGenerator {
     JFR_ONLY(StubRoutines::_jfr_write_checkpoint = StubRoutines::_jfr_write_checkpoint_stub->entry_point();)
   }
 
-  void generate_all() {
+  void generate_final_stubs() {
     // Generates all stubs and initializes the entry points
 
     // These entry points require SharedInfo::stack0 to be set up in
@@ -5571,10 +5576,6 @@ class StubGenerator: public StubCodeGenerator {
                                CAST_FROM_FN_PTR(address,
                                  SharedRuntime::throw_NullPointerException_at_call));
 
-    StubRoutines::la::_vector_iota_indices = generate_iota_indices("iota_indices");
-
-    // entry points that are platform specific
-
     // support for verify_oop (must happen after universe_init)
     if (VerifyOops) {
       StubRoutines::_verify_oop_subroutine_entry   = generate_verify_oop();
@@ -5591,10 +5592,14 @@ class StubGenerator: public StubCodeGenerator {
       StubRoutines::_dcos = generate_dsin_dcos(/* isCos = */ true);
     }
 
-    if (UseBigIntegerShiftIntrinsic) {
-      StubRoutines::_bigIntegerLeftShiftWorker = generate_bigIntegerLeftShift();
+    BarrierSetNMethod* bs_nm = BarrierSet::barrier_set()->barrier_set_nmethod();
+    if (bs_nm != NULL) {
+      StubRoutines::la::_method_entry_barrier = generate_method_entry_barrier();
     }
+  }
 
+  void generate_compiler_stubs() {
+#if COMPILER2_OR_JVMCI
 #ifdef COMPILER2
     if (UseMulAddIntrinsic) {
       StubRoutines::_mulAdd = generate_mulAdd();
@@ -5613,7 +5618,13 @@ class StubGenerator: public StubCodeGenerator {
       // because it's faster for the sizes of modulus we care about.
       StubRoutines::_montgomerySquare = g.generate_multiply();
     }
+
+    if (UseBigIntegerShiftIntrinsic) {
+      StubRoutines::_bigIntegerLeftShiftWorker = generate_bigIntegerLeftShift();
+    }
 #endif
+
+    StubRoutines::la::_vector_iota_indices = generate_iota_indices("iota_indices");
 
     if (UseAESIntrinsics) {
       StubRoutines::_aescrypt_encryptBlock = generate_aescrypt_encryptBlock(false);
@@ -5640,28 +5651,31 @@ class StubGenerator: public StubCodeGenerator {
 
     generate_string_indexof_stubs();
 
-    BarrierSetNMethod* bs_nm = BarrierSet::barrier_set()->barrier_set_nmethod();
-    if (bs_nm != NULL) {
-      StubRoutines::la::_method_entry_barrier = generate_method_entry_barrier();
-    }
+#endif // COMPILER2_OR_JVMCI
   }
 
  public:
-  StubGenerator(CodeBuffer* code, int phase) : StubCodeGenerator(code) {
-    if (phase == 0) {
-      generate_initial();
-    } else if (phase == 1) {
-      generate_phase1(); // stubs that must be available for the interpreter
-    } else {
-      generate_all();
-    }
+  StubGenerator(CodeBuffer* code, StubsKind kind) : StubCodeGenerator(code) {
+    switch(kind) {
+    case Initial_stubs:
+      generate_initial_stubs();
+      break;
+     case Continuation_stubs:
+      generate_continuation_stubs();
+      break;
+    case Compiler_stubs:
+      generate_compiler_stubs();
+      break;
+    case Final_stubs:
+      generate_final_stubs();
+      break;
+    default:
+      fatal("unexpected stubs kind: %d", kind);
+      break;
+    };
   }
 }; // end class declaration
 
-#define UCM_TABLE_MAX_ENTRIES 7
-void StubGenerator_generate(CodeBuffer* code, int phase) {
-  if (UnsafeCopyMemory::_table == NULL) {
-    UnsafeCopyMemory::create_table(UCM_TABLE_MAX_ENTRIES);
-  }
-  StubGenerator g(code, phase);
+void StubGenerator_generate(CodeBuffer* code, StubCodeGenerator::StubsKind kind) {
+  StubGenerator g(code, kind);
 }

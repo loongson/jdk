@@ -323,6 +323,18 @@ void InterpreterMacroAssembler::get_method_counters(Register method,
   bind(has_counters);
 }
 
+void InterpreterMacroAssembler::load_resolved_indy_entry(Register cache, Register index) {
+  // Get index out of bytecode pointer, get_cache_entry_pointer_at_bcp
+  get_cache_index_at_bcp(index, 1, sizeof(u4));
+  // Get address of invokedynamic array
+  ld_d(cache, FP, frame::interpreter_frame_cache_offset * wordSize);
+  ld_d(cache, Address(cache, in_bytes(ConstantPoolCache::invokedynamic_entries_offset())));
+  // Scale the index to be the entry index * sizeof(ResolvedInvokeDynamicInfo)
+  slli_d(index, index, log2i_exact(sizeof(ResolvedIndyEntry)));
+  addi_d(cache, cache, Array<ResolvedIndyEntry>::base_offset_in_bytes());
+  add_d(cache, cache, index);
+}
+
 // Load object from cpool->resolved_references(index)
 void InterpreterMacroAssembler::load_resolved_reference_at_index(
                                            Register result, Register index, Register tmp) {

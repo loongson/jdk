@@ -585,13 +585,17 @@ address TemplateInterpreterGenerator::generate_return_entry_for(TosState state, 
 
   const Register cache = T4;
   const Register index = T3;
-  __ get_cache_and_index_at_bcp(cache, index, 1, index_size);
-
-  const Register flags = cache;
-  __ alsl_d(AT, index, cache, Address::times_ptr - 1);
-  __ ld_w(flags, AT, in_bytes(ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::flags_offset()));
-  __ andi(flags, flags, ConstantPoolCacheEntry::parameter_size_mask);
-  __ alsl_d(SP, flags, SP, Interpreter::logStackElementSize - 1);
+  if (index_size == sizeof(u4)) {
+    __ load_resolved_indy_entry(cache, index);
+    __ ld_hu(cache, Address(cache, in_bytes(ResolvedIndyEntry::num_parameters_offset())));
+    __ alsl_d(SP, cache, SP, Interpreter::logStackElementSize - 1);
+  } else {
+    __ get_cache_and_index_at_bcp(cache, index, 1, index_size);
+    __ alsl_d(AT, index, cache, Address::times_ptr - 1);
+    __ ld_d(cache, AT, in_bytes(ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::flags_offset()));
+    __ andi(cache, cache, ConstantPoolCacheEntry::parameter_size_mask);
+    __ alsl_d(SP, cache, SP, Interpreter::logStackElementSize - 1);
+  }
 
   __ check_and_handle_popframe(TREG);
   __ check_and_handle_earlyret(TREG);

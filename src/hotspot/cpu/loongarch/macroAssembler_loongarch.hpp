@@ -262,7 +262,6 @@ class MacroAssembler: public Assembler {
 
   // oop manipulations
   void load_klass(Register dst, Register src);
-  void load_klass_check_null(Register dst, Register src);
   void store_klass(Register dst, Register src);
 
   void access_load_at(BasicType type, DecoratorSet decorators, Register dst, Address src,

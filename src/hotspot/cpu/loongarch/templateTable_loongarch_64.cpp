@@ -697,9 +697,6 @@ void TemplateTable::index_check(Register array, Register index) {
 
 void TemplateTable::index_check_without_pop(Register array, Register index) {
   // destroys A2
-  // check array
-  __ null_check(array, arrayOopDesc::length_offset_in_bytes());
-
   // sign extend since tos (index) might contain garbage in upper bits
   __ slli_w(index, index, 0);
 
@@ -3330,7 +3327,7 @@ void TemplateTable::invokevirtual_helper(Register index,
   __ bind(notFinal);
 
   // get receiver klass
-  __ load_klass_check_null(T2, recv);
+  __ load_klass(T2, recv);
 
   // profile this call
   __ profile_virtual_call(T2, T0, T1);
@@ -3432,8 +3429,8 @@ void TemplateTable::invokeinterface(int byte_no) {
   __ andr(AT, T1, AT);
   __ beq(AT, R0, notVFinal);
 
-  // Get receiver klass into FSR - also a null check
-  __ load_klass_check_null(FSR, T3);
+  // Get receiver klass into FSR
+  __ load_klass(FSR, T3);
 
   Label subtype;
   __ check_klass_subtype(FSR, T2, T0, subtype);
@@ -3453,9 +3450,9 @@ void TemplateTable::invokeinterface(int byte_no) {
   // no return from above
   __ bind(notVFinal);
 
-  // Get receiver klass into T1 - also a null check
+  // Get receiver klass into T1
   __ restore_locals();
-  __ load_klass_check_null(T1, T3);
+  __ load_klass(T1, T3);
 
   Label no_such_method;
 
@@ -3720,7 +3717,6 @@ void TemplateTable::anewarray() {
 
 void TemplateTable::arraylength() {
   transition(atos, itos);
-  __ null_check(FSR, arrayOopDesc::length_offset_in_bytes());
   __ ld_w(FSR, FSR, arrayOopDesc::length_offset_in_bytes());
 }
 

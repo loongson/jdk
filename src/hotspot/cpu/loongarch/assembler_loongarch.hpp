@@ -206,7 +206,7 @@ class AddressLiteral {
  protected:
   // creation
   AddressLiteral()
-    : _target(NULL)
+    : _target(nullptr)
   {}
 
   public:
@@ -1720,7 +1720,7 @@ public:
   }
 
   inline void emit_data64(jlong data, RelocationHolder const& rspec, int format = 0) {
-    assert(inst_mark() != NULL, "must be inside InstructionMark");
+    assert(inst_mark() != nullptr, "must be inside InstructionMark");
     // Do not use AbstractAssembler::relocate, which is not intended for
     // embedded words.  Instead, relocate to the enclosing instruction.
     code_section()->relocate(inst_mark(), rspec, format);

@@ -46,7 +46,7 @@ static const int stub_size = 600;
 extern "C" {
   typedef void (*get_cpu_info_stub_t)(void*);
 }
-static get_cpu_info_stub_t get_cpu_info_stub = NULL;
+static get_cpu_info_stub_t get_cpu_info_stub = nullptr;
 
 
 class VM_Version_StubGenerator: public StubCodeGenerator {
@@ -441,7 +441,7 @@ void VM_Version::initialize() {
   // Making this stub must be FIRST use of assembler
 
   stub_blob = BufferBlob::create("get_cpu_info_stub", stub_size);
-  if (stub_blob == NULL) {
+  if (stub_blob == nullptr) {
     vm_exit_during_initialization("Unable to allocate get_cpu_info_stub");
   }
   CodeBuffer c(stub_blob);

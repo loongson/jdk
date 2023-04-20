@@ -43,7 +43,7 @@ void C1SafepointPollStub::emit_code(LIR_Assembler* ce) {
   __ lea(SCR2, safepoint_pc);
   __ st_d(SCR2, Address(TREG, JavaThread::saved_exception_pc_offset()));
 
-  assert(SharedRuntime::polling_page_return_handler_blob() != NULL,
+  assert(SharedRuntime::polling_page_return_handler_blob() != nullptr,
          "polling page return stub not created yet");
   address stub = SharedRuntime::polling_page_return_handler_blob()->entry_point();
 
@@ -319,7 +319,7 @@ void ArrayCopyStub::emit_code(LIR_Assembler* ce) {
   AddressLiteral resolve(SharedRuntime::get_resolve_static_call_stub(),
                          relocInfo::static_call_type);
   address call = __ trampoline_call(resolve);
-  if (call == NULL) {
+  if (call == nullptr) {
     ce->bailout("trampoline stub overflow");
     return;
   }

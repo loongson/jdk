@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -88,7 +88,7 @@ int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr
   li(SCR1, aligned_mask - os::vm_page_size());
   andr(hdr, hdr, SCR1);
   // for recursive locking, the result is zero => save it in the displaced header
-  // location (NULL in the displaced hdr location indicates recursive locking)
+  // location (null in the displaced hdr location indicates recursive locking)
   st_d(hdr, Address(disp_hdr, 0));
   // otherwise we don't care about the result and handle locking via runtime call
   bnez(hdr, slow_case);
@@ -106,7 +106,7 @@ void C1_MacroAssembler::unlock_object(Register hdr, Register obj, Register disp_
 
   // load displaced header
   ld_d(hdr, Address(disp_hdr, 0));
-  // if the loaded hdr is NULL we had recursive locking
+  // if the loaded hdr is null we had recursive locking
   // if we had recursive locking, we are done
   beqz(hdr, done);
   // load object
@@ -279,7 +279,7 @@ void C1_MacroAssembler::build_frame(int framesize, int bang_size_in_bytes) {
 
   // Insert nmethod entry barrier into frame.
   BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
-  bs->nmethod_entry_barrier(this, NULL /* slow_path */, NULL /* continuation */, NULL /* guard */);
+  bs->nmethod_entry_barrier(this, nullptr /* slow_path */, nullptr /* continuation */, nullptr /* guard */);
 }
 
 void C1_MacroAssembler::remove_frame(int framesize) {

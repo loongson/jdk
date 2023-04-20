@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1998, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -94,7 +94,7 @@ address Relocation::pd_call_destination(address orig_addr) {
     tty->print_cr("\nError!\ncall destination: " INTPTR_FORMAT, p2i(addr()));
     Disassembler::decode(addr() - 10 * BytesPerInstWord, addr() + 10 * BytesPerInstWord, tty);
     ShouldNotReachHere();
-    return NULL;
+    return nullptr;
   }
 }
 

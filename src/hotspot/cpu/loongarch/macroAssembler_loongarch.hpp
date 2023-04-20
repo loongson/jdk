@@ -98,9 +98,9 @@ class MacroAssembler: public Assembler {
   virtual void check_and_handle_popframe(Register java_thread);
   virtual void check_and_handle_earlyret(Register java_thread);
 
-  // Support for NULL-checks
+  // Support for null-checks
   //
-  // Generates code that causes a NULL OS exception if the content of reg is NULL.
+  // Generates code that causes a null OS exception if the content of reg is null.
   // If the accessed location is M[reg + offset] and the offset is known, provide the
   // offset. No explicit code generation is needed if the offset is within a certain
   // range (0 <= offset <= page_size).
@@ -111,7 +111,7 @@ class MacroAssembler: public Assembler {
 
   // Required platform-specific helpers for Label::patch_instructions.
   // They _shadow_ the declarations in AbstractAssembler, which are undefined.
-  static void pd_patch_instruction(address branch, address target, const char* file = NULL, int line = 0);
+  static void pd_patch_instruction(address branch, address target, const char* file = nullptr, int line = 0);
 
   // Return whether code is emitted to a scratch blob.
   virtual bool in_scratch_emit_size() {
@@ -276,7 +276,7 @@ class MacroAssembler: public Assembler {
   void store_heap_oop(Address dst, Register val, Register tmp1 = noreg,
                       Register tmp2 = noreg, DecoratorSet decorators = 0);
 
-  // Used for storing NULL. All other oop constants should be
+  // Used for storing null. All other oop constants should be
   // stored using routines that take a jobject.
   void store_heap_oop_null(Address dst);
 
@@ -337,7 +337,7 @@ class MacroAssembler: public Assembler {
   // Test sub_klass against super_klass, with fast and slow paths.
 
   // The fast path produces a tri-state answer: yes / no / maybe-slow.
-  // One of the three labels can be NULL, meaning take the fall-through.
+  // One of the three labels can be null, meaning take the fall-through.
   // If super_check_offset is -1, the value is loaded up from super_klass.
   // No registers are killed, except temp_reg.
   void check_klass_subtype_fast_path(Register sub_klass,
@@ -371,8 +371,8 @@ class MacroAssembler: public Assembler {
 
   void clinit_barrier(Register klass,
                       Register scratch,
-                      Label* L_fast_path = NULL,
-                      Label* L_slow_path = NULL);
+                      Label* L_fast_path = nullptr,
+                      Label* L_slow_path = nullptr);
 
 
   // Debugging
@@ -460,7 +460,7 @@ class MacroAssembler: public Assembler {
   void call(address entry, RelocationHolder& rh);
   void call_long(address entry);
 
-  address trampoline_call(AddressLiteral entry, CodeBuffer *cbuf = NULL);
+  address trampoline_call(AddressLiteral entry, CodeBuffer *cbuf = nullptr);
 
   static const unsigned long branch_range = NOT_DEBUG(128 * M) DEBUG_ONLY(2 * M);
 

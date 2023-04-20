@@ -358,7 +358,7 @@ class StubGenerator: public StubCodeGenerator {
     __ st_d(AT, TREG, in_bytes(Thread::exception_line_offset   ()));
 
     // complete return to VM
-    assert(StubRoutines::_call_stub_return_address != NULL, "_call_stub_return_address must have been generated before");
+    assert(StubRoutines::_call_stub_return_address != nullptr, "_call_stub_return_address must have been generated before");
     __ jmp(StubRoutines::_call_stub_return_address, relocInfo::none);
     return start;
   }
@@ -462,7 +462,7 @@ class StubGenerator: public StubCodeGenerator {
     __ st_d(c_rarg3, Address(c_rarg2));
 
     // make sure object is 'reasonable'
-    __ beqz(oop, exit); // if obj is NULL it is OK
+    __ beqz(oop, exit); // if obj is null it is OK
 
     BarrierSetAssembler* bs_asm = BarrierSet::barrier_set()->barrier_set_assembler();
     bs_asm->check_oop(_masm, oop, c_rarg2, c_rarg3, error);
@@ -2400,9 +2400,9 @@ class StubGenerator: public StubCodeGenerator {
 
     Label L_miss;
 
-    __ check_klass_subtype_fast_path(sub_klass, super_klass, tmp1,       &L_success, &L_miss, NULL,
+    __ check_klass_subtype_fast_path(sub_klass, super_klass, tmp1,       &L_success, &L_miss, nullptr,
                                      super_check_offset);
-    __ check_klass_subtype_slow_path<false>(sub_klass, super_klass, tmp1, tmp2, &L_success, NULL);
+    __ check_klass_subtype_slow_path<false>(sub_klass, super_klass, tmp1, tmp2, &L_success, nullptr);
 
     // Fall through on failure!
     __ bind(L_miss);
@@ -2674,19 +2674,19 @@ class StubGenerator: public StubCodeGenerator {
     // (2) src_pos must not be negative.
     // (3) dst_pos must not be negative.
     // (4) length  must not be negative.
-    // (5) src klass and dst klass should be the same and not NULL.
+    // (5) src klass and dst klass should be the same and not null.
     // (6) src and dst should be arrays.
     // (7) src_pos + length must not exceed length of src.
     // (8) dst_pos + length must not exceed length of dst.
     //
 
-    // if (src == NULL) return -1;
+    // if (src == nullptr) return -1;
     __ beqz(src, L_failed);
 
     // if (src_pos < 0) return -1;
     __ blt(src_pos, R0, L_failed);
 
-    // if (dst == NULL) return -1;
+    // if (dst == nullptr) return -1;
     __ beqz(dst, L_failed);
 
     // if (dst_pos < 0) return -1;
@@ -2705,11 +2705,11 @@ class StubGenerator: public StubCodeGenerator {
 
     __ load_klass(scratch_src_klass, src);
 #ifdef ASSERT
-    // assert(src->klass() != NULL);
+    // assert(src->klass() != nullptr);
     {
       __ block_comment("assert klasses not null {");
       Label L1, L2;
-      __ bnez(scratch_src_klass, L2); // it is broken if klass is NULL
+      __ bnez(scratch_src_klass, L2); // it is broken if klass is null
       __ bind(L1);
       __ stop("broken null klass");
       __ bind(L2);
@@ -5593,7 +5593,7 @@ class StubGenerator: public StubCodeGenerator {
     }
 
     BarrierSetNMethod* bs_nm = BarrierSet::barrier_set()->barrier_set_nmethod();
-    if (bs_nm != NULL) {
+    if (bs_nm != nullptr) {
       StubRoutines::la::_method_entry_barrier = generate_method_entry_barrier();
     }
   }

@@ -104,10 +104,10 @@ void C2_MacroAssembler::fast_lock(Register oop, Register box, Register flag,
   li(AT, (int32_t)intptr_t(markWord::unused_mark().value()));
   st_d(AT, box, BasicLock::displaced_header_offset_in_bytes());
 
-  // The object's monitor m is unlocked if m->owner == NULL,
+  // The object's monitor m is unlocked if m->owner is null,
   // otherwise m->owner may contain a thread or a stack address.
   //
-  // Try to CAS m->owner from NULL to current thread.
+  // Try to CAS m->owner from null to current thread.
   move(AT, R0);
   addi_d(tmp, disp_hdr, ObjectMonitor::owner_offset_in_bytes() - markWord::monitor_value);
   cmpxchg(Address(tmp, 0), AT, TREG, flag, true, false);
@@ -503,13 +503,13 @@ void C2_MacroAssembler::string_indexof(Register haystack, Register needle,
   address stub;
   if (isLL) {
     stub = StubRoutines::la::string_indexof_linear_ll();
-    assert(stub != NULL, "string_indexof_linear_ll stub has not been generated");
+    assert(stub != nullptr, "string_indexof_linear_ll stub has not been generated");
   } else if (needle_isL) {
     stub = StubRoutines::la::string_indexof_linear_ul();
-    assert(stub != NULL, "string_indexof_linear_ul stub has not been generated");
+    assert(stub != nullptr, "string_indexof_linear_ul stub has not been generated");
   } else {
     stub = StubRoutines::la::string_indexof_linear_uu();
-    assert(stub != NULL, "string_indexof_linear_uu stub has not been generated");
+    assert(stub != nullptr, "string_indexof_linear_uu stub has not been generated");
   }
   trampoline_call(RuntimeAddress(stub));
   b(DONE);
@@ -1666,9 +1666,9 @@ void C2_MacroAssembler::cmp_branchEqNe_off21(int flag, Register op1, Label& L) {
 }
 
 bool C2_MacroAssembler::in_scratch_emit_size() {
-  if (ciEnv::current()->task() != NULL) {
+  if (ciEnv::current()->task() != nullptr) {
     PhaseOutput* phase_output = Compile::current()->output();
-    if (phase_output != NULL && phase_output->in_scratch_emit_size()) {
+    if (phase_output != nullptr && phase_output->in_scratch_emit_size()) {
       return true;
     }
   }

@@ -101,8 +101,8 @@ Address TemplateTable::at_bcp(int offset) {
 }
 
 // Miscellaneous helper routines
-// Store an oop (or NULL) at the address described by obj.
-// If val == noreg this means store a NULL
+// Store an oop (or null) at the address described by obj.
+// If val == noreg this means store a null
 static void do_oop_store(InterpreterMacroAssembler* _masm,
                          Address dst,
                          Register val,
@@ -478,7 +478,7 @@ void TemplateTable::fast_aldc(LdcType type) {
     __ ld_d(tmp, Address(rarg));
     __ resolve_oop_handle(tmp, T4);
     __ bne(tmp, result, notNull);
-    __ xorr(result, result, result);  // NULL object reference
+    __ xorr(result, result, result);  // null object reference
     __ bind(notNull);
   }
 
@@ -1001,7 +1001,7 @@ void TemplateTable::aastore() {
   __ ld_d(A1, at_tos_p2());  // Array
 
   index_check_without_pop(A1, T2);
-  // do array store check - check for NULL value first
+  // do array store check - check for null value first
   __ beq(FSR, R0, is_null);
 
   // Move subklass into T3
@@ -1026,7 +1026,7 @@ void TemplateTable::aastore() {
   do_oop_store(_masm, Address(A1, 0), FSR, IS_ARRAY);
   __ b(done);
 
-  // Have a NULL in FSR, A1=array, T2=index.  Store NULL at ary[idx]
+  // Have a null in FSR, A1=array, T2=index.  Store null at ary[idx]
   __ bind(is_null);
   __ profile_null_seen(T4);
   __ alsl_d(A1, T2, A1, (UseCompressedOops? Address::times_4 : Address::times_8) - 1);
@@ -1701,7 +1701,7 @@ void TemplateTable::branch(bool is_jsr, bool is_wide) {
     call_VM(NOREG, CAST_FROM_FN_PTR(address,
     InterpreterRuntime::frequency_counter_overflow), A7);
 
-    // V0: osr nmethod (osr ok) or NULL (osr not possible)
+    // V0: osr nmethod (osr ok) or null (osr not possible)
     // V1: osr adapter frame return address
     // LVP: locals pointer
     // BCP: bcp
@@ -2222,7 +2222,7 @@ void TemplateTable::resolve_cache_and_index(int byte_no,
   if (VM_Version::supports_fast_class_init_checks() && bytecode() == Bytecodes::_invokestatic) {
     __ load_resolved_method_at_index(byte_no, temp, Rcache, index);
     __ load_method_holder(temp, temp);
-    __ clinit_barrier(temp, AT, NULL, &clinit_barrier_slow);
+    __ clinit_barrier(temp, AT, nullptr, &clinit_barrier_slow);
   }
 }
 //END: LA
@@ -2393,7 +2393,7 @@ void TemplateTable::jvmti_post_field_access(Register cache, Register index,
       __ ld_d(tmp1, SP, 0);
       __ verify_oop(tmp1);
     }
-    // tmp1: object pointer or NULL
+    // tmp1: object pointer or null
     // tmp2: cache entry pointer
     __ call_VM(NOREG, CAST_FROM_FN_PTR(address,
                                        InterpreterRuntime::post_field_access),
@@ -2669,7 +2669,7 @@ void TemplateTable::jvmti_post_field_mod(Register cache, Register index, bool is
     __ alsl_d(tmp2, tmp4, tmp2, LogBytesPerWord - 1);
     // object (tos)
     __ move(tmp3, SP);
-    // tmp1: object pointer set up above (NULL if static)
+    // tmp1: object pointer set up above (null if static)
     // tmp2: cache entry pointer
     // tmp3: jvalue object on the stack
     __ call_VM(NOREG,
@@ -3772,7 +3772,7 @@ void TemplateTable::checkcast() {
   // Come here on success
   __ bind(ok_is_subtype);
 
-  // Collect counts on whether this check-cast sees NULLs a lot or not.
+  // Collect counts on whether this check-cast sees nulls a lot or not.
   if (ProfileInterpreter) {
     __ b(done);
     __ bind(is_null);
@@ -3830,7 +3830,7 @@ void TemplateTable::instanceof() {
   __ bind(ok_is_subtype);
   __ li(FSR, 1);
 
-  // Collect counts on whether this test sees NULLs a lot or not.
+  // Collect counts on whether this test sees nulls a lot or not.
   if (ProfileInterpreter) {
     __ beq(R0, R0, done);
     __ bind(is_null);
@@ -3839,8 +3839,8 @@ void TemplateTable::instanceof() {
     __ bind(is_null);   // same as 'done'
   }
   __ bind(done);
-  // FSR = 0: obj == NULL or  obj is not an instanceof the specified klass
-  // FSR = 1: obj != NULL and obj is     an instanceof the specified klass
+  // FSR = 0: obj == nullptr or  obj is not an instanceof the specified klass
+  // FSR = 1: obj != nullptr and obj is     an instanceof the specified klass
 }
 
 //--------------------------------------------------------
@@ -3901,7 +3901,7 @@ void TemplateTable::athrow() {
 void TemplateTable::monitorenter() {
   transition(atos, vtos);
 
-  // check for NULL object
+  // check for null object
   __ null_check(FSR);
 
   const Address monitor_block_top(FP, frame::interpreter_frame_monitor_block_top_offset

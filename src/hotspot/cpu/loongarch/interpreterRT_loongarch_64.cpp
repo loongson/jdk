@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -190,10 +190,10 @@ class SlowSignatureHandler
     _from -= Interpreter::stackElementSize;
 
     if (_num_int_args < Argument::n_int_register_parameters_c - 1) {
-      *_int_args++ = (*from_addr == 0) ? NULL : (intptr_t) from_addr;
+      *_int_args++ = (*from_addr == 0) ? (intptr_t)0 : (intptr_t)from_addr;
       _num_int_args++;
     } else {
-      *_to++ = (*from_addr == 0) ? NULL : (intptr_t) from_addr;
+      *_to++ = (*from_addr == 0) ? (intptr_t)0 : (intptr_t)from_addr;
     }
   }
 

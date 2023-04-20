@@ -886,7 +886,7 @@ void reg_mask_init() {
   _PTR_REG_mask = _ALL_REG_mask;
   _PTR_HAS_S6_REG_mask = _ALL_REG_mask;
 
-  if (UseCompressedOops && (CompressedOops::ptrs_base() != NULL)) {
+  if (UseCompressedOops && (CompressedOops::ptrs_base() != nullptr)) {
     _ANY_REG32_mask.Remove(OptoReg::as_OptoReg(r28->as_VMReg()));
     _ANY_REG_mask.SUBTRACT(_S5_LONG_REG_mask);
     _PTR_REG_mask.SUBTRACT(_S5_LONG_REG_mask);
@@ -929,7 +929,7 @@ int HandlerImpl::emit_exception_handler(CodeBuffer& cbuf) {
   // That's why we must use the macroassembler to generate a handler.
   C2_MacroAssembler _masm(&cbuf);
   address base = __ start_a_stub(size_exception_handler());
-  if (base == NULL) {
+  if (base == nullptr) {
     ciEnv::current()->record_failure("CodeCache is full");
     return 0;  // CodeBuffer::expand failed
   }
@@ -952,7 +952,7 @@ int HandlerImpl::emit_deopt_handler(CodeBuffer& cbuf) {
   // That's why we must use the macroassembler to generate a handler.
   C2_MacroAssembler _masm(&cbuf);
   address base = __ start_a_stub(size_deopt_handler());
-  if (base == NULL) {
+  if (base == nullptr) {
     ciEnv::current()->record_failure("CodeCache is full");
     return 0;  // CodeBuffer::expand failed
   }
@@ -1074,7 +1074,7 @@ bool Matcher::is_short_branch_offset(int rule, int br_size, int offset) {
 
 MachOper* Matcher::pd_specialize_generic_vector_operand(MachOper* generic_opnd, uint ideal_reg, bool is_temp) {
   ShouldNotReachHere(); // generic vector operands not supported
-  return NULL;
+  return nullptr;
 }
 
 bool Matcher::is_reg2reg_move(MachNode* m) {
@@ -1096,11 +1096,11 @@ const bool Matcher::vector_needs_load_shuffle(BasicType elem_bt, int vlen) {
 }
 
 const RegMask* Matcher::predicate_reg_mask(void) {
-  return NULL;
+  return nullptr;
 }
 
 const TypeVectMask* Matcher::predicate_reg_type(const Type* elemTy, int length) {
-  return NULL;
+  return nullptr;
 }
 
 const int Matcher::scalable_vector_reg_size(const BasicType bt) {
@@ -1459,7 +1459,7 @@ uint MachSpillCopyNode::implementation( CodeBuffer *cbuf, PhaseRegAlloc *ra_, bo
   if( src_first == dst_first && src_second == dst_second )
     return 0;            // Self copy, no move
 
-  if (bottom_type()->isa_vect() != NULL) {
+  if (bottom_type()->isa_vect() != nullptr) {
     uint ireg = ideal_reg();
     assert((src_first_rc != rc_int && dst_first_rc != rc_int), "sanity");
     if (src_first_rc == rc_stack && dst_first_rc == rc_stack) {
@@ -1816,12 +1816,12 @@ uint MachSpillCopyNode::implementation( CodeBuffer *cbuf, PhaseRegAlloc *ra_, bo
 
 #ifndef PRODUCT
 void MachSpillCopyNode::format( PhaseRegAlloc *ra_, outputStream* st ) const {
-  implementation( NULL, ra_, false, st );
+  implementation( nullptr, ra_, false, st );
 }
 #endif
 
 void MachSpillCopyNode::emit(CodeBuffer &cbuf, PhaseRegAlloc *ra_) const {
-  implementation( &cbuf, ra_, false, NULL );
+  implementation( &cbuf, ra_, false, nullptr );
 }
 
 uint MachSpillCopyNode::size(PhaseRegAlloc *ra_) const {
@@ -2061,7 +2061,7 @@ void MachPrologNode::format( PhaseRegAlloc *ra_, outputStream* st ) const {
     }
   }
   st->print("addi_d   SP, SP, -%d \t",framesize);
-  if (C->stub_function() == NULL && BarrierSet::barrier_set()->barrier_set_nmethod() != NULL) {
+  if (C->stub_function() == nullptr && BarrierSet::barrier_set()->barrier_set_nmethod() != nullptr) {
     st->print("\n\t");
     st->print("ld_d  T1, guard, 0\n\t");
     st->print("dbar  0\n\t");
@@ -2110,9 +2110,9 @@ void MachPrologNode::emit(CodeBuffer &cbuf, PhaseRegAlloc *ra_) const {
 
   assert((__ pc() - start) >= 1 * BytesPerInstWord, "No enough room for patch_verified_entry");
 
-  if (C->stub_function() == NULL) {
+  if (C->stub_function() == nullptr) {
     BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
-    if (BarrierSet::barrier_set()->barrier_set_nmethod() != NULL) {
+    if (BarrierSet::barrier_set()->barrier_set_nmethod() != nullptr) {
       // Dummy labels for just measuring the code size
       Label dummy_slow_path;
       Label dummy_continuation;
@@ -2285,7 +2285,7 @@ bool needs_releasing_store(const Node *n)
 
   StoreNode *st = n->as_Store();
 
-  return st->trailing_membar() != NULL;
+  return st->trailing_membar() != nullptr;
 }
 
 %}
@@ -2336,7 +2336,7 @@ encode %{
     if ( !_method ) {
       // A call to a runtime wrapper, e.g. new, new_typeArray_Java, uncommon_trap.
       call = __ trampoline_call(AddressLiteral(addr, relocInfo::runtime_call_type), &cbuf);
-      if (call == NULL) {
+      if (call == nullptr) {
         ciEnv::current()->record_failure("CodeCache is full");
         return;
       }
@@ -2345,7 +2345,7 @@ encode %{
       RelocationHolder rspec = _optimized_virtual ? opt_virtual_call_Relocation::spec(method_index)
                                      : static_call_Relocation::spec(method_index);
       call = __ trampoline_call(AddressLiteral(addr, rspec), &cbuf);
-      if (call == NULL) {
+      if (call == nullptr) {
         ciEnv::current()->record_failure("CodeCache is full");
         return;
       }
@@ -2356,7 +2356,7 @@ encode %{
       } else {
         // Emit stub for static call
         address stub = CompiledStaticCall::emit_to_interp_stub(cbuf);
-        if (stub == NULL) {
+        if (stub == nullptr) {
           ciEnv::current()->record_failure("CodeCache is full");
           return;
         }
@@ -2374,7 +2374,7 @@ encode %{
     C2_MacroAssembler _masm(&cbuf);
     __ block_comment("Java_Dynamic_Call");
     address call = __ ic_call((address)$meth$$method, resolved_method_index(cbuf));
-    if (call == NULL) {
+    if (call == nullptr) {
       ciEnv::current()->record_failure("CodeCache is full");
       return;
     }
@@ -2394,13 +2394,13 @@ encode %{
     // result may be the same as sub
     //    47c   B40: #    B21 B41 <- B20  Freq: 0.155379
     //    47c     partialSubtypeCheck result=S1, sub=S1, super=S3, length=S0
-    //    4bc     mov   S2, NULL #@loadConP
+    //    4bc     mov   S2, nullptr #@loadConP
     //    4c0     beq   S1, S2, B21 #@branchConP  P=0.999999 C=-1.000000
     //
     C2_MacroAssembler _masm(&cbuf);
     Label done;
     __ check_klass_subtype_slow_path<false>(sub, super, length, tmp,
-        NULL, &miss,
+        nullptr, &miss,
         /*set_cond_codes:*/ true);
     // Refer to X86_64's RDI
     __ move(result, R0);
@@ -2985,7 +2985,7 @@ operand immP() %{
   interface(CONST_INTER);
 %}
 
-// NULL Pointer Immediate
+// null Pointer Immediate
 operand immP_0() %{
   predicate(n->get_ptr() == 0);
   match(ConP);
@@ -3015,7 +3015,7 @@ operand immN() %{
   interface(CONST_INTER);
 %}
 
-// NULL Pointer Immediate
+// null Pointer Immediate
 operand immN_0() %{
   predicate(n->get_narrowcon() == 0);
   match(ConN);
@@ -4678,7 +4678,7 @@ instruct loadN(mRegN dst, memory mem)
 instruct loadN2P(mRegP dst, memory mem)
 %{
    match(Set dst (DecodeN (LoadN mem)));
-   predicate(CompressedOops::base() == NULL && CompressedOops::shift() == 0);
+   predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0);
 
    ins_cost(125);
    format %{ "ld_wu    $dst, $mem\t# @ loadN2P" %}
@@ -4738,7 +4738,7 @@ instruct loadNKlass(mRegN dst, memory mem)
 instruct loadN2PKlass(mRegP dst, memory mem)
 %{
   match(Set dst (DecodeNKlass (LoadNKlass mem)));
-  predicate(CompressedKlassPointers::base() == NULL && CompressedKlassPointers::shift() == 0);
+  predicate(CompressedKlassPointers::base() == nullptr && CompressedKlassPointers::shift() == 0);
 
   ins_cost(125);
   format %{ "ld_wu    $dst, $mem\t# compressed klass ptr @ loadN2PKlass" %}
@@ -4811,7 +4811,7 @@ instruct storeP_volatile(indirect mem, mRegP src ) %{
   ins_pipe( pipe_serial );
 %}
 
-// Store NULL Pointer, mark word, or other simple pointer constant.
+// Store null Pointer, mark word, or other simple pointer constant.
 instruct storeImmP_immP_0(memory mem, immP_0 zero) %{
   match(Set mem (StoreP mem zero));
   predicate(!needs_releasing_store(n));
@@ -4864,7 +4864,7 @@ instruct storeN_volatile(indirect mem, mRegN src)
 instruct storeP2N(memory mem, mRegP src)
 %{
   match(Set mem (StoreN mem (EncodeP src)));
-  predicate(CompressedOops::base() == NULL && CompressedOops::shift() == 0 && !needs_releasing_store(n));
+  predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0 && !needs_releasing_store(n));
 
   ins_cost(125);
   format %{ "st_w    $mem, $src\t# @ storeP2N" %}
@@ -4877,7 +4877,7 @@ instruct storeP2N(memory mem, mRegP src)
 instruct storeP2N_volatile(indirect mem, mRegP src)
 %{
   match(Set mem (StoreN mem (EncodeP src)));
-  predicate(CompressedOops::base() == NULL && CompressedOops::shift() == 0);
+  predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0);
 
   ins_cost(130);
   format %{ "amswap_db_w    R0, $src, $mem # @ storeP2N" %}
@@ -4915,7 +4915,7 @@ instruct storeNKlass_volatile(indirect mem, mRegN src)
 instruct storeP2NKlass(memory mem, mRegP src)
 %{
   match(Set mem (StoreNKlass mem (EncodePKlass src)));
-  predicate(CompressedKlassPointers::base() == NULL && CompressedKlassPointers::shift() == 0 && !needs_releasing_store(n));
+  predicate(CompressedKlassPointers::base() == nullptr && CompressedKlassPointers::shift() == 0 && !needs_releasing_store(n));
 
   ins_cost(125);
   format %{ "st_w    $mem, $src\t# @ storeP2NKlass" %}
@@ -4928,7 +4928,7 @@ instruct storeP2NKlass(memory mem, mRegP src)
 instruct storeP2NKlass_volatile(indirect mem, mRegP src)
 %{
   match(Set mem (StoreNKlass mem (EncodePKlass src)));
-  predicate(CompressedKlassPointers::base() == NULL && CompressedKlassPointers::shift() == 0);
+  predicate(CompressedKlassPointers::base() == nullptr && CompressedKlassPointers::shift() == 0);
 
   ins_cost(130);
   format %{ "amswap_db_w    R0, $src, $mem # @ storeP2NKlass" %}
@@ -5180,7 +5180,7 @@ instruct loadConP_immP_0(mRegP dst, immP_0 src)
 
 instruct loadConN_immN_0(mRegN dst, immN_0 src) %{
   match(Set dst src);
-  format %{ "move    $dst, R0\t# compressed NULL ptr" %}
+  format %{ "move    $dst, R0\t# compressed null ptr" %}
   ins_encode %{
     __ move($dst$$Register, R0);
   %}
@@ -5438,7 +5438,7 @@ instruct branchConP_0_long(cmpOpEqNe cmp, mRegP op1, immP_0 zero, label labl) %{
 
 instruct branchConN2P_0_long(cmpOpEqNe cmp, mRegN op1, immP_0 zero, label labl) %{
   match(If cmp (CmpP (DecodeN op1) zero));
-  predicate(CompressedOops::base() == NULL && CompressedOops::shift() == 0);
+  predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0);
   effect(USE labl);
 
   ins_cost(180);
@@ -5909,7 +5909,7 @@ instruct branchConP_0_short(cmpOpEqNe cmp, mRegP op1, immP_0 zero, label labl) %
 
 instruct branchConN2P_0_short(cmpOpEqNe cmp, mRegN op1, immP_0 zero, label labl) %{
   match(If cmp (CmpP (DecodeN op1) zero));
-  predicate(CompressedOops::base() == NULL && CompressedOops::shift() == 0);
+  predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0);
   effect(USE labl);
 
   ins_cost(180);

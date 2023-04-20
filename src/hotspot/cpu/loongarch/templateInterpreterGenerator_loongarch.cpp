@@ -278,7 +278,7 @@ address TemplateInterpreterGenerator::generate_math_entry(AbstractInterpreter::M
   //        [ arg ]
   // retaddr in ra
 
-  address entry_point = NULL;
+  address entry_point = nullptr;
   switch (kind) {
   case Interpreter::java_lang_math_abs:
     entry_point = __ pc();
@@ -409,49 +409,49 @@ void TemplateInterpreterGenerator::generate_transcendental_entry(AbstractInterpr
   address fn;
   switch (kind) {
   case Interpreter::java_lang_math_sin :
-    if (StubRoutines::dsin() == NULL) {
+    if (StubRoutines::dsin() == nullptr) {
       fn = CAST_FROM_FN_PTR(address, SharedRuntime::dsin);
     } else {
       fn = CAST_FROM_FN_PTR(address, StubRoutines::dsin());
     }
     break;
   case Interpreter::java_lang_math_cos :
-    if (StubRoutines::dcos() == NULL) {
+    if (StubRoutines::dcos() == nullptr) {
       fn = CAST_FROM_FN_PTR(address, SharedRuntime::dcos);
     } else {
       fn = CAST_FROM_FN_PTR(address, StubRoutines::dcos());
     }
     break;
   case Interpreter::java_lang_math_tan :
-    if (StubRoutines::dtan() == NULL) {
+    if (StubRoutines::dtan() == nullptr) {
       fn = CAST_FROM_FN_PTR(address, SharedRuntime::dtan);
     } else {
       fn = CAST_FROM_FN_PTR(address, StubRoutines::dtan());
     }
     break;
   case Interpreter::java_lang_math_log :
-    if (StubRoutines::dlog() == NULL) {
+    if (StubRoutines::dlog() == nullptr) {
       fn = CAST_FROM_FN_PTR(address, SharedRuntime::dlog);
     } else {
       fn = CAST_FROM_FN_PTR(address, StubRoutines::dlog());
     }
     break;
   case Interpreter::java_lang_math_log10 :
-    if (StubRoutines::dlog10() == NULL) {
+    if (StubRoutines::dlog10() == nullptr) {
       fn = CAST_FROM_FN_PTR(address, SharedRuntime::dlog10);
     } else {
       fn = CAST_FROM_FN_PTR(address, StubRoutines::dlog10());
     }
     break;
   case Interpreter::java_lang_math_exp :
-    if (StubRoutines::dexp() == NULL) {
+    if (StubRoutines::dexp() == nullptr) {
       fn = CAST_FROM_FN_PTR(address, SharedRuntime::dexp);
     } else {
       fn = CAST_FROM_FN_PTR(address, StubRoutines::dexp());
     }
     break;
   case Interpreter::java_lang_math_pow :
-    if (StubRoutines::dpow() == NULL) {
+    if (StubRoutines::dpow() == nullptr) {
       fn = CAST_FROM_FN_PTR(address, SharedRuntime::dpow);
     } else {
       fn = CAST_FROM_FN_PTR(address, StubRoutines::dpow());
@@ -459,7 +459,7 @@ void TemplateInterpreterGenerator::generate_transcendental_entry(AbstractInterpr
     break;
   default:
     ShouldNotReachHere();
-    fn = NULL;  // unreachable
+    fn = nullptr;  // unreachable
   }
   __ li(T4, fn);
   __ jalr(T4);
@@ -541,7 +541,7 @@ address TemplateInterpreterGenerator::generate_ClassCastException_handler() {
 
 address TemplateInterpreterGenerator::generate_exception_handler_common(
         const char* name, const char* message, bool pass_oop) {
-  assert(!pass_oop || message == NULL, "either oop or message but not both");
+  assert(!pass_oop || message == nullptr, "either oop or message but not both");
   address entry = __ pc();
 
   // expression stack must be empty before entering the VM if an exception happened
@@ -567,7 +567,7 @@ address TemplateInterpreterGenerator::generate_return_entry_for(TosState state, 
 
   // Restore stack bottom in case i2c adjusted stack
   __ ld_d(SP, Address(FP, frame::interpreter_frame_last_sp_offset * wordSize));
-  // and NULL it as marker that sp is now tos until next java call
+  // and null it as marker that sp is now tos until next java call
   __ st_d(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);
 
   __ restore_bcp();
@@ -615,7 +615,7 @@ address TemplateInterpreterGenerator::generate_deopt_entry_for(TosState state,
   __ restore_locals();
   __ get_dispatch();
 
-  // NULL last_sp until next java call
+  // null last_sp until next java call
   __ st_d(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);
 
 #if INCLUDE_JVMCI
@@ -652,7 +652,7 @@ address TemplateInterpreterGenerator::generate_deopt_entry_for(TosState state,
     __ should_not_reach_here();
     __ bind(L);
   }
-  if (continuation == NULL) {
+  if (continuation == nullptr) {
     __ dispatch_next(state, step);
   } else {
     __ jump_to_entry(continuation);
@@ -829,7 +829,7 @@ void TemplateInterpreterGenerator::generate_stack_overflow_check(void) {
   // Note: the restored frame is not necessarily interpreted.
   // Use the shared runtime version of the StackOverflowError.
   __ move(SP, Rsender);
-  assert(StubRoutines::throw_StackOverflowError_entry() != NULL, "stub not yet generated");
+  assert(StubRoutines::throw_StackOverflowError_entry() != nullptr, "stub not yet generated");
   __ jmp(StubRoutines::throw_StackOverflowError_entry(), relocInfo::runtime_call_type);
 
   // all done with frame size check
@@ -973,7 +973,7 @@ address TemplateInterpreterGenerator::generate_Reference_get_entry(void) {
 
   Label slow_path;
   const Register local_0 = A0;
-  // Check if local 0 != NULL
+  // Check if local 0 != nullptr
   // If the receiver is null then it is OK to jump to the slow path.
   __ ld_d(local_0, Address(SP, 0));
   __ beqz(local_0, slow_path);
@@ -1919,7 +1919,7 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
     __ bne(AT, R0, L_done);
 
     // The member name argument must be restored if _invokestatic is re-executed after a PopFrame call.
-    // Detect such a case in the InterpreterRuntime function and return the member name argument, or NULL.
+    // Detect such a case in the InterpreterRuntime function and return the member name argument, or null.
 
     __ ld_d(T8, LVP, 0);
     __ call_VM(T8, CAST_FROM_FN_PTR(address, InterpreterRuntime::member_name_arg_or_null), T8, Rmethod, BCP);
@@ -2083,7 +2083,7 @@ void TemplateInterpreterGenerator::trace_bytecode(Template* t) {
   // The run-time runtime saves the right registers, depending on
   // the tosca in-state for the given template.
   address entry = Interpreter::trace_code(t->tos_in());
-  assert(entry != NULL, "entry must have been generated");
+  assert(entry != nullptr, "entry must have been generated");
   __ call(entry, relocInfo::none);
   //add for compressedoops
   __ reinit_heapbase();

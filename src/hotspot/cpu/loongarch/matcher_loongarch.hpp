@@ -87,7 +87,7 @@
     // TODO: Either support matching DecodeNKlass (heap-based) in operand
     //       or condisider the following:
     // Prefer ConNKlass+DecodeNKlass over ConP in simple compressed klass mode.
-    //return CompressedKlassPointers::base() == NULL;
+    //return CompressedKlassPointers::base() == nullptr;
     return true;
   }
 

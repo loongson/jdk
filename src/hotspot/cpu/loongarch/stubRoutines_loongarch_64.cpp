@@ -32,11 +32,11 @@
 // a description of how to extend it, see the stubRoutines.hpp file.
 
 //find the last fp value
-address StubRoutines::la::_method_entry_barrier      = NULL;
-address StubRoutines::la::_vector_iota_indices       = NULL;
-address StubRoutines::la::_string_indexof_linear_ll  = NULL;
-address StubRoutines::la::_string_indexof_linear_uu  = NULL;
-address StubRoutines::la::_string_indexof_linear_ul  = NULL;
+address StubRoutines::la::_method_entry_barrier      = nullptr;
+address StubRoutines::la::_vector_iota_indices       = nullptr;
+address StubRoutines::la::_string_indexof_linear_ll  = nullptr;
+address StubRoutines::la::_string_indexof_linear_uu  = nullptr;
+address StubRoutines::la::_string_indexof_linear_ul  = nullptr;
 
 /**
  *  crc_table[] from jdk/src/share/native/java/util/zip/zlib-1.2.5/crc32.h

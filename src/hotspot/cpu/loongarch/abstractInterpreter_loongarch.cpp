@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -61,7 +61,7 @@ int AbstractInterpreter::size_top_interpreter_activation(Method* method) {
     -(frame::interpreter_frame_initial_sp_offset) + entry_size;
 
   const int stub_code = frame::entry_frame_after_call_words;
-  assert(method != NULL, "invalid method");
+  assert(method != nullptr, "invalid method");
   const int method_stack = (method->max_locals() + method->max_stack()) *
                            Interpreter::stackElementWords;
   return (overhead_size + method_stack + stub_code);
@@ -106,8 +106,8 @@ void AbstractInterpreter::layout_activation(Method* method,
                                            bool is_bottom_frame) {
   // Note: This calculation must exactly parallel the frame setup
   // in AbstractInterpreterGenerator::generate_method_entry.
-  // If interpreter_frame!=NULL, set up the method, locals, and monitors.
-  // The frame interpreter_frame, if not NULL, is guaranteed to be the
+  // If interpreter_frame!=nullptr, set up the method, locals, and monitors.
+  // The frame interpreter_frame, if not null, is guaranteed to be the
   // right size, as determined by a previous call to this method.
   // It is also guaranteed to be walkable even though it is in a skeletal state
 

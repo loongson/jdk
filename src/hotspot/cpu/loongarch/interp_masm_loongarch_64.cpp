@@ -87,7 +87,7 @@ void InterpreterMacroAssembler::call_VM_leaf_base(address entry_point,
     Label L;
     ld_d(AT,FP,frame::interpreter_frame_last_sp_offset * wordSize);
     beq(AT,R0,L);
-    stop("InterpreterMacroAssembler::call_VM_leaf_base: last_sp != NULL");
+    stop("InterpreterMacroAssembler::call_VM_leaf_base: last_sp != nullptr");
     bind(L);
   }
 #endif
@@ -118,7 +118,7 @@ void InterpreterMacroAssembler::call_VM_base(Register oop_result,
     Label L;
     ld_d(AT, FP, frame::interpreter_frame_last_sp_offset * wordSize);
     beq(AT, R0, L);
-    stop("InterpreterMacroAssembler::call_VM_base: last_sp != NULL");
+    stop("InterpreterMacroAssembler::call_VM_base: last_sp != nullptr");
     bind(L);
   }
 #endif /* ASSERT */
@@ -1303,7 +1303,7 @@ void InterpreterMacroAssembler::record_item_in_profile_helper(Register item, Reg
   }
 
   // In the fall-through case, we found no matching item, but we
-  // observed the item[start_row] is NULL.
+  // observed the item[start_row] is null.
 
   // Fill in the item field and increment the count.
   int item_offset = in_bytes(item_offset_fn(start_row));
@@ -1319,13 +1319,13 @@ void InterpreterMacroAssembler::record_item_in_profile_helper(Register item, Reg
 // Example state machine code for three profile rows:
 //   // main copy of decision tree, rooted at row[1]
 //   if (row[0].rec == rec) { row[0].incr(); goto done; }
-//   if (row[0].rec != NULL) {
+//   if (row[0].rec != nullptr) {
 //     // inner copy of decision tree, rooted at row[1]
 //     if (row[1].rec == rec) { row[1].incr(); goto done; }
-//     if (row[1].rec != NULL) {
+//     if (row[1].rec != nullptr) {
 //       // degenerate decision tree, rooted at row[2]
 //       if (row[2].rec == rec) { row[2].incr(); goto done; }
-//       if (row[2].rec != NULL) { goto done; } // overflow
+//       if (row[2].rec != nullptr) { goto done; } // overflow
 //       row[2].init(rec); goto done;
 //     } else {
 //       // remember row[1] is empty

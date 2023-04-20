@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1998, 2010, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,19 +32,19 @@
  private:
   // This is the hook for finding a register in an "well-known" location,
   // such as a register block of a predetermined format.
-  // Since there is none, we just return NULL.
+  // Since there is none, we just return null.
   // See registerMap_sparc.hpp for an example of grabbing registers
   // from register save areas of a standard layout.
-  address pd_location(VMReg reg) const {return NULL;}
+  address pd_location(VMReg reg) const {return nullptr;}
   address pd_location(VMReg base_reg, int slot_idx) const {
     if (base_reg->is_FloatRegister()) {
       assert(base_reg->is_concrete(), "must pass base reg");
       intptr_t offset_in_bytes = slot_idx * VMRegImpl::stack_slot_size;
       address base_location = location(base_reg, nullptr);
-      if (base_location != NULL) {
+      if (base_location != nullptr) {
         return base_location + offset_in_bytes;
       } else {
-        return NULL;
+        return nullptr;
       }
     } else {
       return location(base_reg->next(slot_idx), nullptr);

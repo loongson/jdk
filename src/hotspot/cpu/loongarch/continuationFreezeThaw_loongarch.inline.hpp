@@ -143,7 +143,7 @@ inline void FreezeBase::relativize_interpreted_frame_metadata(const frame& f, co
     || (f.unextended_sp() == f.sp()), "");
   assert(f.fp() > (intptr_t*)f.at(frame::interpreter_frame_initial_sp_offset), "");
 
-  // at(frame::interpreter_frame_last_sp_offset) can be NULL at safepoint preempts
+  // at(frame::interpreter_frame_last_sp_offset) can be null at safepoint preempts
   *hf.addr_at(frame::interpreter_frame_last_sp_offset) = hf.unextended_sp() - hf.fp();
   // this line can be changed into an assert when we have fixed the "frame padding problem", see JDK-8300197
   *hf.addr_at(frame::interpreter_frame_locals_offset) = frame::sender_sp_offset + f.interpreter_frame_method()->max_locals() - 1;

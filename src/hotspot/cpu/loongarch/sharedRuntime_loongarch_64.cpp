@@ -714,7 +714,7 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
   address c2i_entry = __ pc();
 
   // Class initialization barrier for static methods
-  address c2i_no_clinit_check_entry = NULL;
+  address c2i_no_clinit_check_entry = nullptr;
   if (VM_Version::supports_fast_class_init_checks()) {
     Label L_skip_barrier;
     address handle_wrong_method = SharedRuntime::get_handle_wrong_method_stub();
@@ -754,7 +754,7 @@ int SharedRuntime::c_calling_convention(const BasicType *sig_bt,
                                          VMRegPair *regs,
                                          VMRegPair *regs2,
                                          int total_args_passed) {
-  assert(regs2 == NULL, "not needed on LA");
+  assert(regs2 == nullptr, "not needed on LA");
 
   // We return the amount of VMRegImpl stack slots we need to reserve for all
   // the arguments NOT counting out_preserve_stack_slots.
@@ -1353,11 +1353,11 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
                                        stack_slots / VMRegImpl::slots_per_word,
                                        in_ByteSize(-1),
                                        in_ByteSize(-1),
-                                       (OopMapSet*)NULL);
+                                       nullptr);
   }
 
   address native_func = method->native_function();
-  assert(native_func != NULL, "must have function");
+  assert(native_func != nullptr, "must have function");
 
   // Native nmethod wrappers never take possession of the oop arguments.
   // So the caller will gc the arguments. The only thing we need an
@@ -1377,7 +1377,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
   BasicType* out_sig_bt = NEW_RESOURCE_ARRAY(BasicType, total_c_args);
   VMRegPair* out_regs   = NEW_RESOURCE_ARRAY(VMRegPair, total_c_args);
-  BasicType* in_elem_bt = NULL;
+  BasicType* in_elem_bt = nullptr;
 
   int argc = 0;
   out_sig_bt[argc++] = T_ADDRESS;
@@ -1394,7 +1394,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   // the 1st six register arguments). It's weird see int_stk_helper.
   //
   int out_arg_slots;
-  out_arg_slots = c_calling_convention(out_sig_bt, out_regs, NULL, total_c_args);
+  out_arg_slots = c_calling_convention(out_sig_bt, out_regs, nullptr, total_c_args);
 
   // Compute framesize for the wrapper.  We need to handlize all oops in
   // registers. We must create space for them here that is disjoint from
@@ -1533,7 +1533,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   __ addi_d(SP, SP, -1 * (stack_size - 2*wordSize));
 
   BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
-  bs->nmethod_entry_barrier(masm, NULL /* slow_path */, NULL /* continuation */, NULL /* guard */);
+  bs->nmethod_entry_barrier(masm, nullptr /* slow_path */, nullptr /* continuation */, nullptr /* guard */);
 
   // Frame is now completed as far a size and linkage.
 
@@ -2124,7 +2124,7 @@ void SharedRuntime::generate_deopt_blob() {
   CodeBuffer     buffer ("deopt_blob", 2048+pad, 1024);
   MacroAssembler* masm  = new MacroAssembler( & buffer);
   int frame_size_in_words;
-  OopMap* map = NULL;
+  OopMap* map = nullptr;
   // Account for the extra args we place on the stack
   // by the time we call fetch_unroll_info
   const int additional_words = 2; // deopt kind, thread
@@ -2646,7 +2646,7 @@ SafepointBlob* SharedRuntime::generate_handler_blob(address call_ptr, int poll_t
   const int additional_words = 0;
   int frame_size_in_words;
 
-  assert (StubRoutines::forward_exception_entry() != NULL, "must be generated before");
+  assert (StubRoutines::forward_exception_entry() != nullptr, "must be generated before");
 
   ResourceMark rm;
   OopMapSet *oop_maps = new OopMapSet();
@@ -2756,7 +2756,7 @@ SafepointBlob* SharedRuntime::generate_handler_blob(address call_ptr, int poll_t
 // must do any gc of the args.
 //
 RuntimeStub* SharedRuntime::generate_resolve_blob(address destination, const char* name) {
-  assert (StubRoutines::forward_exception_entry() != NULL, "must be generated before");
+  assert (StubRoutines::forward_exception_entry() != nullptr, "must be generated before");
 
   // allocate space for the code
   ResourceMark rm;
@@ -2769,7 +2769,7 @@ RuntimeStub* SharedRuntime::generate_resolve_blob(address destination, const cha
   //we put the thread in A0
 
   OopMapSet *oop_maps = new OopMapSet();
-  OopMap* map = NULL;
+  OopMap* map = nullptr;
 
   address start = __ pc();
   map = reg_save.save_live_registers(masm, 0, &frame_size_words);

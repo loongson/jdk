@@ -135,7 +135,7 @@ void MacroAssembler::patchable_jump_far(Register ra, jlong offs) {
 
 void MacroAssembler::patchable_jump(address target, bool force_patchable) {
   assert(ReservedCodeCacheSize < 4*G, "branch out of range");
-  assert(CodeCache::find_blob(target) != NULL,
+  assert(CodeCache::find_blob(target) != nullptr,
          "destination of jump not found in code cache");
   if (force_patchable || patchable_branches()) {
     jlong offs = target - pc();
@@ -174,15 +174,15 @@ address MacroAssembler::trampoline_call(AddressLiteral entry, CodeBuffer* cbuf) 
   if (far_branches()) {
     if (!in_scratch_emit_size()) {
       address stub = emit_trampoline_stub(offset(), target);
-      if (stub == NULL) {
+      if (stub == nullptr) {
         postcond(pc() == badAddress);
-        return NULL; // CodeCache is full
+        return nullptr; // CodeCache is full
       }
     }
     target = pc();
   }
 
-  if (cbuf != NULL) { cbuf->set_insts_mark(); }
+  if (cbuf != nullptr) { cbuf->set_insts_mark(); }
   relocate(entry.rspec());
   bl(target);
 
@@ -207,8 +207,8 @@ address MacroAssembler::emit_trampoline_stub(int insts_call_instruction_offset,
   // Start the stub
   address stub = start_a_stub(NativeInstruction::nop_instruction_size
                    + NativeCallTrampolineStub::instruction_size);
-  if (stub == NULL) {
-    return NULL;  // CodeBuffer::expand failed
+  if (stub == nullptr) {
+    return nullptr;  // CodeBuffer::expand failed
   }
 
   // Create a trampoline stub relocation which relates this trampoline stub
@@ -472,7 +472,7 @@ void MacroAssembler::jmp(address entry, relocInfo::relocType rtype) {
 
 void MacroAssembler::jmp_far(Label& L) {
   if (L.is_bound()) {
-    assert(target(L) != NULL, "jmp most probably wrong");
+    assert(target(L) != nullptr, "jmp most probably wrong");
     patchable_jump(target(L), true /* force patchable */);
   } else {
     L.add_patch_at(code(), locator());
@@ -483,7 +483,7 @@ void MacroAssembler::jmp_far(Label& L) {
 // Move an oop into a register.
 void MacroAssembler::movoop(Register dst, jobject obj) {
   int oop_index;
-  if (obj == NULL) {
+  if (obj == nullptr) {
     oop_index = oop_recorder()->allocate_oop_index(obj);
   } else {
 #ifdef ASSERT
@@ -592,7 +592,7 @@ void MacroAssembler::call_long(address entry) {
 address MacroAssembler::ic_call(address entry, jint method_index) {
   RelocationHolder rh = virtual_call_Relocation::spec(pc(), method_index);
   patchable_li52(IC_Klass, (long)Universe::non_oop_word());
-  assert(entry != NULL, "call most probably wrong");
+  assert(entry != nullptr, "call most probably wrong");
   InstructionMark im(this);
   return trampoline_call(AddressLiteral(entry, rh));
 }
@@ -602,7 +602,7 @@ void MacroAssembler::emit_static_call_stub() {
   ibar(0);
 
   // static stub relocation also tags the Method* in the code-stream.
-  mov_metadata(Rmethod, NULL);
+  mov_metadata(Rmethod, nullptr);
   // This is recognized as unresolved by relocs/nativeInst/ic code
 
   patchable_jump(pc());
@@ -902,13 +902,13 @@ void MacroAssembler::check_and_handle_popframe(Register java_thread) {}
 
 void MacroAssembler::null_check(Register reg, int offset) {
   if (needs_explicit_null_check(offset)) {
-    // provoke OS NULL exception if reg = NULL by
+    // provoke OS null exception if reg is null by
     // accessing M[reg] w/o changing any (non-CC) registers
     // NOTE: cmpl is plenty here to provoke a segv
     ld_w(AT, reg, 0);
   } else {
     // nothing to do, (later) access of M[reg + offset]
-    // will provoke OS NULL exception if reg = NULL
+    // will provoke OS null exception if reg is null
   }
 }
 
@@ -960,7 +960,7 @@ void MacroAssembler::remove_frame(int framesize) {
 }
 
 void MacroAssembler::unimplemented(const char* what) {
-  const char* buf = NULL;
+  const char* buf = nullptr;
   {
     ResourceMark rm;
     stringStream ss;
@@ -1202,7 +1202,7 @@ void MacroAssembler::lipc(Register rd, Label& L) {
 
 void MacroAssembler::set_narrow_klass(Register dst, Klass* k) {
   assert(UseCompressedClassPointers, "should only be used for compressed header");
-  assert(oop_recorder() != NULL, "this assembler needs an OopRecorder");
+  assert(oop_recorder() != nullptr, "this assembler needs an OopRecorder");
 
   int klass_index = oop_recorder()->find_index(k);
   RelocationHolder rspec = metadata_Relocation::spec(klass_index);
@@ -1214,7 +1214,7 @@ void MacroAssembler::set_narrow_klass(Register dst, Klass* k) {
 
 void MacroAssembler::set_narrow_oop(Register dst, jobject obj) {
   assert(UseCompressedOops, "should only be used for compressed header");
-  assert(oop_recorder() != NULL, "this assembler needs an OopRecorder");
+  assert(oop_recorder() != nullptr, "this assembler needs an OopRecorder");
 
   int oop_index = oop_recorder()->find_index(obj);
   RelocationHolder rspec = oop_Relocation::spec(oop_index);
@@ -1256,7 +1256,7 @@ void MacroAssembler::load_mirror(Register mirror, Register method, Register tmp)
 void MacroAssembler::_verify_oop(Register reg, const char* s, const char* file, int line) {
   if (!VerifyOops) return;
 
-  const char* bx = NULL;
+  const char* bx = nullptr;
   {
     ResourceMark rm;
     stringStream ss;
@@ -1283,7 +1283,7 @@ void MacroAssembler::_verify_oop(Register reg, const char* s, const char* file, 
 void MacroAssembler::_verify_oop_addr(Address addr, const char* s, const char* file, int line) {
   if (!VerifyOops) return;
 
-  const char* bx = NULL;
+  const char* bx = nullptr;
   {
     ResourceMark rm;
     stringStream ss;
@@ -1743,7 +1743,7 @@ void MacroAssembler::store_heap_oop_null(Address dst) {
 #ifdef ASSERT
 void MacroAssembler::verify_heapbase(const char* msg) {
   assert (UseCompressedOops || UseCompressedClassPointers, "should be compressed");
-  assert (Universe::heap() != NULL, "java heap should be initialized");
+  assert (Universe::heap() != nullptr, "java heap should be initialized");
 }
 #endif
 
@@ -1753,7 +1753,7 @@ void MacroAssembler::encode_heap_oop(Register r) {
   verify_heapbase("MacroAssembler::encode_heap_oop:heap base corrupted?");
 #endif
   verify_oop_msg(r, "broken oop in encode_heap_oop");
-  if (CompressedOops::base() == NULL) {
+  if (CompressedOops::base() == nullptr) {
     if (CompressedOops::shift() != 0) {
       assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
       srli_d(r, r, LogMinObjAlignmentInBytes);
@@ -1774,7 +1774,7 @@ void MacroAssembler::encode_heap_oop(Register dst, Register src) {
   verify_heapbase("MacroAssembler::encode_heap_oop:heap base corrupted?");
 #endif
   verify_oop_msg(src, "broken oop in encode_heap_oop");
-  if (CompressedOops::base() == NULL) {
+  if (CompressedOops::base() == nullptr) {
     if (CompressedOops::shift() != 0) {
       assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
       srli_d(dst, src, LogMinObjAlignmentInBytes);
@@ -1805,7 +1805,7 @@ void MacroAssembler::encode_heap_oop_not_null(Register r) {
   }
 #endif
   verify_oop_msg(r, "broken oop in encode_heap_oop_not_null");
-  if (CompressedOops::base() != NULL) {
+  if (CompressedOops::base() != nullptr) {
     sub_d(r, r, S5_heapbase);
   }
   if (CompressedOops::shift() != 0) {
@@ -1826,7 +1826,7 @@ void MacroAssembler::encode_heap_oop_not_null(Register dst, Register src) {
   }
 #endif
   verify_oop_msg(src, "broken oop in encode_heap_oop_not_null2");
-  if (CompressedOops::base() == NULL) {
+  if (CompressedOops::base() == nullptr) {
     if (CompressedOops::shift() != 0) {
       assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
       srli_d(dst, src, LogMinObjAlignmentInBytes);
@@ -1849,7 +1849,7 @@ void MacroAssembler::decode_heap_oop(Register r) {
 #ifdef ASSERT
   verify_heapbase("MacroAssembler::decode_heap_oop corrupted?");
 #endif
-  if (CompressedOops::base() == NULL) {
+  if (CompressedOops::base() == nullptr) {
     if (CompressedOops::shift() != 0) {
       assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
       slli_d(r, r, LogMinObjAlignmentInBytes);
@@ -1877,7 +1877,7 @@ void MacroAssembler::decode_heap_oop(Register dst, Register src) {
 #ifdef ASSERT
   verify_heapbase("MacroAssembler::decode_heap_oop corrupted?");
 #endif
-  if (CompressedOops::base() == NULL) {
+  if (CompressedOops::base() == nullptr) {
     if (CompressedOops::shift() != 0) {
       assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
       slli_d(dst, src, LogMinObjAlignmentInBytes);
@@ -1914,13 +1914,13 @@ void MacroAssembler::decode_heap_oop(Register dst, Register src) {
 void MacroAssembler::decode_heap_oop_not_null(Register r) {
   // Note: it will change flags
   assert(UseCompressedOops, "should only be used for compressed headers");
-  assert(Universe::heap() != NULL, "java heap should be initialized");
+  assert(Universe::heap() != nullptr, "java heap should be initialized");
   // Cannot assert, unverified entry point counts instructions (see .ad file)
   // vtableStubs also counts instructions in pd_code_size_limit.
   // Also do not verify_oop as this is called by verify_oop.
   if (CompressedOops::shift() != 0) {
     assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
-    if (CompressedOops::base() != NULL) {
+    if (CompressedOops::base() != nullptr) {
       if (LogMinObjAlignmentInBytes <= 4) {
         alsl_d(r, r, S5_heapbase, LogMinObjAlignmentInBytes - 1);
       } else {
@@ -1931,19 +1931,19 @@ void MacroAssembler::decode_heap_oop_not_null(Register r) {
       slli_d(r, r, LogMinObjAlignmentInBytes);
     }
   } else {
-    assert(CompressedOops::base() == NULL, "sanity");
+    assert(CompressedOops::base() == nullptr, "sanity");
   }
 }
 
 void MacroAssembler::decode_heap_oop_not_null(Register dst, Register src) {
   assert(UseCompressedOops, "should only be used for compressed headers");
-  assert(Universe::heap() != NULL, "java heap should be initialized");
+  assert(Universe::heap() != nullptr, "java heap should be initialized");
   // Cannot assert, unverified entry point counts instructions (see .ad file)
   // vtableStubs also counts instructions in pd_code_size_limit.
   // Also do not verify_oop as this is called by verify_oop.
   if (CompressedOops::shift() != 0) {
     assert(LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
-    if (CompressedOops::base() != NULL) {
+    if (CompressedOops::base() != nullptr) {
       if (LogMinObjAlignmentInBytes <= 4) {
         alsl_d(dst, src, S5_heapbase, LogMinObjAlignmentInBytes - 1);
       } else {
@@ -1954,7 +1954,7 @@ void MacroAssembler::decode_heap_oop_not_null(Register dst, Register src) {
       slli_d(dst, src, LogMinObjAlignmentInBytes);
     }
   } else {
-    assert (CompressedOops::base() == NULL, "sanity");
+    assert (CompressedOops::base() == nullptr, "sanity");
     if (dst != src) {
       move(dst, src);
     }
@@ -1962,7 +1962,7 @@ void MacroAssembler::decode_heap_oop_not_null(Register dst, Register src) {
 }
 
 void MacroAssembler::encode_klass_not_null(Register r) {
-  if (CompressedKlassPointers::base() != NULL) {
+  if (CompressedKlassPointers::base() != nullptr) {
     if (((uint64_t)CompressedKlassPointers::base() & 0xffffffff) == 0
         && CompressedKlassPointers::shift() == 0) {
       bstrpick_d(r, r, 31, 0);
@@ -1982,7 +1982,7 @@ void MacroAssembler::encode_klass_not_null(Register dst, Register src) {
   if (dst == src) {
     encode_klass_not_null(src);
   } else {
-    if (CompressedKlassPointers::base() != NULL) {
+    if (CompressedKlassPointers::base() != nullptr) {
       if (((uint64_t)CompressedKlassPointers::base() & 0xffffffff) == 0
           && CompressedKlassPointers::shift() == 0) {
         bstrpick_d(dst, src, 31, 0);
@@ -2011,7 +2011,7 @@ void MacroAssembler::decode_klass_not_null(Register r) {
   // Cannot assert, unverified entry point counts instructions (see .ad file)
   // vtableStubs also counts instructions in pd_code_size_limit.
   // Also do not verify_oop as this is called by verify_oop.
-  if (CompressedKlassPointers::base() != NULL) {
+  if (CompressedKlassPointers::base() != nullptr) {
     if (CompressedKlassPointers::shift() == 0) {
       if (((uint64_t)CompressedKlassPointers::base() & 0xffffffff) == 0) {
         lu32i_d(r, (uint64_t)CompressedKlassPointers::base() >> 32);
@@ -2041,7 +2041,7 @@ void MacroAssembler::decode_klass_not_null(Register dst, Register src) {
     // Cannot assert, unverified entry point counts instructions (see .ad file)
     // vtableStubs also counts instructions in pd_code_size_limit.
     // Also do not verify_oop as this is called by verify_oop.
-    if (CompressedKlassPointers::base() != NULL) {
+    if (CompressedKlassPointers::base() != nullptr) {
       if (CompressedKlassPointers::shift() == 0) {
         if (((uint64_t)CompressedKlassPointers::base() & 0xffffffff) == 0) {
           move(dst, src);
@@ -2069,8 +2069,8 @@ void MacroAssembler::decode_klass_not_null(Register dst, Register src) {
 
 void MacroAssembler::reinit_heapbase() {
   if (UseCompressedOops) {
-    if (Universe::heap() != NULL) {
-      if (CompressedOops::base() == NULL) {
+    if (Universe::heap() != nullptr) {
+      if (CompressedOops::base() == nullptr) {
         move(S5_heapbase, R0);
       } else {
         li(S5_heapbase, (int64_t)CompressedOops::ptrs_base());
@@ -2088,8 +2088,8 @@ void MacroAssembler::check_klass_subtype(Register sub_klass,
                            Label& L_success) {
 //implement ind   gen_subtype_check
   Label L_failure;
-  check_klass_subtype_fast_path(sub_klass, super_klass, temp_reg,        &L_success, &L_failure, NULL);
-  check_klass_subtype_slow_path<false>(sub_klass, super_klass, temp_reg, noreg, &L_success, NULL);
+  check_klass_subtype_fast_path(sub_klass, super_klass, temp_reg,        &L_success, &L_failure, nullptr);
+  check_klass_subtype_slow_path<false>(sub_klass, super_klass, temp_reg, noreg, &L_success, nullptr);
   bind(L_failure);
 }
 
@@ -2111,10 +2111,10 @@ void MacroAssembler::check_klass_subtype_fast_path(Register sub_klass,
 
   Label L_fallthrough;
   int label_nulls = 0;
-  if (L_success == NULL)   { L_success   = &L_fallthrough; label_nulls++; }
-  if (L_failure == NULL)   { L_failure   = &L_fallthrough; label_nulls++; }
-  if (L_slow_path == NULL) { L_slow_path = &L_fallthrough; label_nulls++; }
-  assert(label_nulls <= 1, "at most one NULL in the batch");
+  if (L_success == nullptr)   { L_success   = &L_fallthrough; label_nulls++; }
+  if (L_failure == nullptr)   { L_failure   = &L_fallthrough; label_nulls++; }
+  if (L_slow_path == nullptr) { L_slow_path = &L_fallthrough; label_nulls++; }
+  assert(label_nulls <= 1, "at most one null in the batch");
 
   int sc_offset = in_bytes(Klass::secondary_super_cache_offset());
   int sco_offset = in_bytes(Klass::super_check_offset_offset());
@@ -2208,9 +2208,9 @@ void MacroAssembler::check_klass_subtype_slow_path(Register sub_klass,
 
   Label L_fallthrough;
   int label_nulls = 0;
-  if (L_success == NULL)   { L_success   = &L_fallthrough; label_nulls++; }
-  if (L_failure == NULL)   { L_failure   = &L_fallthrough; label_nulls++; }
-  assert(label_nulls <= 1, "at most one NULL in the batch");
+  if (L_success == nullptr)   { L_success   = &L_fallthrough; label_nulls++; }
+  if (L_failure == nullptr)   { L_failure   = &L_fallthrough; label_nulls++; }
+  assert(label_nulls <= 1, "at most one null in the batch");
 
   // a couple of useful fields in sub_klass:
   int ss_offset = in_bytes(Klass::secondary_supers_offset());
@@ -2270,13 +2270,13 @@ void MacroAssembler::check_klass_subtype_slow_path(Register sub_klass,
 
 void MacroAssembler::clinit_barrier(Register klass, Register scratch, Label* L_fast_path, Label* L_slow_path) {
 
-  assert(L_fast_path != NULL || L_slow_path != NULL, "at least one is required");
+  assert(L_fast_path != nullptr || L_slow_path != nullptr, "at least one is required");
   assert_different_registers(klass, TREG, scratch);
 
   Label L_fallthrough;
-  if (L_fast_path == NULL) {
+  if (L_fast_path == nullptr) {
     L_fast_path = &L_fallthrough;
-  } else if (L_slow_path == NULL) {
+  } else if (L_slow_path == nullptr) {
     L_slow_path = &L_fallthrough;
   }
 
@@ -2453,7 +2453,7 @@ void MacroAssembler::resolve_jobject(Register value,
   assert_different_registers(value, thread, tmp);
   Label done, tagged, weak_tagged;
 
-  beqz(value, done);                // Use NULL as-is.
+  beqz(value, done);                // Use null as-is.
   // Test for tag.
   andi(AT, value, JNIHandles::tag_mask);
   bnez(AT, tagged);
@@ -2486,7 +2486,7 @@ void MacroAssembler::resolve_global_jobject(Register value, Register tmp1, Regis
   assert_different_registers(value, tmp1, tmp2);
   Label done;
 
-  beqz(value, done);           // Use NULL as-is.
+  beqz(value, done);           // Use null as-is.
 
 #ifdef ASSERT
   {
@@ -3027,8 +3027,8 @@ void MacroAssembler::cmp_cmov(Register      op1,
 void MacroAssembler::membar(Membar_mask_bits hint){
   address prev = pc() - NativeInstruction::sync_instruction_size;
   address last = code()->last_insn();
-  if (last != NULL && ((NativeInstruction*)last)->is_sync() && prev == last) {
-    code()->set_last_insn(NULL);
+  if (last != nullptr && ((NativeInstruction*)last)->is_sync() && prev == last) {
+    code()->set_last_insn(nullptr);
     block_comment("merged membar");
   } else {
     code()->set_last_insn(pc());
@@ -3569,7 +3569,7 @@ void MacroAssembler::object_move(
     }
   } else {
     // Oop is in an a register we must store it to the space we reserve
-    // on the stack for oop_handles and pass a handle if oop is non-NULL
+    // on the stack for oop_handles and pass a handle if oop is non-null
     const Register rOop = src.first()->as_Register();
     assert((rOop->encoding() >= A0->encoding()) && (rOop->encoding() <= T0->encoding()),"wrong register");
     //Important: refer to java_calling_convention

@@ -181,14 +181,14 @@ address MethodHandles::generate_method_handle_interpreter_entry(MacroAssembler* 
     // They are linked to Java-generated adapters via MethodHandleNatives.linkMethod.
     // They all allow an appendix argument.
     __ stop("empty stubs make SG sick");
-    return NULL;
+    return nullptr;
   }
 
   // No need in interpreter entry for linkToNative for now.
   // Interpreter calls compiled entry through i2c.
   if (iid == vmIntrinsics::_linkToNative) {
     __ stop("Should not reach here");           // empty stubs make SG sick
-    return NULL;
+    return nullptr;
   }
 
   // Rmethod: Method*
@@ -463,8 +463,8 @@ void trace_method_handle_stub(const char* adaptername,
                               intptr_t* saved_regs,
                               intptr_t* entry_sp) {
   // called as a leaf from native code: do not block the JVM!
-  bool has_mh = (strstr(adaptername, "/static") == NULL &&
-                 strstr(adaptername, "linkTo") == NULL);    // static linkers don't have MH
+  bool has_mh = (strstr(adaptername, "/static") == nullptr &&
+                 strstr(adaptername, "linkTo") == nullptr);    // static linkers don't have MH
   const char* mh_reg_name = has_mh ? "s7_mh" : "s7";
   tty->print_cr("MH %s %s=" PTR_FORMAT " sp=" PTR_FORMAT,
                 adaptername, mh_reg_name,

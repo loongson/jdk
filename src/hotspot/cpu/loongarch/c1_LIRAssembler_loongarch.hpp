@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -56,7 +56,7 @@ friend class ArrayCopyStub;
   void casw(Register addr, Register newval, Register cmpval, Register result, bool sign);
   void casl(Register addr, Register newval, Register cmpval, Register result);
 
-  void poll_for_safepoint(relocInfo::relocType rtype, CodeEmitInfo* info = NULL);
+  void poll_for_safepoint(relocInfo::relocType rtype, CodeEmitInfo* info = nullptr);
 
   static const int max_tableswitches = 20;
   struct tableswitch switches[max_tableswitches];

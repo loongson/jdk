@@ -1091,6 +1091,10 @@ const bool Matcher::vector_needs_partial_operations(Node* node, const TypeVect* 
   return false;
 }
 
+const bool Matcher::vector_needs_load_shuffle(BasicType elem_bt, int vlen) {
+  return false;
+}
+
 const RegMask* Matcher::predicate_reg_mask(void) {
   return NULL;
 }
@@ -17208,38 +17212,6 @@ instruct loadconV32(vecY dst, immI_0 src) %{
     }
     __ li(AT, (long)(StubRoutines::la::vector_iota_indices() + offset));
     __ xvld($dst$$FloatRegister, AT, (int)0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-// ---------------------------- LOAD_SHUFFLE ----------------------------------
-
-instruct loadShuffle16B(vecX dst) %{
-  predicate(Matcher::vector_length(n) == 16 && Matcher::vector_element_basic_type(n) == T_BYTE);
-  match(Set dst (VectorLoadShuffle dst));
-  format %{ "vld_shuffle    $dst\t# @loadShuffle16B" %}
-  ins_encode %{
-    // empty
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct loadShuffle32B(vecY dst) %{
-  predicate(Matcher::vector_length(n) == 32 && Matcher::vector_element_basic_type(n) == T_BYTE);
-  match(Set dst (VectorLoadShuffle dst));
-  format %{ "xvld_shuffle    $dst\t# @loadShuffle32B" %}
-  ins_encode %{
-    // empty
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct loadShuffle16S(vecY dst, vecX src) %{
-  predicate(Matcher::vector_length(n) == 16 && Matcher::vector_element_basic_type(n) == T_SHORT);
-  match(Set dst (VectorLoadShuffle src));
-  format %{ "vext2xv.hu.bu    $dst, $src\t# @loadShuffle16S" %}
-  ins_encode %{
-    __ vext2xv_hu_bu($dst$$FloatRegister, $src$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}

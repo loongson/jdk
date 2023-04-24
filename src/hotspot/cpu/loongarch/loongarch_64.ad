@@ -8236,6 +8236,23 @@ instruct cmpL3_reg_zero(mRegI dst, mRegL src1, immL_0 zero) %{
   ins_pipe( pipe_slow );
 %}
 
+// Manifest a CmpU result in an integer register.  Very painful.
+// This is the test to avoid.
+instruct cmpU3_reg_reg(mRegI dst, mRegI src1, mRegI src2) %{
+  match(Set dst (CmpU3 src1 src2));
+  format %{ "cmpU3  $dst, $src1, $src2 @ cmpU3_reg_reg" %}
+  ins_encode %{
+    Register opr1 = as_Register($src1$$reg);
+    Register opr2 = as_Register($src2$$reg);
+    Register dst  = as_Register($dst$$reg);
+
+    __ sltu(AT, opr1, opr2);
+    __ sltu(dst, opr2, opr1);
+    __ sub_d(dst, dst, AT);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 instruct cmpL3_reg_reg(mRegI dst, mRegL src1, mRegL src2) %{
   match(Set dst (CmpL3 src1 src2));
   ins_cost(1000);
@@ -8247,6 +8264,23 @@ instruct cmpL3_reg_reg(mRegI dst, mRegL src1, mRegL src2) %{
 
     __ slt(AT, opr1, opr2);
     __ slt(dst, opr2, opr1);
+    __ sub_d(dst, dst, AT);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+// Manifest a CmpUL result in an integer register.  Very painful.
+// This is the test to avoid.
+instruct cmpUL3_reg_reg(mRegI dst, mRegLorI2L src1, mRegLorI2L src2) %{
+  match(Set dst (CmpUL3 src1 src2));
+  format %{ "cmpUL3  $dst, $src1, $src2 @ cmpUL3_reg_reg" %}
+  ins_encode %{
+    Register opr1 = as_Register($src1$$reg);
+    Register opr2 = as_Register($src2$$reg);
+    Register dst  = as_Register($dst$$reg);
+
+    __ sltu(AT, opr1, opr2);
+    __ sltu(dst, opr2, opr1);
     __ sub_d(dst, dst, AT);
   %}
   ins_pipe( pipe_slow );

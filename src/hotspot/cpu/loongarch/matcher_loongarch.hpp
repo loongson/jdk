@@ -38,9 +38,9 @@
     return false;
   }
 
-  // LoongArch doesn't support misaligned vectors store/load? FIXME
+  // LoongArch support misaligned vectors store/load
   static constexpr bool misaligned_vectors_ok() {
-    return false;
+    return true;
   }
 
   // Whether code generation need accurate ConvI2L types.

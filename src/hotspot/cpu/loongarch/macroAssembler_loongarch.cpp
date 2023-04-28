@@ -3669,3 +3669,97 @@ void MacroAssembler::double_move(VMRegPair src, VMRegPair dst, Register tmp) {
     }
   }
 }
+
+// Implements fast-locking.
+// Branches to slow upon failure to lock the object.
+// Falls through upon success.
+//
+//  - obj: the object to be locked
+//  - hdr: the header, already loaded from obj, will be destroyed
+//  - flag: as cr for c2, but only as temporary regisgter for c1/interpreter
+//  - tmp: temporary registers, will be destroyed
+void MacroAssembler::fast_lock(Register obj, Register hdr, Register flag, Register tmp, Label& slow) {
+  assert(LockingMode == LM_LIGHTWEIGHT, "only used with new lightweight locking");
+  assert_different_registers(obj, hdr, flag, tmp);
+
+  // Check if we would have space on lock-stack for the object.
+  ld_wu(flag, Address(TREG, JavaThread::lock_stack_top_offset()));
+  li(tmp, (unsigned)LockStack::end_offset());
+  sltu(flag, flag, tmp);
+  beqz(flag, slow);
+
+  // Load (object->mark() | 1) into hdr
+  ori(hdr, hdr, markWord::unlocked_value);
+  // Clear lock-bits, into tmp
+  xori(tmp, hdr, markWord::unlocked_value);
+  // Try to swing header from unlocked to locked
+  cmpxchg(/*addr*/ Address(obj, 0), /*old*/ hdr, /*new*/ tmp, /*flag*/ flag, /*retold*/ true, /*barrier*/true);
+  beqz(flag, slow);
+
+  // After successful lock, push object on lock-stack
+  ld_wu(tmp, Address(TREG, JavaThread::lock_stack_top_offset()));
+  stx_d(obj, TREG, tmp);
+  addi_w(tmp, tmp, oopSize);
+  st_w(tmp, Address(TREG, JavaThread::lock_stack_top_offset()));
+}
+
+// Implements fast-unlocking.
+// Branches to slow upon failure.
+// Falls through upon success.
+//
+// - obj: the object to be unlocked
+// - hdr: the (pre-loaded) header of the object
+// - flag: as cr for c2, but only as temporary regisgter for c1/interpreter
+// - tmp: temporary registers
+void MacroAssembler::fast_unlock(Register obj, Register hdr, Register flag, Register tmp, Label& slow) {
+  assert(LockingMode == LM_LIGHTWEIGHT, "only used with new lightweight locking");
+  assert_different_registers(obj, hdr, tmp, flag);
+
+#ifdef ASSERT
+  {
+    // The following checks rely on the fact that LockStack is only ever modified by
+    // its owning thread, even if the lock got inflated concurrently; removal of LockStack
+    // entries after inflation will happen delayed in that case.
+
+    // Check for lock-stack underflow.
+    Label stack_ok;
+    ld_wu(tmp, Address(TREG, JavaThread::lock_stack_top_offset()));
+    li(flag, (unsigned)LockStack::start_offset());
+    bltu(flag, tmp, stack_ok);
+    stop("Lock-stack underflow");
+    bind(stack_ok);
+  }
+  {
+    // Check if the top of the lock-stack matches the unlocked object.
+    Label tos_ok;
+    addi_w(tmp, tmp, -oopSize);
+    ldx_d(tmp, TREG, tmp);
+    beq(tmp, obj, tos_ok);
+    stop("Top of lock-stack does not match the unlocked object");
+    bind(tos_ok);
+  }
+  {
+    // Check that hdr is fast-locked.
+    Label hdr_ok;
+    andi(tmp, hdr, markWord::lock_mask_in_place);
+    beqz(tmp, hdr_ok);
+    stop("Header is not fast-locked");
+    bind(hdr_ok);
+  }
+#endif
+
+  // Load the new header (unlocked) into tmp
+  ori(tmp, hdr, markWord::unlocked_value);
+
+  // Try to swing header from locked to unlocked
+  cmpxchg(/*addr*/ Address(obj, 0), /*old*/ hdr, /*new*/ tmp, /*flag*/ flag, /**/true, /*barrier*/ true);
+  beqz(flag, slow);
+
+  // After successful unlock, pop object from lock-stack
+  ld_wu(tmp, Address(TREG, JavaThread::lock_stack_top_offset()));
+  addi_w(tmp, tmp, -oopSize);
+#ifdef ASSERT
+  stx_d(R0, TREG, tmp);
+#endif
+  st_w(tmp, Address(TREG, JavaThread::lock_stack_top_offset()));
+}

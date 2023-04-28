@@ -551,7 +551,7 @@ OopMapSet* Runtime1::generate_patching(StubAssembler* sasm, address target) {
   { Label L;
     __ get_thread(SCR1);
     __ beq(TREG, SCR1, L);
-    __ stop("StubAssembler::call_RT: rthread not callee saved?");
+    __ stop("StubAssembler::call_RT: TREG not callee saved?");
     __ bind(L);
   }
 #endif

@@ -33,9 +33,9 @@ public:
   void cmp_branch_long(int flag, Register op1, Register op2, Label* L, bool is_signed);
   void cmp_branchEqNe_off21(int flag, Register op1, Label& L);
 
-  void fast_lock(Register oop, Register box, Register flag,
+  void fast_lock_c2(Register oop, Register box, Register flag,
                  Register disp_hdr, Register tmp);
-  void fast_unlock(Register oop, Register box, Register flag,
+  void fast_unlock_c2(Register oop, Register box, Register flag,
                    Register disp_hdr, Register tmp);
 
   // Compare strings.

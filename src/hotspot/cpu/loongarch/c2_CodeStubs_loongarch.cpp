@@ -26,6 +26,7 @@
 #include "precompiled.hpp"
 #include "opto/c2_MacroAssembler.hpp"
 #include "opto/c2_CodeStubs.hpp"
+#include "runtime/objectMonitor.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
 
@@ -59,6 +60,32 @@ void C2EntryBarrierStub::emit(C2_MacroAssembler& masm) {
   __ bind(guard());
   __ relocate(entry_guard_Relocation::spec());
   __ emit_int32(0);  // nmethod guard value
+}
+
+int C2HandleAnonOMOwnerStub::max_size() const {
+  // Max size of stub has been determined by testing with 0, in which case
+  // C2CodeStubList::emit() will throw an assertion and report the actual size that
+  // is needed.
+  return 24;
+}
+
+void C2HandleAnonOMOwnerStub::emit(C2_MacroAssembler& masm) {
+  __ bind(entry());
+  Register mon = monitor();
+  Register t = tmp();
+  assert(t != noreg, "need tmp register");
+  // Fix owner to be the current thread.
+  __ st_d(TREG, Address(mon, ObjectMonitor::owner_offset_in_bytes()));
+
+  // Pop owner object from lock-stack.
+  __ ld_wu(t, Address(TREG, JavaThread::lock_stack_top_offset()));
+  __ addi_w(t, t, -oopSize);
+#ifdef ASSERT
+  __ stx_d(R0, TREG, t);
+#endif
+  __ st_w(t, Address(TREG, JavaThread::lock_stack_top_offset()));
+
+  __ b(continuation());
 }
 
 #undef __

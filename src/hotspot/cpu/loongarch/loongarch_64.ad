@@ -11478,7 +11478,7 @@ instruct cmpFastLock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRe
   format %{ "FASTLOCK $cr <-- $object, $box, $tmp1, $tmp2 #@ cmpFastLock" %}
 
   ins_encode %{
-    __ fast_lock($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register);
+    __ fast_lock_c2($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register);
   %}
 
   ins_pipe( pipe_slow );
@@ -11491,7 +11491,7 @@ instruct cmpFastUnlock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_m
   format %{ "FASTUNLOCK $cr <-- $object, $box, $tmp1, $tmp2 #@ cmpFastUnlock" %}
 
   ins_encode %{
-    __ fast_unlock($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register);
+    __ fast_unlock_c2($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register);
   %}
 
   ins_pipe( pipe_slow );

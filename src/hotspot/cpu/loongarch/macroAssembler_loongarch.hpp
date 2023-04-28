@@ -697,6 +697,9 @@ class MacroAssembler: public Assembler {
     }
   }
 
+  void fast_lock(Register obj, Register hdr, Register flag, Register tmp, Label& slow);
+  void fast_unlock(Register obj, Register hdr, Register flag, Register tmp, Label& slow);
+
 private:
   void push(unsigned int bitset);
   void pop(unsigned int bitset);

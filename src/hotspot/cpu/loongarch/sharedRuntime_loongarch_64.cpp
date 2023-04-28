@@ -1731,7 +1731,9 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     // Load the oop from the handle
     __ ld_d(obj_reg, oop_handle_reg, 0);
 
-    if (!UseHeavyMonitors) {
+    if (LockingMode == LM_MONITOR) {
+      __ b(slow_path_lock);
+    } else if (LockingMode == LM_LEGACY) {
       // Load immediate 1 into swap_reg %T8
       __ li(swap_reg, 1);
 
@@ -1756,7 +1758,11 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       __ st_d(swap_reg, lock_reg, mark_word_offset);
       __ bne(swap_reg, R0, slow_path_lock);
     } else {
-      __ b(slow_path_lock);
+      assert(LockingMode == LM_LIGHTWEIGHT, "must be");
+      __ ld_d(swap_reg, Address(obj_reg, oopDesc::mark_offset_in_bytes()));
+      // FIXME
+      Register tmp = T1;
+      __ fast_lock(obj_reg, swap_reg, tmp, SCR1, slow_path_lock);
     }
 
     __ bind(count);
@@ -1887,7 +1893,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
     Label done, not_recursive;
 
-    if (!UseHeavyMonitors) {
+    if (LockingMode == LM_LEGACY) {
       // Simple recursive lock?
       __ ld_d(AT, FP, lock_slot_fp_offset);
       __ bnez(AT, not_recursive);
@@ -1902,7 +1908,9 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       save_native_result(masm, ret_type, stack_slots);
     }
 
-    if (!UseHeavyMonitors) {
+    if (LockingMode == LM_MONITOR) {
+      __ b(slow_path_unlock);
+    } else if (LockingMode == LM_LEGACY) {
       //  get old displaced header
       __ ld_d(T8, FP, lock_slot_fp_offset);
       // get address of the stack lock
@@ -1913,7 +1921,12 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       __ bind(count);
       __ decrement(Address(TREG, JavaThread::held_monitor_count_offset()), 1);
     } else {
-      __ b(slow_path_unlock);
+      assert(LockingMode == LM_LIGHTWEIGHT, "");
+      __ ld_d(lock_reg, Address(obj_reg, oopDesc::mark_offset_in_bytes()));
+      __ andi(AT, lock_reg, markWord::monitor_value);
+      __ bnez(AT, slow_path_unlock);
+      __ fast_unlock(obj_reg, lock_reg, swap_reg, SCR1, slow_path_unlock);
+      __ decrement(Address(TREG, JavaThread::held_monitor_count_offset()));
     }
 
     // slow path re-enters here

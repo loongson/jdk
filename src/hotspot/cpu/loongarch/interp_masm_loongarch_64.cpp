@@ -799,7 +799,7 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
 void InterpreterMacroAssembler::lock_object(Register lock_reg) {
   assert(lock_reg == T0, "The argument is only for looks. It must be T0");
 
-  if (UseHeavyMonitors) {
+  if (LockingMode == LM_MONITOR) {
     call_VM(NOREG, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter), lock_reg);
   } else {
     Label count, done, slow_case;
@@ -820,37 +820,46 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
       bnez(AT, slow_case);
     }
 
+    if (LockingMode == LM_LIGHTWEIGHT) {
+      ld_d(tmp_reg, Address(scr_reg, oopDesc::mark_offset_in_bytes()));
+      fast_lock(scr_reg, tmp_reg, SCR1, SCR2, slow_case);
+      b(count);
+    } else if (LockingMode == LM_LEGACY) {
+      // Load (object->mark() | 1) into tmp_reg
+      ld_d(AT, scr_reg, 0);
+      ori(tmp_reg, AT, 1);
 
-    // Load (object->mark() | 1) into tmp_reg
-    ld_d(AT, scr_reg, 0);
-    ori(tmp_reg, AT, 1);
+      // Save (object->mark() | 1) into BasicLock's displaced header
+      st_d(tmp_reg, lock_reg, mark_offset);
 
-    // Save (object->mark() | 1) into BasicLock's displaced header
-    st_d(tmp_reg, lock_reg, mark_offset);
+      assert(lock_offset == 0, "displached header must be first word in BasicObjectLock");
 
-    assert(lock_offset == 0, "displached header must be first word in BasicObjectLock");
+      cmpxchg(Address(scr_reg, 0), tmp_reg, lock_reg, AT, true, false, count);
 
-    cmpxchg(Address(scr_reg, 0), tmp_reg, lock_reg, AT, true, false, count);
-
-    // Test if the oopMark is an obvious stack pointer, i.e.,
-    //  1) (mark & 3) == 0, and
-    //  2) SP <= mark < SP + os::pagesize()
-    //
-    // These 3 tests can be done by evaluating the following
-    // expression: ((mark - sp) & (3 - os::vm_page_size())),
-    // assuming both stack pointer and pagesize have their
-    // least significant 2 bits clear.
-    // NOTE: the oopMark is in tmp_reg as the result of cmpxchg
-    sub_d(tmp_reg, tmp_reg, SP);
-    li(AT, 7 - (int)os::vm_page_size());
-    andr(tmp_reg, tmp_reg, AT);
-    // Save the test result, for recursive case, the result is zero
-    st_d(tmp_reg, lock_reg, mark_offset);
-    beqz(tmp_reg, count);
+      // Test if the oopMark is an obvious stack pointer, i.e.,
+      //  1) (mark & 3) == 0, and
+      //  2) SP <= mark < SP + os::pagesize()
+      //
+      // These 3 tests can be done by evaluating the following
+      // expression: ((mark - sp) & (3 - os::vm_page_size())),
+      // assuming both stack pointer and pagesize have their
+      // least significant 2 bits clear.
+      // NOTE: the oopMark is in tmp_reg as the result of cmpxchg
+      sub_d(tmp_reg, tmp_reg, SP);
+      li(AT, 7 - (int)os::vm_page_size());
+      andr(tmp_reg, tmp_reg, AT);
+      // Save the test result, for recursive case, the result is zero
+      st_d(tmp_reg, lock_reg, mark_offset);
+      beqz(tmp_reg, count);
+    }
 
     bind(slow_case);
     // Call the runtime routine for slow case
-    call_VM(NOREG, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter), lock_reg);
+    if (LockingMode == LM_LIGHTWEIGHT) {
+      call_VM(NOREG, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter_obj), scr_reg);
+    } else {
+      call_VM(NOREG, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter), lock_reg);
+    }
     b(done);
 
     bind(count);
@@ -875,7 +884,7 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
 void InterpreterMacroAssembler::unlock_object(Register lock_reg) {
   assert(lock_reg == T0, "The argument is only for looks. It must be T0");
 
-  if (UseHeavyMonitors) {
+  if (LockingMode == LM_MONITOR) {
     call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit), lock_reg);
   } else {
     Label count, done;
@@ -885,23 +894,47 @@ void InterpreterMacroAssembler::unlock_object(Register lock_reg) {
 
     save_bcp(); // Save in case of exception
 
-    // Convert from BasicObjectLock structure to object and BasicLock structure
-    // Store the BasicLock address into tmp_reg
-    addi_d(tmp_reg, lock_reg, BasicObjectLock::lock_offset_in_bytes());
+    if (LockingMode != LM_LIGHTWEIGHT) {
+      // Convert from BasicObjectLock structure to object and BasicLock
+      // structure Store the BasicLock address into tmp_reg
+      lea(tmp_reg, Address(lock_reg, BasicObjectLock::lock_offset_in_bytes()));
+    }
 
     // Load oop into scr_reg
     ld_d(scr_reg, lock_reg, BasicObjectLock::obj_offset_in_bytes());
     // free entry
     st_d(R0, lock_reg, BasicObjectLock::obj_offset_in_bytes());
 
-    // Load the old header from BasicLock structure
-    ld_d(hdr_reg, tmp_reg, BasicLock::displaced_header_offset_in_bytes());
-    // zero for recursive case
-    beqz(hdr_reg, count);
+    if (LockingMode == LM_LIGHTWEIGHT) {
+      Label slow_case;
 
-    // Atomic swap back the old header
-    cmpxchg(Address(scr_reg, 0), tmp_reg, hdr_reg, AT, false, false, count);
+      // Check for non-symmetric locking. This is allowed by the spec and the interpreter
+      // must handle it.
+      Register tmp = SCR1;
+      // First check for lock-stack underflow.
+      ld_wu(tmp, Address(TREG, JavaThread::lock_stack_top_offset()));
+      li(AT, (unsigned)LockStack::start_offset());
+      bgeu(AT, tmp, slow_case);
+      // Then check if the top of the lock-stack matches the unlocked object.
+      addi_w(tmp, tmp, -oopSize);
+      ldx_d(tmp, TREG, tmp);
+      bne(scr_reg, tmp, slow_case);
 
+      ld_d(hdr_reg, Address(scr_reg, oopDesc::mark_offset_in_bytes()));
+      andi(AT, hdr_reg, markWord::monitor_value);
+      bnez(AT, slow_case);
+      fast_unlock(scr_reg, hdr_reg, tmp_reg, SCR1, slow_case);
+      b(count);
+      bind(slow_case);
+    } else if (LockingMode == LM_LEGACY) {
+      // Load the old header from BasicLock structure
+      ld_d(hdr_reg, tmp_reg, BasicLock::displaced_header_offset_in_bytes());
+      // zero for recursive case
+      beqz(hdr_reg, count);
+
+      // Atomic swap back the old header
+      cmpxchg(Address(scr_reg, 0), tmp_reg, hdr_reg, AT, false, false, count);
+    }
     // Call the runtime routine for slow case.
     st_d(scr_reg, lock_reg, BasicObjectLock::obj_offset_in_bytes()); // restore obj
     call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit), lock_reg);

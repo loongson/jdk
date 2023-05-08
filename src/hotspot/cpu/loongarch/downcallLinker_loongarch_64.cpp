@@ -46,6 +46,7 @@ class DowncallStubGenerator : public StubCodeGenerator {
 
   bool _needs_return_buffer;
   int _captured_state_mask;
+  bool _needs_transition;
 
   int _frame_complete;
   int _frame_size_slots;
@@ -59,7 +60,8 @@ public:
                          const GrowableArray<VMStorage>& input_registers,
                          const GrowableArray<VMStorage>& output_registers,
                          bool needs_return_buffer,
-                         int captured_state_mask)
+                         int captured_state_mask,
+                         bool needs_transition)
    : StubCodeGenerator(buffer, PrintMethodHandleStubs),
      _signature(signature),
      _num_args(num_args),
@@ -69,6 +71,7 @@ public:
      _output_registers(output_registers),
      _needs_return_buffer(needs_return_buffer),
      _captured_state_mask(captured_state_mask),
+     _needs_transition(needs_transition),
      _frame_complete(0),
      _frame_size_slots(0),
      _oop_maps(nullptr) {
@@ -99,13 +102,15 @@ RuntimeStub* DowncallLinker::make_downcall_stub(BasicType* signature,
                                                 const GrowableArray<VMStorage>& input_registers,
                                                 const GrowableArray<VMStorage>& output_registers,
                                                 bool needs_return_buffer,
-                                                int captured_state_mask) {
+                                                int captured_state_mask,
+                                                bool needs_transition) {
   int code_size = native_invoker_code_base_size + (num_args * native_invoker_size_per_arg);
   int locs_size = 1; // must be non-zero
   CodeBuffer code("nep_invoker_blob", code_size, locs_size);
   DowncallStubGenerator g(&code, signature, num_args, ret_bt, abi,
                           input_registers, output_registers,
-                          needs_return_buffer, captured_state_mask);
+                          needs_return_buffer, captured_state_mask,
+                          needs_transition);
   g.generate();
   code.log_section_sizes("nep_invoker_blob");
 
@@ -161,7 +166,7 @@ void DowncallStubGenerator::generate() {
   assert(_abi._shadow_space_bytes == 0, "not expecting shadow space on LoongArch64");
   allocated_frame_size += arg_shuffle.out_arg_bytes();
 
-  bool should_save_return_value = !_needs_return_buffer;
+  bool should_save_return_value = !_needs_return_buffer && _needs_transition;
   RegSpiller out_reg_spiller(_output_registers);
   int spill_offset = -1;
 
@@ -189,7 +194,7 @@ void DowncallStubGenerator::generate() {
   _frame_size_slots = align_up(framesize + (allocated_frame_size >> LogBytesPerInt), 4);
   assert(is_even(_frame_size_slots/2), "sp not 16-byte aligned");
 
-  _oop_maps  = new OopMapSet();
+  _oop_maps  = _needs_transition ? new OopMapSet() : nullptr;
   address start = __ pc();
 
   __ enter();
@@ -199,20 +204,22 @@ void DowncallStubGenerator::generate() {
 
   _frame_complete = __ pc() - start;
 
-  Label L;
-  address the_pc = __ pc();
-  __ bind(L);
-  __ set_last_Java_frame(TREG, SP, FP, L);
-  OopMap* map = new OopMap(_frame_size_slots, 0);
-  _oop_maps->add_gc_map(the_pc - start, map);
+  if (_needs_transition) {
+    Label L;
+    address the_pc = __ pc();
+    __ bind(L);
+    __ set_last_Java_frame(TREG, SP, FP, L);
+    OopMap* map = new OopMap(_frame_size_slots, 0);
+    _oop_maps->add_gc_map(the_pc - start, map);
 
-  // State transition
-  __ li(tmp1, _thread_in_native);
-  if (os::is_MP()) {
-    __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
-    __ amswap_db_w(R0, tmp1, tmp2);
-  } else {
-    __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
+    // State transition
+    __ li(tmp1, _thread_in_native);
+    if (os::is_MP()) {
+      __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
+      __ amswap_db_w(R0, tmp1, tmp2);
+    } else {
+      __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
+    }
   }
 
   __ block_comment("{ argument shuffle");
@@ -261,89 +268,91 @@ void DowncallStubGenerator::generate() {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  __ li(tmp1, _thread_in_native_trans);
-  if (os::is_MP()) {
-    __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
-    __ amswap_db_w(R0, tmp1, tmp2);
-  } else {
-    __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
-  }
-
-  // Force this write out before the read below
-  //if (os::is_MP())  __ membar(__ AnyAny);
-
-
   Label L_after_safepoint_poll;
   Label L_safepoint_poll_slow_path;
-
-  __ safepoint_poll(L_safepoint_poll_slow_path, TREG, true /* at_return */, true /* acquire */, false /* in_nmethod */);
-
-  __ ld_w(tmp1, TREG, in_bytes(JavaThread::suspend_flags_offset()));
-  __ bnez(tmp1, L_safepoint_poll_slow_path);
-
-  __ bind(L_after_safepoint_poll);
-
-  // change thread state
-  __ li(tmp1, _thread_in_Java);
-  if (os::is_MP()) {
-    __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
-    __ amswap_db_w(R0, tmp1, tmp2);
-  } else {
-    __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
-  }
-
-  __ block_comment("reguard stack check");
   Label L_reguard;
   Label L_after_reguard;
-  __ ld_w(tmp1, TREG, in_bytes(JavaThread::stack_guard_state_offset()));
-  __ addi_d(tmp1, tmp1, -StackOverflow::stack_guard_yellow_reserved_disabled);
-  __ beqz(tmp1, L_reguard);
-  __ bind(L_after_reguard);
+  if (_needs_transition) {
+    __ li(tmp1, _thread_in_native_trans);
+    if (os::is_MP()) {
+      __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
+      __ amswap_db_w(R0, tmp1, tmp2);
+    } else {
+      __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
+    }
 
-  __ reset_last_Java_frame(true);
+    // Force this write out before the read below
+    //if (os::is_MP())  __ membar(__ AnyAny);
+
+    __ safepoint_poll(L_safepoint_poll_slow_path, TREG, true /* at_return */, true /* acquire */, false /* in_nmethod */);
+
+    __ ld_w(tmp1, TREG, in_bytes(JavaThread::suspend_flags_offset()));
+    __ bnez(tmp1, L_safepoint_poll_slow_path);
+
+    __ bind(L_after_safepoint_poll);
+
+    // change thread state
+    __ li(tmp1, _thread_in_Java);
+    if (os::is_MP()) {
+      __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
+      __ amswap_db_w(R0, tmp1, tmp2);
+    } else {
+      __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
+    }
+
+    __ block_comment("reguard stack check");
+    __ ld_w(tmp1, TREG, in_bytes(JavaThread::stack_guard_state_offset()));
+    __ addi_d(tmp1, tmp1, -StackOverflow::stack_guard_yellow_reserved_disabled);
+    __ beqz(tmp1, L_reguard);
+    __ bind(L_after_reguard);
+
+    __ reset_last_Java_frame(true);
+  }
 
   __ leave(); // required for proper stackwalking of RuntimeStub frame
   __ jr(RA);
 
   //////////////////////////////////////////////////////////////////////////////
 
-  __ block_comment("{ L_safepoint_poll_slow_path");
-  __ bind(L_safepoint_poll_slow_path);
+  if (_needs_transition) {
+    __ block_comment("{ L_safepoint_poll_slow_path");
+    __ bind(L_safepoint_poll_slow_path);
 
-  if (should_save_return_value) {
-    // Need to save the native result registers around any runtime calls.
-    out_reg_spiller.generate_spill(_masm, spill_offset);
-  }
+    if (should_save_return_value) {
+      // Need to save the native result registers around any runtime calls.
+      out_reg_spiller.generate_spill(_masm, spill_offset);
+    }
 
-  __ move(c_rarg0, TREG);
-  assert(frame::arg_reg_save_area_bytes == 0, "not expecting frame reg save area");
-  __ call(CAST_FROM_FN_PTR(address, JavaThread::check_special_condition_for_native_trans), relocInfo::runtime_call_type);
+    __ move(c_rarg0, TREG);
+    assert(frame::arg_reg_save_area_bytes == 0, "not expecting frame reg save area");
+    __ call(CAST_FROM_FN_PTR(address, JavaThread::check_special_condition_for_native_trans), relocInfo::runtime_call_type);
 
-  if (should_save_return_value) {
-    out_reg_spiller.generate_fill(_masm, spill_offset);
-  }
+    if (should_save_return_value) {
+      out_reg_spiller.generate_fill(_masm, spill_offset);
+    }
 
-  __ b(L_after_safepoint_poll);
-  __ block_comment("} L_safepoint_poll_slow_path");
+    __ b(L_after_safepoint_poll);
+    __ block_comment("} L_safepoint_poll_slow_path");
 
   //////////////////////////////////////////////////////////////////////////////
 
-  __ block_comment("{ L_reguard");
-  __ bind(L_reguard);
+    __ block_comment("{ L_reguard");
+    __ bind(L_reguard);
 
-  if (should_save_return_value) {
-    out_reg_spiller.generate_spill(_masm, spill_offset);
+    if (should_save_return_value) {
+      out_reg_spiller.generate_spill(_masm, spill_offset);
+    }
+
+    __ call(CAST_FROM_FN_PTR(address, SharedRuntime::reguard_yellow_pages),relocInfo::runtime_call_type);
+
+    if (should_save_return_value) {
+      out_reg_spiller.generate_fill(_masm, spill_offset);
+    }
+
+    __ b(L_after_reguard);
+
+    __ block_comment("} L_reguard");
   }
-
-  __ call(CAST_FROM_FN_PTR(address, SharedRuntime::reguard_yellow_pages),relocInfo::runtime_call_type);
-
-  if (should_save_return_value) {
-    out_reg_spiller.generate_fill(_masm, spill_offset);
-  }
-
-  __ b(L_after_reguard);
-
-  __ block_comment("} L_reguard");
 
   //////////////////////////////////////////////////////////////////////////////
 

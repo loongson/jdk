@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -49,8 +49,6 @@ const bool CCallingConventionRequiresIntsAsLongs = false;
 #define DEOPTIMIZE_WHEN_PATCHING
 
 #define SUPPORT_RESERVED_STACK_AREA
-
-#define COMPRESSED_CLASS_POINTERS_DEPENDS_ON_COMPRESSED_OOPS false
 
 #define USE_POINTERS_TO_REGISTER_IMPL_ARRAY
 

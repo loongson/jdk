@@ -429,9 +429,10 @@ void VM_Version::get_processor_features() {
         warning("UseActiveCoresMP disabled because active processors are more than one.");
       FLAG_SET_DEFAULT(UseActiveCoresMP, false);
     }
-  } else {
-    if (!os::is_MP())
+  } else { // !UseActiveCoresMP
+    if (FLAG_IS_DEFAULT(UseActiveCoresMP) && !os::is_MP()) {
       FLAG_SET_DEFAULT(UseActiveCoresMP, true);
+    }
   }
 }
 

@@ -13430,11 +13430,10 @@ instruct div4D(vecY dst, vecY src1, vecY src2) %{
 instruct abs16B(vecX dst, vecX src) %{
   predicate(Matcher::vector_length(n) == 16);
   match(Set dst (AbsVB src));
-  effect(TEMP_DEF dst);
   format %{ "vabs    $dst, $src\t# @abs16B" %}
   ins_encode %{
-    __ vxor_v($dst$$FloatRegister, $dst$$FloatRegister, $dst$$FloatRegister);
-    __ vabsd_b($dst$$FloatRegister, $src$$FloatRegister, $dst$$FloatRegister);
+    __ vxor_v(fscratch, fscratch, fscratch);
+    __ vabsd_b($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -13442,11 +13441,10 @@ instruct abs16B(vecX dst, vecX src) %{
 instruct abs8S(vecX dst, vecX src) %{
   predicate(Matcher::vector_length(n) == 8);
   match(Set dst (AbsVS src));
-  effect(TEMP_DEF dst);
   format %{ "vabs    $dst, $src\t# @abs8S" %}
   ins_encode %{
-    __ vxor_v($dst$$FloatRegister, $dst$$FloatRegister, $dst$$FloatRegister);
-    __ vabsd_h($dst$$FloatRegister, $src$$FloatRegister, $dst$$FloatRegister);
+    __ vxor_v(fscratch, fscratch, fscratch);
+    __ vabsd_h($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -13454,11 +13452,10 @@ instruct abs8S(vecX dst, vecX src) %{
 instruct abs4I(vecX dst, vecX src) %{
   predicate(Matcher::vector_length(n) == 4);
   match(Set dst (AbsVI src));
-  effect(TEMP_DEF dst);
   format %{ "vabs    $dst, $src\t# @abs4I" %}
   ins_encode %{
-    __ vxor_v($dst$$FloatRegister, $dst$$FloatRegister, $dst$$FloatRegister);
-    __ vabsd_w($dst$$FloatRegister, $src$$FloatRegister, $dst$$FloatRegister);
+    __ vxor_v(fscratch, fscratch, fscratch);
+    __ vabsd_w($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -13466,11 +13463,10 @@ instruct abs4I(vecX dst, vecX src) %{
 instruct abs2L(vecX dst, vecX src) %{
   predicate(Matcher::vector_length(n) == 2);
   match(Set dst (AbsVL src));
-  effect(TEMP_DEF dst);
   format %{ "vabs    $dst, $src\t# @abs2L" %}
   ins_encode %{
-    __ vxor_v($dst$$FloatRegister, $dst$$FloatRegister, $dst$$FloatRegister);
-    __ vabsd_d($dst$$FloatRegister, $src$$FloatRegister, $dst$$FloatRegister);
+    __ vxor_v(fscratch, fscratch, fscratch);
+    __ vabsd_d($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -13498,11 +13494,10 @@ instruct abs2D(vecX dst, vecX src) %{
 instruct abs32B(vecY dst, vecY src) %{
   predicate(Matcher::vector_length(n) == 32);
   match(Set dst (AbsVB src));
-  effect(TEMP_DEF dst);
   format %{ "xvabs    $dst, $src\t# @abs32B" %}
   ins_encode %{
-    __ xvxor_v($dst$$FloatRegister, $dst$$FloatRegister, $dst$$FloatRegister);
-    __ xvabsd_b($dst$$FloatRegister, $src$$FloatRegister, $dst$$FloatRegister);
+    __ xvxor_v(fscratch, fscratch, fscratch);
+    __ xvabsd_b($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -13510,11 +13505,10 @@ instruct abs32B(vecY dst, vecY src) %{
 instruct abs16S(vecY dst, vecY src) %{
   predicate(Matcher::vector_length(n) == 16);
   match(Set dst (AbsVS src));
-  effect(TEMP_DEF dst);
   format %{ "xvabs    $dst, $src\t# @abs16S" %}
   ins_encode %{
-    __ xvxor_v($dst$$FloatRegister, $dst$$FloatRegister, $dst$$FloatRegister);
-    __ xvabsd_h($dst$$FloatRegister, $src$$FloatRegister, $dst$$FloatRegister);
+    __ xvxor_v(fscratch, fscratch, fscratch);
+    __ xvabsd_h($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -13522,11 +13516,10 @@ instruct abs16S(vecY dst, vecY src) %{
 instruct abs8I(vecY dst, vecY src) %{
   predicate(Matcher::vector_length(n) == 8);
   match(Set dst (AbsVI src));
-  effect(TEMP_DEF dst);
   format %{ "xvabs    $dst, $src\t# @abs8I" %}
   ins_encode %{
-    __ xvxor_v($dst$$FloatRegister, $dst$$FloatRegister, $dst$$FloatRegister);
-    __ xvabsd_w($dst$$FloatRegister, $src$$FloatRegister, $dst$$FloatRegister);
+    __ xvxor_v(fscratch, fscratch, fscratch);
+    __ xvabsd_w($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -13534,11 +13527,10 @@ instruct abs8I(vecY dst, vecY src) %{
 instruct abs4L(vecY dst, vecY src) %{
   predicate(Matcher::vector_length(n) == 4);
   match(Set dst (AbsVL src));
-  effect(TEMP_DEF dst);
   format %{ "xvabs    $dst, $src\t# @abs4L" %}
   ins_encode %{
-    __ xvxor_v($dst$$FloatRegister, $dst$$FloatRegister, $dst$$FloatRegister);
-    __ xvabsd_d($dst$$FloatRegister, $src$$FloatRegister, $dst$$FloatRegister);
+    __ xvxor_v(fscratch, fscratch, fscratch);
+    __ xvabsd_d($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -13647,32 +13639,32 @@ instruct max2L(vecX dst, vecX src1, vecX src2) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct max4F(vecX dst, vecX src1, vecX src2, vecX tmp1, vecX tmp2) %{
+instruct max4F(vecX dst, vecX src1, vecX src2, vecX tmp) %{
   predicate(Matcher::vector_length(n) == 4 && Matcher::vector_element_basic_type(n) == T_FLOAT);
   match(Set dst (MaxV src1 src2));
-  effect(TEMP_DEF dst, TEMP tmp1, TEMP tmp2);
-  format %{ "vfmax    $dst, $src1, $src2\t# TEMP($tmp1, $tmp2) @max4F" %}
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "vfmax    $dst, $src1, $src2\t# TEMP($tmp) @max4F" %}
   ins_encode %{
     __ vfmax_s($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ vxor_v($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ vfdiv_s($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ vfcmp_cun_s($tmp2$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ vbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister);
+    __ vxor_v($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ vfdiv_s($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ vfcmp_cun_s(fscratch, $src1$$FloatRegister, $src2$$FloatRegister);
+    __ vbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct max2D(vecX dst, vecX src1, vecX src2, vecX tmp1, vecX tmp2) %{
+instruct max2D(vecX dst, vecX src1, vecX src2, vecX tmp) %{
   predicate(Matcher::vector_length(n) == 2 && Matcher::vector_element_basic_type(n) == T_DOUBLE);
   match(Set dst (MaxV src1 src2));
-  effect(TEMP_DEF dst, TEMP tmp1, TEMP tmp2);
-  format %{ "vfmax    $dst, $src1, $src2\t# TEMP($tmp1, $tmp2) @max2D" %}
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "vfmax    $dst, $src1, $src2\t# TEMP($tmp) @max2D" %}
   ins_encode %{
     __ vfmax_d($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ vxor_v($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ vfdiv_d($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ vfcmp_cun_d($tmp2$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ vbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister);
+    __ vxor_v($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ vfdiv_d($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ vfcmp_cun_d(fscratch, $src1$$FloatRegister, $src2$$FloatRegister);
+    __ vbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -13717,32 +13709,32 @@ instruct max4L(vecY dst, vecY src1, vecY src2) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct max8F(vecY dst, vecY src1, vecY src2, vecY tmp1, vecY tmp2) %{
+instruct max8F(vecY dst, vecY src1, vecY src2, vecY tmp) %{
   predicate(Matcher::vector_length(n) == 8 && Matcher::vector_element_basic_type(n) == T_FLOAT);
   match(Set dst (MaxV src1 src2));
-  effect(TEMP_DEF dst, TEMP tmp1, TEMP tmp2);
-  format %{ "xvfmax    $dst, $src1, $src2\t# TEMP($tmp1, $tmp2) @max8F" %}
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "xvfmax    $dst, $src1, $src2\t# TEMP($tmp) @max8F" %}
   ins_encode %{
     __ xvfmax_s($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ xvxor_v($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ xvfdiv_s($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ xvfcmp_cun_s($tmp2$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ xvbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister);
+    __ xvxor_v($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ xvfdiv_s($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ xvfcmp_cun_s(fscratch, $src1$$FloatRegister, $src2$$FloatRegister);
+    __ xvbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct max4D(vecY dst, vecY src1, vecY src2, vecY tmp1, vecY tmp2) %{
+instruct max4D(vecY dst, vecY src1, vecY src2, vecY tmp) %{
   predicate(Matcher::vector_length(n) == 4 && Matcher::vector_element_basic_type(n) == T_DOUBLE);
   match(Set dst (MaxV src1 src2));
-  effect(TEMP_DEF dst, TEMP tmp1, TEMP tmp2);
-  format %{ "xvfmax    $dst, $src1, $src2\t# TEMP($tmp1, $tmp2) @max4D" %}
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "xvfmax    $dst, $src1, $src2\t# TEMP($tmp) @max4D" %}
   ins_encode %{
     __ xvfmax_d($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ xvxor_v($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ xvfdiv_d($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ xvfcmp_cun_d($tmp2$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ xvbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister);
+    __ xvxor_v($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ xvfdiv_d($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ xvfcmp_cun_d(fscratch, $src1$$FloatRegister, $src2$$FloatRegister);
+    __ xvbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -13789,32 +13781,32 @@ instruct min2L(vecX dst, vecX src1, vecX src2) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct min4F(vecX dst, vecX src1, vecX src2, vecX tmp1, vecX tmp2) %{
+instruct min4F(vecX dst, vecX src1, vecX src2, vecX tmp) %{
   predicate(Matcher::vector_length(n) == 4 && Matcher::vector_element_basic_type(n) == T_FLOAT);
   match(Set dst (MinV src1 src2));
-  effect(TEMP_DEF dst, TEMP tmp1, TEMP tmp2);
-  format %{ "vfmin    $dst, $src1, $src2\t# TEMP($tmp1, $tmp2) @min4F" %}
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "vfmin    $dst, $src1, $src2\t# TEMP($tmp) @min4F" %}
   ins_encode %{
     __ vfmin_s($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ vxor_v($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ vfdiv_s($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ vfcmp_cun_s($tmp2$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ vbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister);
+    __ vxor_v($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ vfdiv_s($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ vfcmp_cun_s(fscratch, $src1$$FloatRegister, $src2$$FloatRegister);
+    __ vbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct min2D(vecX dst, vecX src1, vecX src2, vecX tmp1, vecX tmp2) %{
+instruct min2D(vecX dst, vecX src1, vecX src2, vecX tmp) %{
   predicate(Matcher::vector_length(n) == 2 && Matcher::vector_element_basic_type(n) == T_DOUBLE);
   match(Set dst (MinV src1 src2));
-  effect(TEMP_DEF dst, TEMP tmp1, TEMP tmp2);
-  format %{ "vfmin    $dst, $src1, $src2\t# TEMP($tmp1, $tmp2) @min2D" %}
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "vfmin    $dst, $src1, $src2\t# TEMP($tmp) @min2D" %}
   ins_encode %{
     __ vfmin_d($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ vxor_v($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ vfdiv_d($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ vfcmp_cun_d($tmp2$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ vbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister);
+    __ vxor_v($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ vfdiv_d($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ vfcmp_cun_d(fscratch, $src1$$FloatRegister, $src2$$FloatRegister);
+    __ vbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -13859,32 +13851,32 @@ instruct min4L(vecY dst, vecY src1, vecY src2) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct min8F(vecY dst, vecY src1, vecY src2, vecY tmp1, vecY tmp2) %{
+instruct min8F(vecY dst, vecY src1, vecY src2, vecY tmp) %{
   predicate(Matcher::vector_length(n) == 8 && Matcher::vector_element_basic_type(n) == T_FLOAT);
   match(Set dst (MinV src1 src2));
-  effect(TEMP_DEF dst, TEMP tmp1, TEMP tmp2);
-  format %{ "xvfmin    $dst, $src1, $src2\t# TEMP($tmp1, $tmp2) @min8F" %}
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "xvfmin    $dst, $src1, $src2\t# TEMP($tmp) @min8F" %}
   ins_encode %{
     __ xvfmin_s($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ xvxor_v($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ xvfdiv_s($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ xvfcmp_cun_s($tmp2$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ xvbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister);
+    __ xvxor_v($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ xvfdiv_s($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ xvfcmp_cun_s(fscratch, $src1$$FloatRegister, $src2$$FloatRegister);
+    __ xvbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct min4D(vecY dst, vecY src1, vecY src2, vecY tmp1, vecY tmp2) %{
+instruct min4D(vecY dst, vecY src1, vecY src2, vecY tmp) %{
   predicate(Matcher::vector_length(n) == 4 && Matcher::vector_element_basic_type(n) == T_DOUBLE);
   match(Set dst (MinV src1 src2));
-  effect(TEMP_DEF dst, TEMP tmp1, TEMP tmp2);
-  format %{ "xvfmin    $dst, $src1, $src2\t# TEMP($tmp1, $tmp2) @min4D" %}
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "xvfmin    $dst, $src1, $src2\t# TEMP($tmp) @min4D" %}
   ins_encode %{
     __ xvfmin_d($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ xvxor_v($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ xvfdiv_d($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ xvfcmp_cun_d($tmp2$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ xvbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister);
+    __ xvxor_v($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ xvfdiv_d($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ xvfcmp_cun_d(fscratch, $src1$$FloatRegister, $src2$$FloatRegister);
+    __ xvbitsel_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14407,30 +14399,28 @@ instruct nmsub4D(vecY dst, vecY src1, vecY src2, vecY src3) %{
 
 // --------------- Vector Multiply-Add Shorts into Integer --------------------
 
-instruct muladd8Sto4I(vecX dst, vecX src1, vecX src2, vecX tmp) %{
+instruct muladd8Sto4I(vecX dst, vecX src1, vecX src2) %{
   predicate(Matcher::vector_length(n->in(1)) == 8 && Matcher::vector_element_basic_type(n->in(1)) == T_SHORT);
   match(Set dst (MulAddVS2VI src1 src2));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "muladdvs2vi    $dst, $src1, $src2\t# TEMP($tmp) @muladd8Sto4I" %}
+  format %{ "muladdvs2vi    $dst, $src1, $src2\t# @muladd8Sto4I" %}
   ins_encode %{
     DEBUG_ONLY(Unimplemented()); // unverified
-    __ vmulwev_w_h($tmp$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
+    __ vmulwev_w_h(fscratch, $src1$$FloatRegister, $src2$$FloatRegister);
     __ vmulwod_w_h($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ vadd_w($dst$$FloatRegister, $tmp$$FloatRegister, $dst$$FloatRegister);
+    __ vadd_w($dst$$FloatRegister, fscratch, $dst$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct muladd16Sto8I(vecY dst, vecY src1, vecY src2, vecY tmp) %{
+instruct muladd16Sto8I(vecY dst, vecY src1, vecY src2) %{
   predicate(Matcher::vector_length(n->in(1)) == 16 && Matcher::vector_element_basic_type(n->in(1)) == T_SHORT);
   match(Set dst (MulAddVS2VI src1 src2));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "muladdvs2vi    $dst, $src1, $src2\t# TEMP($tmp) @muladd16Sto8I" %}
+  format %{ "muladdvs2vi    $dst, $src1, $src2\t# @muladd16Sto8I" %}
   ins_encode %{
     DEBUG_ONLY(Unimplemented()); // unverified
-    __ xvmulwev_w_h($tmp$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
+    __ xvmulwev_w_h(fscratch, $src1$$FloatRegister, $src2$$FloatRegister);
     __ xvmulwod_w_h($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister);
-    __ xvadd_w($dst$$FloatRegister, $tmp$$FloatRegister, $dst$$FloatRegister);
+    __ xvadd_w($dst$$FloatRegister, fscratch, $dst$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14461,15 +14451,14 @@ instruct shiftcntY(vecY dst, mRegI cnt) %{
 
 // ------------------------------ LeftShift -----------------------------------
 
-instruct sll16B(vecX dst, vecX src, vecX shift, vecX tmp) %{
+instruct sll16B(vecX dst, vecX src, vecX shift) %{
   predicate(Matcher::vector_length(n) == 16);
   match(Set dst (LShiftVB src shift));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "vsll    $dst, $src, $shift\t# TEMP($tmp) @sll16B" %}
+  format %{ "vsll    $dst, $src, $shift\t# @sll16B" %}
   ins_encode %{
-    __ vsll_b($tmp$$FloatRegister, $src$$FloatRegister, $shift$$FloatRegister);
+    __ vsll_b(fscratch, $src$$FloatRegister, $shift$$FloatRegister);
     __ vslti_bu($dst$$FloatRegister, $shift$$FloatRegister, 0x8);
-    __ vand_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister);
+    __ vand_v($dst$$FloatRegister, $dst$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14488,15 +14477,14 @@ instruct sll16B_imm(vecX dst, vecX src, immI shift) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct sll8S(vecX dst, vecX src, vecX shift, vecX tmp) %{
+instruct sll8S(vecX dst, vecX src, vecX shift) %{
   predicate(Matcher::vector_length(n) == 8);
   match(Set dst (LShiftVS src shift));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "vsll    $dst, $src, $shift\t# TEMP($tmp) @sll8S" %}
+  format %{ "vsll    $dst, $src, $shift\t# @sll8S" %}
   ins_encode %{
-    __ vsll_h($tmp$$FloatRegister, $src$$FloatRegister, $shift$$FloatRegister);
+    __ vsll_h(fscratch, $src$$FloatRegister, $shift$$FloatRegister);
     __ vslti_bu($dst$$FloatRegister, $shift$$FloatRegister, 0x10);
-    __ vand_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister);
+    __ vand_v($dst$$FloatRegister, $dst$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14555,15 +14543,14 @@ instruct sll2L_imm(vecX dst, vecX src, immI shift) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct sll32B(vecY dst, vecY src, vecY shift, vecY tmp) %{
+instruct sll32B(vecY dst, vecY src, vecY shift) %{
   predicate(Matcher::vector_length(n) == 32);
   match(Set dst (LShiftVB src shift));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "xvsll    $dst, $src, $shift\t# TEMP($tmp) @sll32B" %}
+  format %{ "xvsll    $dst, $src, $shift\t# @sll32B" %}
   ins_encode %{
-    __ xvsll_b($tmp$$FloatRegister, $src$$FloatRegister, $shift$$FloatRegister);
+    __ xvsll_b(fscratch, $src$$FloatRegister, $shift$$FloatRegister);
     __ xvslti_bu($dst$$FloatRegister, $shift$$FloatRegister, 0x8);
-    __ xvand_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister);
+    __ xvand_v($dst$$FloatRegister, $dst$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14582,15 +14569,14 @@ instruct sll32B_imm(vecY dst, vecY src, immI shift) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct sll16S(vecY dst, vecY src, vecY shift, vecY tmp) %{
+instruct sll16S(vecY dst, vecY src, vecY shift) %{
   predicate(Matcher::vector_length(n) == 16);
   match(Set dst (LShiftVS src shift));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "xvsll    $dst, $src, $shift\t# TEMP($tmp) @sll16S" %}
+  format %{ "xvsll    $dst, $src, $shift\t# @sll16S" %}
   ins_encode %{
-    __ xvsll_h($tmp$$FloatRegister, $src$$FloatRegister, $shift$$FloatRegister);
+    __ xvsll_h(fscratch, $src$$FloatRegister, $shift$$FloatRegister);
     __ xvslti_bu($dst$$FloatRegister, $shift$$FloatRegister, 0x10);
-    __ xvand_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister);
+    __ xvand_v($dst$$FloatRegister, $dst$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14651,15 +14637,14 @@ instruct sll4L_imm(vecY dst, vecY src, immI shift) %{
 
 // ----------------------- LogicalRightShift ----------------------------------
 
-instruct srl16B(vecX dst, vecX src, vecX shift, vecX tmp) %{
+instruct srl16B(vecX dst, vecX src, vecX shift) %{
   predicate(Matcher::vector_length(n) == 16);
   match(Set dst (URShiftVB src shift));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "vsrl    $dst, $src, $shift\t# TEMP($tmp) @srl16B" %}
+  format %{ "vsrl    $dst, $src, $shift\t# @srl16B" %}
   ins_encode %{
-    __ vsrl_b($tmp$$FloatRegister, $src$$FloatRegister, $shift$$FloatRegister);
+    __ vsrl_b(fscratch, $src$$FloatRegister, $shift$$FloatRegister);
     __ vslti_bu($dst$$FloatRegister, $shift$$FloatRegister, 0x8);
-    __ vand_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister);
+    __ vand_v($dst$$FloatRegister, $dst$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14678,15 +14663,14 @@ instruct srl16B_imm(vecX dst, vecX src, immI shift) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct srl8S(vecX dst, vecX src, vecX shift, vecX tmp) %{
+instruct srl8S(vecX dst, vecX src, vecX shift) %{
   predicate(Matcher::vector_length(n) == 8);
   match(Set dst (URShiftVS src shift));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "vsrl    $dst, $src, $shift\t# TEMP($tmp) @srl8S" %}
+  format %{ "vsrl    $dst, $src, $shift\t# @srl8S" %}
   ins_encode %{
-    __ vsrl_h($tmp$$FloatRegister, $src$$FloatRegister, $shift$$FloatRegister);
+    __ vsrl_h(fscratch, $src$$FloatRegister, $shift$$FloatRegister);
     __ vslti_bu($dst$$FloatRegister, $shift$$FloatRegister, 0x10);
-    __ vand_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister);
+    __ vand_v($dst$$FloatRegister, $dst$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14745,15 +14729,14 @@ instruct srl2L_imm(vecX dst, vecX src, immI shift) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct srl32B(vecY dst, vecY src, vecY shift, vecY tmp) %{
+instruct srl32B(vecY dst, vecY src, vecY shift) %{
   predicate(Matcher::vector_length(n) == 32);
   match(Set dst (URShiftVB src shift));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "xvsrl    $dst, $src, $shift\t# TEMP($tmp) @srl32B" %}
+  format %{ "xvsrl    $dst, $src, $shift\t# @srl32B" %}
   ins_encode %{
-    __ xvsrl_b($tmp$$FloatRegister, $src$$FloatRegister, $shift$$FloatRegister);
+    __ xvsrl_b(fscratch, $src$$FloatRegister, $shift$$FloatRegister);
     __ xvslti_bu($dst$$FloatRegister, $shift$$FloatRegister, 0x8);
-    __ xvand_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister);
+    __ xvand_v($dst$$FloatRegister, $dst$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14772,15 +14755,14 @@ instruct srl32B_imm(vecY dst, vecY src, immI shift) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct srl16S(vecY dst, vecY src, vecY shift, vecY tmp) %{
+instruct srl16S(vecY dst, vecY src, vecY shift) %{
   predicate(Matcher::vector_length(n) == 16);
   match(Set dst (URShiftVS src shift));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "xvsrl    $dst, $src, $shift\t# TEMP($tmp) @srl16S" %}
+  format %{ "xvsrl    $dst, $src, $shift\t# @srl16S" %}
   ins_encode %{
-    __ xvsrl_h($tmp$$FloatRegister, $src$$FloatRegister, $shift$$FloatRegister);
+    __ xvsrl_h(fscratch, $src$$FloatRegister, $shift$$FloatRegister);
     __ xvslti_bu($dst$$FloatRegister, $shift$$FloatRegister, 0x10);
-    __ xvand_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister);
+    __ xvand_v($dst$$FloatRegister, $dst$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14841,15 +14823,14 @@ instruct srl4L_imm(vecY dst, vecY src, immI shift) %{
 
 // ------------------------- ArithmeticRightShift -----------------------------
 
-instruct sra16B(vecX dst, vecX src, vecX shift, vecX tmp) %{
+instruct sra16B(vecX dst, vecX src, vecX shift) %{
   predicate(Matcher::vector_length(n) == 16);
   match(Set dst (RShiftVB src shift));
-  effect(TEMP tmp);
-  format %{ "vsra    $dst, $src, $shift\t# TEMP($tmp) @sra16B" %}
+  format %{ "vsra    $dst, $src, $shift\t# @sra16B" %}
   ins_encode %{
-    __ vslti_bu($tmp$$FloatRegister, $shift$$FloatRegister, 0x8);
-    __ vorn_v($tmp$$FloatRegister, $shift$$FloatRegister, $tmp$$FloatRegister);
-    __ vsra_b($dst$$FloatRegister, $src$$FloatRegister, $tmp$$FloatRegister);
+    __ vslti_bu(fscratch, $shift$$FloatRegister, 0x8);
+    __ vorn_v(fscratch, $shift$$FloatRegister, fscratch);
+    __ vsra_b($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14868,15 +14849,14 @@ instruct sra16B_imm(vecX dst, vecX src, immI shift) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct sra8S(vecX dst, vecX src, vecX shift, vecX tmp) %{
+instruct sra8S(vecX dst, vecX src, vecX shift) %{
   predicate(Matcher::vector_length(n) == 8);
   match(Set dst (RShiftVS src shift));
-  effect(TEMP tmp);
-  format %{ "vsra    $dst, $src, $shift\t# TEMP($tmp) @sra8S" %}
+  format %{ "vsra    $dst, $src, $shift\t# @sra8S" %}
   ins_encode %{
-    __ vslti_bu($tmp$$FloatRegister, $shift$$FloatRegister, 0x10);
-    __ vorn_v($tmp$$FloatRegister, $shift$$FloatRegister, $tmp$$FloatRegister);
-    __ vsra_h($dst$$FloatRegister, $src$$FloatRegister, $tmp$$FloatRegister);
+    __ vslti_bu(fscratch, $shift$$FloatRegister, 0x10);
+    __ vorn_v(fscratch, $shift$$FloatRegister, fscratch);
+    __ vsra_h($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14935,15 +14915,14 @@ instruct sra2L_imm(vecX dst, vecX src, immI shift) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct sra32B(vecY dst, vecY src, vecY shift, vecY tmp) %{
+instruct sra32B(vecY dst, vecY src, vecY shift) %{
   predicate(Matcher::vector_length(n) == 32);
   match(Set dst (RShiftVB src shift));
-  effect(TEMP tmp);
-  format %{ "xvsra    $dst, $src, $shift\t# TEMP($tmp) @sra32B" %}
+  format %{ "xvsra    $dst, $src, $shift\t# @sra32B" %}
   ins_encode %{
-    __ xvslti_bu($tmp$$FloatRegister, $shift$$FloatRegister, 0x8);
-    __ xvorn_v($tmp$$FloatRegister, $shift$$FloatRegister, $tmp$$FloatRegister);
-    __ xvsra_b($dst$$FloatRegister, $src$$FloatRegister, $tmp$$FloatRegister);
+    __ xvslti_bu(fscratch, $shift$$FloatRegister, 0x8);
+    __ xvorn_v(fscratch, $shift$$FloatRegister, fscratch);
+    __ xvsra_b($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14962,15 +14941,14 @@ instruct sra32B_imm(vecY dst, vecY src, immI shift) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct sra16S(vecY dst, vecY src, vecY shift, vecY tmp) %{
+instruct sra16S(vecY dst, vecY src, vecY shift) %{
   predicate(Matcher::vector_length(n) == 16);
   match(Set dst (RShiftVS src shift));
-  effect(TEMP tmp);
-  format %{ "xvsra    $dst, $src, $shift\t# TEMP($tmp) @sra16S" %}
+  format %{ "xvsra    $dst, $src, $shift\t# @sra16S" %}
   ins_encode %{
-    __ xvslti_bu($tmp$$FloatRegister, $shift$$FloatRegister, 0x10);
-    __ xvorn_v($tmp$$FloatRegister, $shift$$FloatRegister, $tmp$$FloatRegister);
-    __ xvsra_h($dst$$FloatRegister, $src$$FloatRegister, $tmp$$FloatRegister);
+    __ xvslti_bu(fscratch, $shift$$FloatRegister, 0x10);
+    __ xvorn_v(fscratch, $shift$$FloatRegister, fscratch);
+    __ xvsra_h($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -15113,14 +15091,13 @@ instruct rotr4L_imm(vecY dst, vecY src, immI shift) %{
 
 // ------------------------------ RotateLeftV ---------------------------------
 
-instruct rotl4I(vecX dst, vecX src, vecX shift, vecX tmp) %{
+instruct rotl4I(vecX dst, vecX src, vecX shift) %{
   predicate(Matcher::vector_length(n) == 4);
   match(Set dst (RotateLeftV src shift));
-  effect(TEMP tmp);
-  format %{ "vrotl    $dst, $src, $shift\t# TEMP($tmp) @rotl4I" %}
+  format %{ "vrotl    $dst, $src, $shift\t# @rotl4I" %}
   ins_encode %{
-    __ vneg_w($tmp$$FloatRegister, $shift$$FloatRegister);
-    __ vrotr_w($dst$$FloatRegister, $src$$FloatRegister, $tmp$$FloatRegister);
+    __ vneg_w(fscratch, $shift$$FloatRegister);
+    __ vrotr_w($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -15135,14 +15112,13 @@ instruct rotl4I_imm(vecX dst, vecX src, immI shift) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct rotl2L(vecX dst, vecX src, vecX shift, vecX tmp) %{
+instruct rotl2L(vecX dst, vecX src, vecX shift) %{
   predicate(Matcher::vector_length(n) == 2);
   match(Set dst (RotateLeftV src shift));
-  effect(TEMP tmp);
-  format %{ "vrotl    $dst, $src, $shift\t# TEMP($tmp) @rotl2L" %}
+  format %{ "vrotl    $dst, $src, $shift\t# @rotl2L" %}
   ins_encode %{
-    __ vneg_d($tmp$$FloatRegister, $shift$$FloatRegister);
-    __ vrotr_d($dst$$FloatRegister, $src$$FloatRegister, $tmp$$FloatRegister);
+    __ vneg_d(fscratch, $shift$$FloatRegister);
+    __ vrotr_d($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -15157,14 +15133,13 @@ instruct rotl2L_imm(vecX dst, vecX src, immI shift) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct rotl8I(vecY dst, vecY src, vecY shift, vecY tmp) %{
+instruct rotl8I(vecY dst, vecY src, vecY shift) %{
   predicate(Matcher::vector_length(n) == 8);
   match(Set dst (RotateLeftV src shift));
-  effect(TEMP tmp);
-  format %{ "xvrotl    $dst, $src, $shift\t# TEMP($tmp) @rotl8I" %}
+  format %{ "xvrotl    $dst, $src, $shift\t# @rotl8I" %}
   ins_encode %{
-    __ xvneg_w($tmp$$FloatRegister, $shift$$FloatRegister);
-    __ xvrotr_w($dst$$FloatRegister, $src$$FloatRegister, $tmp$$FloatRegister);
+    __ xvneg_w(fscratch, $shift$$FloatRegister);
+    __ xvrotr_w($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -15179,14 +15154,13 @@ instruct rotl8I_imm(vecY dst, vecY src, immI shift) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct rotl4L(vecY dst, vecY src, vecY shift, vecY tmp) %{
+instruct rotl4L(vecY dst, vecY src, vecY shift) %{
   predicate(Matcher::vector_length(n) == 4);
   match(Set dst (RotateLeftV src shift));
-  effect(TEMP tmp);
-  format %{ "xvrotl    $dst, $src, $shift\t# TEMP($tmp) @rotl4L" %}
+  format %{ "xvrotl    $dst, $src, $shift\t# @rotl4L" %}
   ins_encode %{
-    __ xvneg_d($tmp$$FloatRegister, $shift$$FloatRegister);
-    __ xvrotr_d($dst$$FloatRegister, $src$$FloatRegister, $tmp$$FloatRegister);
+    __ xvneg_d(fscratch, $shift$$FloatRegister);
+    __ xvrotr_d($dst$$FloatRegister, $src$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -16292,11 +16266,10 @@ instruct cvt4Lto4I(vecX dst, vecY src) %{
 instruct cvt4Lto4F(vecX dst, vecY src) %{
   predicate(Matcher::vector_length(n) == 4 && Matcher::vector_element_basic_type(n) == T_FLOAT);
   match(Set dst (VectorCastL2X src));
-  effect(TEMP_DEF dst);
   format %{ "vconvert    $dst, $src\t# @cvt4Lto4F" %}
   ins_encode %{
-    __ xvpermi_q($dst$$FloatRegister, $src$$FloatRegister, 0x01);
-    __ xvffint_s_l($dst$$FloatRegister, $dst$$FloatRegister, $src$$FloatRegister);
+    __ xvpermi_q(fscratch, $src$$FloatRegister, 0x01);
+    __ xvffint_s_l($dst$$FloatRegister, fscratch, $src$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -16323,15 +16296,15 @@ instruct cvt4Lto4D(vecY dst, vecY src) %{
 
 // ----------------------------- Vector Cast F2X ------------------------------
 
-instruct cvt8Fto8S(vecX dst, vecY src, vecY tmp) %{
+instruct cvt8Fto8S(vecX dst, vecY src) %{
   predicate(Matcher::vector_length(n) == 8 && Matcher::vector_element_basic_type(n) == T_SHORT);
   match(Set dst (VectorCastF2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "vconvert    $dst, $src\t# TEMP($tmp) @cvt8Fto8S" %}
+  effect(TEMP_DEF dst);
+  format %{ "vconvert    $dst, $src\t# @cvt8Fto8S" %}
   ins_encode %{
-    __ xvftintrz_w_s($tmp$$FloatRegister, $src$$FloatRegister);
-    __ xvpermi_q($dst$$FloatRegister, $tmp$$FloatRegister, 0x01);
-    __ vsrlni_h_w($dst$$FloatRegister, $tmp$$FloatRegister, 0);
+    __ xvftintrz_w_s(fscratch, $src$$FloatRegister);
+    __ xvpermi_q($dst$$FloatRegister, fscratch, 0x01);
+    __ vsrlni_h_w($dst$$FloatRegister, fscratch, 0);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -16547,26 +16520,24 @@ instruct insert2L(vecX dst, mRegL val, immIU1 idx) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct insert4F(vecX dst, regF val, immIU2 idx, mRegI tmp) %{
+instruct insert4F(vecX dst, regF val, immIU2 idx) %{
   predicate(Matcher::vector_length(n) == 4 && Matcher::vector_element_basic_type(n) == T_FLOAT);
   match(Set dst (VectorInsert (Binary dst val) idx));
-  effect(TEMP tmp);
-  format %{ "vinsert    $dst, $val, $idx\t# TEMP($tmp) @insert4F" %}
+  format %{ "vinsert    $dst, $val, $idx\t# @insert4F" %}
   ins_encode %{
-    __ vpickve2gr_w($tmp$$Register, $val$$FloatRegister, 0);
-    __ vinsgr2vr_w($dst$$FloatRegister, $tmp$$Register, $idx$$constant);
+    __ vpickve2gr_w(AT, $val$$FloatRegister, 0);
+    __ vinsgr2vr_w($dst$$FloatRegister, AT, $idx$$constant);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct insert2D(vecX dst, regD val, immIU1 idx, mRegI tmp) %{
+instruct insert2D(vecX dst, regD val, immIU1 idx) %{
   predicate(Matcher::vector_length(n) == 2 && Matcher::vector_element_basic_type(n) == T_DOUBLE);
   match(Set dst (VectorInsert (Binary dst val) idx));
-  effect(TEMP tmp);
-  format %{ "vinsert    $dst, $val, $idx\t# TEMP($tmp) @insert2D" %}
+  format %{ "vinsert    $dst, $val, $idx\t# @insert2D" %}
   ins_encode %{
-    __ vpickve2gr_d($tmp$$Register, $val$$FloatRegister, 0);
-    __ vinsgr2vr_d($dst$$FloatRegister, $tmp$$Register, $idx$$constant);
+    __ vpickve2gr_d(AT, $val$$FloatRegister, 0);
+    __ vinsgr2vr_d($dst$$FloatRegister, AT, $idx$$constant);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -16722,15 +16693,14 @@ instruct storemask32B(vecY dst, vecY src, immI_1 size) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct storemask16S(vecX dst, vecY src, immI_2 size, vecX tmp) %{
+instruct storemask16S(vecX dst, vecY src, immI_2 size) %{
   predicate(Matcher::vector_length(n) == 16);
   match(Set dst (VectorStoreMask src size));
-  effect(TEMP tmp);
-  format %{ "vstoremask    $dst, $src\t# TEMP($tmp) @storemask16S" %}
+  format %{ "vstoremask    $dst, $src\t# @storemask16S" %}
   ins_encode %{
-    __ xvpermi_d($tmp$$FloatRegister, $src$$FloatRegister, 0b00001110);
-    __ vsrlni_b_h($tmp$$FloatRegister, $src$$FloatRegister, 0);
-    __ vneg_b($dst$$FloatRegister, $tmp$$FloatRegister);
+    __ xvpermi_d(fscratch, $src$$FloatRegister, 0b00001110);
+    __ vsrlni_b_h(fscratch, $src$$FloatRegister, 0);
+    __ vneg_b($dst$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -16947,45 +16917,43 @@ instruct CMoveI_alltrue_in_maskV32(mRegI dst, mRegIorL2I src1, mRegIorL2I src2, 
 
 // ----------------------------- VectorMaskTrueCount ----------------------------
 
-instruct vmask_truecount16B(mRegI dst, vecX src, vecX tmp) %{
+instruct vmask_truecount16B(mRegI dst, vecX src) %{
   predicate(Matcher::vector_element_basic_type(n->in(1)) == T_BOOLEAN);
   match(Set dst (VectorMaskTrueCount src));
-  effect(TEMP tmp);
-  format %{ "vmask_truecount   $dst, $src\t# TEMP($tmp) @vmask_truecount16B" %}
+  format %{ "vmask_truecount   $dst, $src\t# @vmask_truecount16B" %}
   ins_encode %{
     // Input "src" is a vector of boolean represented as bytes with
     // 0x00/0x01 as element values.
-    __ vpcnt_d($tmp$$FloatRegister, $src$$FloatRegister);
-    __ vhaddw_q_d($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
-    __ vpickve2gr_b($dst$$Register, $tmp$$FloatRegister, 0);
+    __ vpcnt_d(fscratch, $src$$FloatRegister);
+    __ vhaddw_q_d(fscratch, fscratch, fscratch);
+    __ vpickve2gr_b($dst$$Register, fscratch, 0);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vmask_truecount32B(mRegI dst, vecY src, vecY tmp1, vecY tmp2) %{
+instruct vmask_truecount32B(mRegI dst, vecY src, vecY tmp) %{
   predicate(Matcher::vector_element_basic_type(n->in(1)) == T_BOOLEAN);
   match(Set dst (VectorMaskTrueCount src));
-  effect(TEMP tmp1, TEMP tmp2);
-  format %{ "vmask_truecount   $dst, $src\t# TEMP($tmp1, $tmp2) @vmask_truecount32B" %}
+  effect(TEMP tmp);
+  format %{ "vmask_truecount   $dst, $src\t# TEMP($tmp) @vmask_truecount32B" %}
   ins_encode %{
     // Input "src" is a vector of boolean represented as bytes with
     // 0x00/0x01 as element values.
-    __ xvpcnt_d($tmp1$$FloatRegister, $src$$FloatRegister);
-    __ xvhaddw_q_d($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
-    __ xvpermi_d($tmp2$$FloatRegister, $tmp1$$FloatRegister, 0b00001110);
-    __ vadd_b($tmp1$$FloatRegister, $tmp1$$FloatRegister, $tmp2$$FloatRegister);
-    __ vpickve2gr_b($dst$$Register, $tmp1$$FloatRegister, 0);
+    __ xvpcnt_d($tmp$$FloatRegister, $src$$FloatRegister);
+    __ xvhaddw_q_d($tmp$$FloatRegister, $tmp$$FloatRegister, $tmp$$FloatRegister);
+    __ xvpermi_d(fscratch, $tmp$$FloatRegister, 0b00001110);
+    __ vadd_b($tmp$$FloatRegister, $tmp$$FloatRegister, fscratch);
+    __ vpickve2gr_b($dst$$Register, $tmp$$FloatRegister, 0);
   %}
   ins_pipe( pipe_slow );
 %}
 
 // ----------------------------- VectorMaskFirstTrue ----------------------------
 
-instruct vmask_firsttrue16B(mRegI dst, vecX src, mRegI tmp) %{
+instruct vmask_firsttrue16B(mRegI dst, vecX src) %{
   predicate(Matcher::vector_element_basic_type(n->in(1)) == T_BOOLEAN);
   match(Set dst (VectorMaskFirstTrue src));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "vmask_firsttrue    $dst, $src\t# TEMP($tmp) @vmask_firsttrue16B" %}
+  format %{ "vmask_firsttrue    $dst, $src\t# @vmask_firsttrue16B" %}
   ins_encode %{
     // Returns the index of the first active lane of the
     // vector mask, or 16 (VLENGTH) if no lane is active.
@@ -16997,27 +16965,26 @@ instruct vmask_firsttrue16B(mRegI dst, vecX src, mRegI tmp) %{
 
     // Try to compute the result from lower 64 bits.
     __ vpickve2gr_d($dst$$Register, $src$$FloatRegister, 0);
-    __ li($tmp$$Register, (long)0);
+    __ li(AT, (long)0);
     __ bnez($dst$$Register, FIRST_TRUE_INDEX);
 
     // Compute the result from the higher 64 bits.
     __ vpickve2gr_d($dst$$Register, $src$$FloatRegister, 1);
-    __ li($tmp$$Register, (long)8);
+    __ li(AT, (long)8);
 
     // Count the Trailing zero bytes.
     __ bind(FIRST_TRUE_INDEX);
     __ ctz_d($dst$$Register, $dst$$Register);
     __ srli_w($dst$$Register, $dst$$Register, 3);
-    __ add_w($dst$$Register, $tmp$$Register, $dst$$Register);
+    __ add_w($dst$$Register, AT, $dst$$Register);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vmask_firsttrue32B(mRegI dst, vecY src, mRegI tmp) %{
+instruct vmask_firsttrue32B(mRegI dst, vecY src) %{
   predicate(Matcher::vector_element_basic_type(n->in(1)) == T_BOOLEAN);
   match(Set dst (VectorMaskFirstTrue src));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "vmask_firsttrue    $dst, $src\t# TEMP($tmp) @vmask_firsttrue32B" %}
+  format %{ "vmask_firsttrue    $dst, $src\t# @vmask_firsttrue32B" %}
   ins_encode %{
     // Returns the index of the first active lane of the
     // vector mask, or 32 (VLENGTH) if no lane is active.
@@ -17029,39 +16996,38 @@ instruct vmask_firsttrue32B(mRegI dst, vecY src, mRegI tmp) %{
 
     // Try to compute the result from lower 64 bits.
     __ xvpickve2gr_d($dst$$Register, $src$$FloatRegister, 0);
-    __ li($tmp$$Register, (long)0);
+    __ li(AT, (long)0);
     __ bnez($dst$$Register, FIRST_TRUE_INDEX);
 
     // Compute the result from the mid-lower 64 bits.
     __ xvpickve2gr_d($dst$$Register, $src$$FloatRegister, 1);
-    __ li($tmp$$Register, (long)8);
+    __ li(AT, (long)8);
     __ bnez($dst$$Register, FIRST_TRUE_INDEX);
 
     // Compute the result from the mid-higher 64 bits.
     __ xvpickve2gr_d($dst$$Register, $src$$FloatRegister, 2);
-    __ li($tmp$$Register, (long)16);
+    __ li(AT, (long)16);
     __ bnez($dst$$Register, FIRST_TRUE_INDEX);
 
     // Compute the result from the higher 64 bits.
     __ xvpickve2gr_d($dst$$Register, $src$$FloatRegister, 3);
-    __ li($tmp$$Register, (long)24);
+    __ li(AT, (long)24);
 
     // Count the Trailing zero bytes.
     __ bind(FIRST_TRUE_INDEX);
     __ ctz_d($dst$$Register, $dst$$Register);
     __ srli_w($dst$$Register, $dst$$Register, 3);
-    __ add_w($dst$$Register, $tmp$$Register, $dst$$Register);
+    __ add_w($dst$$Register, AT, $dst$$Register);
   %}
   ins_pipe( pipe_slow );
 %}
 
 // ----------------------------- VectorMaskLastTrue ----------------------------
 
-instruct vmask_lasttrue16B(mRegI dst, vecX src, mRegI tmp) %{
+instruct vmask_lasttrue16B(mRegI dst, vecX src) %{
   predicate(Matcher::vector_element_basic_type(n->in(1)) == T_BOOLEAN);
   match(Set dst (VectorMaskLastTrue src));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "vmask_lasttrue    $dst, $src\t# TEMP($tmp) @vmask_lasttrue16B" %}
+  format %{ "vmask_lasttrue    $dst, $src\t# @vmask_lasttrue16B" %}
   ins_encode %{
     // Returns the index of the last active lane of the
     // vector mask, or -1 if no lane is active.
@@ -17073,27 +17039,26 @@ instruct vmask_lasttrue16B(mRegI dst, vecX src, mRegI tmp) %{
 
     // Try to compute the result from higher 64 bits.
     __ vpickve2gr_d($dst$$Register, $src$$FloatRegister, 1);
-    __ li($tmp$$Register, (long)16 - 1);
+    __ li(AT, (long)16 - 1);
     __ bnez($dst$$Register, FIRST_TRUE_INDEX);
 
     // Compute the result from the lower 64 bits.
     __ vpickve2gr_d($dst$$Register, $src$$FloatRegister, 0);
-    __ li($tmp$$Register, (long)8 - 1);
+    __ li(AT, (long)8 - 1);
 
     // Count the Trailing zero bytes.
     __ bind(FIRST_TRUE_INDEX);
     __ clz_d($dst$$Register, $dst$$Register);
     __ srli_w($dst$$Register, $dst$$Register, 3);
-    __ sub_w($dst$$Register, $tmp$$Register, $dst$$Register);
+    __ sub_w($dst$$Register, AT, $dst$$Register);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vmask_lasttrue32B(mRegI dst, vecY src, mRegI tmp) %{
+instruct vmask_lasttrue32B(mRegI dst, vecY src) %{
   predicate(Matcher::vector_element_basic_type(n->in(1)) == T_BOOLEAN);
   match(Set dst (VectorMaskLastTrue src));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "vmask_lasttrue    $dst, $src\t# TEMP($tmp) @vmask_lasttrue32B" %}
+  format %{ "vmask_lasttrue    $dst, $src\t# @vmask_lasttrue32B" %}
   ins_encode %{
     // Returns the index of the last active lane of the
     // vector mask, or -1 if no lane is active.
@@ -17105,28 +17070,28 @@ instruct vmask_lasttrue32B(mRegI dst, vecY src, mRegI tmp) %{
 
     // Try to compute the result from higher 64 bits.
     __ xvpickve2gr_d($dst$$Register, $src$$FloatRegister, 3);
-    __ li($tmp$$Register, (long)32 - 1);
+    __ li(AT, (long)32 - 1);
     __ bnez($dst$$Register, FIRST_TRUE_INDEX);
 
     // Compute the result from the mid-higher 64 bits.
     __ xvpickve2gr_d($dst$$Register, $src$$FloatRegister, 2);
-    __ li($tmp$$Register, (long)24 - 1);
+    __ li(AT, (long)24 - 1);
     __ bnez($dst$$Register, FIRST_TRUE_INDEX);
 
     // Compute the result from the mid-lower 64 bits.
     __ xvpickve2gr_d($dst$$Register, $src$$FloatRegister, 1);
-    __ li($tmp$$Register, (long)16 - 1);
+    __ li(AT, (long)16 - 1);
     __ bnez($dst$$Register, FIRST_TRUE_INDEX);
 
     // Compute the result from the lower 64 bits.
     __ xvpickve2gr_d($dst$$Register, $src$$FloatRegister, 0);
-    __ li($tmp$$Register, (long)8 - 1);
+    __ li(AT, (long)8 - 1);
 
     // Count the Trailing zero bytes.
     __ bind(FIRST_TRUE_INDEX);
     __ clz_d($dst$$Register, $dst$$Register);
     __ srli_w($dst$$Register, $dst$$Register, 3);
-    __ sub_w($dst$$Register, $tmp$$Register, $dst$$Register);
+    __ sub_w($dst$$Register, AT, $dst$$Register);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -17162,12 +17127,11 @@ instruct cmpV32(vecY dst, vecY src1, vecY src2, immI cond)
 instruct cmove4F(vecX dst, vecX src1, vecX src2, immI cond, cmpOp copnd)
 %{
   match(Set dst (CMoveVF (Binary copnd cond) (Binary src1 src2)));
-  effect(TEMP_DEF dst);
   format %{ "vcmove_$copnd    $dst, $src1, $src2, $cond\t# @cmove4F" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
-    __ vector_compare($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, bt, $cond$$constant, 16);
-    __ vbitsel_v($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, $dst$$FloatRegister);
+    __ vector_compare(fscratch, $src1$$FloatRegister, $src2$$FloatRegister, bt, $cond$$constant, 16);
+    __ vbitsel_v($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -17175,12 +17139,11 @@ instruct cmove4F(vecX dst, vecX src1, vecX src2, immI cond, cmpOp copnd)
 instruct cmove2D(vecX dst, vecX src1, vecX src2, immI cond, cmpOp copnd)
 %{
   match(Set dst (CMoveVD (Binary copnd cond) (Binary src1 src2)));
-  effect(TEMP_DEF dst);
   format %{ "vcmove_$copnd    $dst, $src1, $src2, $cond\t# @cmove2D" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
-    __ vector_compare($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, bt, $cond$$constant, 16);
-    __ vbitsel_v($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, $dst$$FloatRegister);
+    __ vector_compare(fscratch, $src1$$FloatRegister, $src2$$FloatRegister, bt, $cond$$constant, 16);
+    __ vbitsel_v($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -17188,12 +17151,11 @@ instruct cmove2D(vecX dst, vecX src1, vecX src2, immI cond, cmpOp copnd)
 instruct cmove8F(vecY dst, vecY src1, vecY src2, immI cond, cmpOp copnd)
 %{
   match(Set dst (CMoveVF (Binary copnd cond) (Binary src1 src2)));
-  effect(TEMP_DEF dst);
   format %{ "vcmove_$copnd    $dst, $src1, $src2, $cond\t# @cmove8F" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
-    __ vector_compare($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, bt, $cond$$constant, 32);
-    __ xvbitsel_v($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, $dst$$FloatRegister);
+    __ vector_compare(fscratch, $src1$$FloatRegister, $src2$$FloatRegister, bt, $cond$$constant, 32);
+    __ xvbitsel_v($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -17201,12 +17163,11 @@ instruct cmove8F(vecY dst, vecY src1, vecY src2, immI cond, cmpOp copnd)
 instruct cmove4D(vecY dst, vecY src1, vecY src2, immI cond, cmpOp copnd)
 %{
   match(Set dst (CMoveVD (Binary copnd cond) (Binary src1 src2)));
-  effect(TEMP_DEF dst);
   format %{ "vcmove_$copnd    $dst, $src1, $src2, $cond\t# @cmove4D" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
-    __ vector_compare($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, bt, $cond$$constant, 32);
-    __ xvbitsel_v($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, $dst$$FloatRegister);
+    __ vector_compare(fscratch, $src1$$FloatRegister, $src2$$FloatRegister, bt, $cond$$constant, 32);
+    __ xvbitsel_v($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, fscratch);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -17291,28 +17252,28 @@ instruct rearrange16B(vecX dst, vecX src, vecX shuffle) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct rearrange32B(vecY dst, vecY src, vecY shuffle, vecY tmp) %{
+instruct rearrange32B(vecY dst, vecY src, vecY shuffle) %{
   predicate(Matcher::vector_length(n) == 32 && Matcher::vector_element_basic_type(n) == T_BYTE);
   match(Set dst (VectorRearrange src shuffle));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "xvrearrange    $dst, $src, $shuffle\t# TEMP($tmp) @rearrange32B" %}
+  effect(TEMP_DEF dst);
+  format %{ "xvrearrange    $dst, $src, $shuffle\t# @rearrange32B" %}
   ins_encode %{
-    __ xvpermi_q($tmp$$FloatRegister, $src$$FloatRegister, 0x00);
+    __ xvpermi_q(fscratch, $src$$FloatRegister, 0x00);
     __ xvpermi_q($dst$$FloatRegister, $src$$FloatRegister, 0x11);
-    __ xvshuf_b($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister, $shuffle$$FloatRegister);
+    __ xvshuf_b($dst$$FloatRegister, $dst$$FloatRegister, fscratch, $shuffle$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct rearrange16S(vecY dst, vecY src, vecY tmp1, vecY tmp2) %{
+instruct rearrange16S(vecY dst, vecY src, vecY tmp) %{
   predicate(Matcher::vector_length(n) == 16 && Matcher::vector_element_basic_type(n) == T_SHORT);
   match(Set dst (VectorRearrange src dst));
-  effect(TEMP tmp1, TEMP tmp2);
-  format %{ "xvrearrange    $dst, $src, $dst\t# TEMP($tmp1, $tmp2) @rearrange16S" %}
+  effect(TEMP tmp);
+  format %{ "xvrearrange    $dst, $src, $dst\t# TEMP($tmp) @rearrange16S" %}
   ins_encode %{
-    __ xvpermi_q($tmp1$$FloatRegister, $src$$FloatRegister, 0x00);
-    __ xvpermi_q($tmp2$$FloatRegister, $src$$FloatRegister, 0x11);
-    __ xvshuf_h($dst$$FloatRegister, $tmp2$$FloatRegister, $tmp1$$FloatRegister);
+    __ xvpermi_q($tmp$$FloatRegister, $src$$FloatRegister, 0x00);
+    __ xvpermi_q(fscratch, $src$$FloatRegister, 0x11);
+    __ xvshuf_h($dst$$FloatRegister, fscratch, $tmp$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}

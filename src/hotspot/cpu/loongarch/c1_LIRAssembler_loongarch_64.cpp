@@ -1511,12 +1511,16 @@ void LIR_Assembler::emit_opTypeCheck(LIR_OpTypeCheck* op) {
 
 void LIR_Assembler::casw(Register addr, Register newval, Register cmpval, Register result, bool sign) {
   __ cmpxchg32(Address(addr, 0), cmpval, newval, result, sign,
-               /* retold */ false, /* barrier */ true, /* weak */ false, /* exchange */ false);
+               /* retold */ false, /* acquire */ true, /* weak */ false, /* exchange */ false);
+  // LA SC equals store-conditional dbar, so no need AnyAny after CAS.
+  //__ membar(__ AnyAny);
 }
 
 void LIR_Assembler::casl(Register addr, Register newval, Register cmpval, Register result) {
   __ cmpxchg(Address(addr, 0), cmpval, newval, result,
-             /* retold */ false, /* barrier */ true, /* weak */ false, /* exchange */ false);
+             /* retold */ false, /* acquire */ true, /* weak */ false, /* exchange */ false);
+  // LA SC equals store-conditional dbar, so no need AnyAny after CAS.
+  //__ membar(__ AnyAny);
 }
 
 void LIR_Assembler::emit_compare_and_swap(LIR_OpCompareAndSwap* op) {

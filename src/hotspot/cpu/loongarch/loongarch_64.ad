@@ -11732,7 +11732,7 @@ instruct compareAndSwapI(mRegI res, mRegP mem_ptr, mRegI oldval, mRegI newval) %
     Register res    = $res$$Register;
     Address  addr($mem_ptr$$Register, 0);
 
-    __ cmpxchg32(addr, oldval, newval, res, true, false, true);
+    __ cmpxchg32(addr, oldval, newval, res, true, false, true /* acquire */);
   %}
   ins_pipe( long_memory_op );
 %}
@@ -11749,7 +11749,7 @@ instruct compareAndSwapL(mRegI res, mRegP mem_ptr, mRegL oldval, mRegL newval) %
     Register res    = $res$$Register;
     Address  addr($mem_ptr$$Register, 0);
 
-    __ cmpxchg(addr, oldval, newval, res, false, true);
+    __ cmpxchg(addr, oldval, newval, res, false, true /* acquire */);
   %}
   ins_pipe( long_memory_op );
 %}
@@ -11766,7 +11766,7 @@ instruct compareAndSwapP(mRegI res, mRegP mem_ptr, mRegP oldval, mRegP newval) %
     Register res    = $res$$Register;
     Address  addr($mem_ptr$$Register, 0);
 
-    __ cmpxchg(addr, oldval, newval, res, false, true);
+    __ cmpxchg(addr, oldval, newval, res, false, true /* acquire */);
   %}
   ins_pipe( long_memory_op );
 %}
@@ -11782,7 +11782,7 @@ instruct compareAndSwapN(mRegI res, mRegP mem_ptr, mRegN oldval, mRegN newval) %
     Register res    = $res$$Register;
     Address  addr($mem_ptr$$Register, 0);
 
-    __ cmpxchg32(addr, oldval, newval, res, false, false, true);
+    __ cmpxchg32(addr, oldval, newval, res, false, false, true /* acquire */);
   %}
   ins_pipe( long_memory_op );
 %}
@@ -11919,7 +11919,7 @@ instruct compareAndExchangeI(mRegI res, indirect mem, mRegI oldval, mRegI newval
   ins_cost(2 * MEMORY_REF_COST);
   effect(TEMP_DEF res);
   format %{
-    "cmpxchg32 $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @compareAndExchangeI"
+    "CMPXCHG $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @compareAndExchangeI"
   %}
   ins_encode %{
     Register newval = $newval$$Register;
@@ -11938,7 +11938,7 @@ instruct compareAndExchangeL(mRegL res, indirect mem, mRegL oldval, mRegL newval
   ins_cost(2 * MEMORY_REF_COST);
   effect(TEMP_DEF res);
   format %{
-    "cmpxchg $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @compareAndExchangeL"
+    "CMPXCHG $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @compareAndExchangeL"
   %}
   ins_encode %{
     Register newval = $newval$$Register;
@@ -11957,7 +11957,7 @@ instruct compareAndExchangeP(mRegP res, indirect mem, mRegP oldval, mRegP newval
   ins_cost(2 * MEMORY_REF_COST);
   effect(TEMP_DEF res);
   format %{
-    "cmpxchg $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @compareAndExchangeP"
+    "CMPXCHG $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @compareAndExchangeP"
   %}
   ins_encode %{
     Register newval = $newval$$Register;
@@ -11976,14 +11976,14 @@ instruct compareAndExchangeN(mRegN res, indirect mem, mRegN oldval, mRegN newval
   ins_cost(2 * MEMORY_REF_COST);
   effect(TEMP_DEF res);
   format %{
-    "cmpxchg32 $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @compareAndExchangeN"
+    "CMPXCHG $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @compareAndExchangeN"
   %}
   ins_encode %{
     Register newval = $newval$$Register;
     Register oldval = $oldval$$Register;
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
-    __ cmpxchg32(addr, oldval, newval, res, false /* sign */, false /* retold */, true /* barrier */, false /* weak */, true /* exchange */);
+    __ cmpxchg32(addr, oldval, newval, res, false /* sign */, false /* retold */, true /* acquire */, false /* weak */, true /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -11994,14 +11994,15 @@ instruct weakCompareAndSwapI(mRegI res, indirect mem, mRegI oldval, mRegI newval
   effect(TEMP_DEF res);
   ins_cost(2 * MEMORY_REF_COST);
   format %{
-    "cmpxchg32 $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapI"
+    "CMPXCHG $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapI"
   %}
   ins_encode %{
     Register newval = $newval$$Register;
     Register oldval = $oldval$$Register;
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
-    __ cmpxchg32(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
+
+    __ cmpxchg32(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* acquire */, true /* weak */, false /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -12012,7 +12013,7 @@ instruct weakCompareAndSwapL(mRegI res, indirect mem, mRegL oldval, mRegL newval
   effect(TEMP_DEF res);
   ins_cost(2 * MEMORY_REF_COST);
   format %{
-    "cmpxchg $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @WeakCompareAndSwapL"
+    "CMPXCHG $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @WeakCompareAndSwapL"
   %}
   ins_encode %{
     Register newval = $newval$$Register;
@@ -12020,7 +12021,7 @@ instruct weakCompareAndSwapL(mRegI res, indirect mem, mRegL oldval, mRegL newval
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
 
-    __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
+    __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* acquire */, true /* weak */, false /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -12031,7 +12032,7 @@ instruct weakCompareAndSwapP(mRegI res, indirect mem, mRegP oldval, mRegP newval
   effect(TEMP_DEF res);
   ins_cost(MEMORY_REF_COST);
   format %{
-    "cmpxchg $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapP"
+    "CMPXCHG $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapP"
   %}
   ins_encode %{
     Register newval = $newval$$Register;
@@ -12039,7 +12040,7 @@ instruct weakCompareAndSwapP(mRegI res, indirect mem, mRegP oldval, mRegP newval
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
 
-  __ cmpxchg(addr, oldval, newval, res, false /* retold */, false /* barrier */, true /* weak */, false /* exchange */);
+  __ cmpxchg(addr, oldval, newval, res, false /* retold */, false /* acquire */, true /* weak */, false /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -12050,7 +12051,7 @@ instruct weakCompareAndSwapP_acq(mRegI res, indirect mem, mRegP oldval, mRegP ne
   effect(TEMP_DEF res);
   ins_cost(2 * MEMORY_REF_COST);
   format %{
-    "cmpxchg $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapP"
+    "CMPXCHG $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapP"
   %}
   ins_encode %{
     Register newval = $newval$$Register;
@@ -12058,7 +12059,7 @@ instruct weakCompareAndSwapP_acq(mRegI res, indirect mem, mRegP oldval, mRegP ne
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
 
-    __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
+    __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* acquire */, true /* weak */, false /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -12069,7 +12070,7 @@ instruct weakCompareAndSwapN(mRegI res, indirect mem, mRegN oldval, mRegN newval
   effect(TEMP_DEF res);
   ins_cost(2 * MEMORY_REF_COST);
   format %{
-    "cmpxchg32 $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapN"
+    "CMPXCHG $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapN"
   %}
   ins_encode %{
     Register newval = $newval$$Register;
@@ -12077,7 +12078,7 @@ instruct weakCompareAndSwapN(mRegI res, indirect mem, mRegN oldval, mRegN newval
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
 
-    __ cmpxchg32(addr, oldval, newval, res, false /* sign */, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
+    __ cmpxchg32(addr, oldval, newval, res, false /* sign */, false /* retold */, true /* acquire */, true /* weak */, false /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}

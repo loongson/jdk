@@ -72,7 +72,7 @@ void C2_MacroAssembler::fast_lock_c2(Register oop, Register box, Register flag,
     st_d(tmp, box, BasicLock::displaced_header_offset_in_bytes());
 
     // If cmpxchg is succ, then flag = 1
-    cmpxchg(Address(oop, 0), tmp, box, flag, true, false);
+    cmpxchg(Address(oop, 0), tmp, box, flag, true, true /* acquire */);
     bnez(flag, cont);
 
     // If the compare-and-exchange succeeded, then we found an unlocked
@@ -106,7 +106,7 @@ void C2_MacroAssembler::fast_lock_c2(Register oop, Register box, Register flag,
   // Try to CAS m->owner from null to current thread.
   move(AT, R0);
   addi_d(tmp, disp_hdr, in_bytes(ObjectMonitor::owner_offset()) - markWord::monitor_value);
-  cmpxchg(Address(tmp, 0), AT, TREG, flag, true, false);
+  cmpxchg(Address(tmp, 0), AT, TREG, flag, true, true /* acquire */);
   if (LockingMode != LM_LIGHTWEIGHT) {
     // Store a non-null value into the box to avoid looking like a re-entrant
     // lock. The fast-path monitor unlock code checks for
@@ -166,7 +166,7 @@ void C2_MacroAssembler::fast_unlock_c2(Register oop, Register box, Register flag
     // Check if it is still a light weight lock, this is true if we
     // see the stack address of the basicLock in the markWord of the
     // object.
-    cmpxchg(Address(oop, 0), box, disp_hdr, flag, false, false);
+    cmpxchg(Address(oop, 0), box, disp_hdr, flag, false, false /* acquire */);
     b(cont);
   } else {
     assert(LockingMode == LM_LIGHTWEIGHT, "must be");

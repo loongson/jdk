@@ -21,6 +21,12 @@
  * questions.
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2023, These
+ * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 /**
  * @test
  * @bug 8283894
@@ -31,7 +37,8 @@
  *            (vm.cpu.features ~= ".*bmi2.*" & vm.cpu.features ~= ".*bmi1.*" &
  *             vm.cpu.features ~= ".*sse2.*")) |
  *            ((vm.opt.UseSVE == "null" | vm.opt.UseSVE > 1) &
- *             os.arch=="aarch64" & vm.cpu.features ~= ".*svebitperm.*"))
+ *             os.arch=="aarch64" & vm.cpu.features ~= ".*svebitperm.*") |
+ *             os.arch=="loongarch64")
  * @library /test/lib /
  * @run driver compiler.intrinsics.TestBitShuffleOpers
  */

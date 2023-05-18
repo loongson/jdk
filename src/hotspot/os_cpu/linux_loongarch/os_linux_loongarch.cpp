@@ -357,59 +357,56 @@ size_t os::Posix::default_stack_size(os::ThreadType thr_type) {
 
 /////////////////////////////////////////////////////////////////////////////
 // helper functions for fatal error handler
-void os::print_register_info(outputStream *st, const void *context) {
-  if (context == nullptr) return;
+void os::print_register_info(outputStream *st, const void *context, int& continuation) {
+  const int register_count = 32;
+  int n = continuation;
+  assert(n >= 0 && n <= register_count, "Invalid continuation value");
+  if (context == nullptr || n == register_count) {
+    return;
+  }
 
-  ucontext_t *uc = (ucontext_t*)context;
-
-  st->print_cr("Register to memory mapping:");
-  st->cr();
-  // this is horrendously verbose but the layout of the registers in the
-  //   // context does not match how we defined our abstract Register set, so
-  //     // we can't just iterate through the gregs area
-  //
-  //       // this is only for the "general purpose" registers
-  st->print("ZERO=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[0]);
-  st->print("RA=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[1]);
-  st->print("TP=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[2]);
-  st->print("SP=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[3]);
-  st->cr();
-  st->print("A0=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[4]);
-  st->print("A1=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[5]);
-  st->print("A2=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[6]);
-  st->print("A3=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[7]);
-  st->cr();
-  st->print("A4=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[8]);
-  st->print("A5=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[9]);
-  st->print("A6=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[10]);
-  st->print("A7=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[11]);
-  st->cr();
-  st->print("T0=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[12]);
-  st->print("T1=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[13]);
-  st->print("T2=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[14]);
-  st->print("T3=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[15]);
-  st->cr();
-  st->print("T4=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[16]);
-  st->print("T5=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[17]);
-  st->print("T6=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[18]);
-  st->print("T7=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[19]);
-  st->cr();
-  st->print("T8=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[20]);
-  st->print("RX=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[21]);
-  st->print("FP=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[22]);
-  st->print("S0=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[23]);
-  st->cr();
-  st->print("S1=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[24]);
-  st->print("S2=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[25]);
-  st->print("S3=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[26]);
-  st->print("S4=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[27]);
-  st->cr();
-  st->print("S5=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[28]);
-  st->print("S6=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[29]);
-  st->print("S7=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[30]);
-  st->print("S8=" ); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[31]);
-  st->cr();
-
+  const ucontext_t *uc = (const ucontext_t*)context;
+  while (n < register_count) {
+    // Update continuation with next index before printing location
+    continuation = n + 1;
+# define CASE_PRINT_REG(n, str) case n: st->print(str); print_location(st, (intptr_t)uc->uc_mcontext.__gregs[n]);
+    switch (n) {
+      CASE_PRINT_REG( 0, "ZERO="); break;
+      CASE_PRINT_REG( 1, "RA="); break;
+      CASE_PRINT_REG( 2, "TP="); break;
+      CASE_PRINT_REG( 3, "SP="); break;
+      CASE_PRINT_REG( 4, "A0="); break;
+      CASE_PRINT_REG( 5, "A1="); break;
+      CASE_PRINT_REG( 6, "A2="); break;
+      CASE_PRINT_REG( 7, "A3="); break;
+      CASE_PRINT_REG( 8, "A4="); break;
+      CASE_PRINT_REG( 9, "A5="); break;
+      CASE_PRINT_REG(10, "A6="); break;
+      CASE_PRINT_REG(11, "A7="); break;
+      CASE_PRINT_REG(12, "T0="); break;
+      CASE_PRINT_REG(13, "T1="); break;
+      CASE_PRINT_REG(14, "T2="); break;
+      CASE_PRINT_REG(15, "T3="); break;
+      CASE_PRINT_REG(16, "T4="); break;
+      CASE_PRINT_REG(17, "T5="); break;
+      CASE_PRINT_REG(18, "T6="); break;
+      CASE_PRINT_REG(19, "T7="); break;
+      CASE_PRINT_REG(20, "T8="); break;
+      CASE_PRINT_REG(21, "RX="); break;
+      CASE_PRINT_REG(22, "FP="); break;
+      CASE_PRINT_REG(23, "S0="); break;
+      CASE_PRINT_REG(24, "S1="); break;
+      CASE_PRINT_REG(25, "S2="); break;
+      CASE_PRINT_REG(26, "S3="); break;
+      CASE_PRINT_REG(27, "S4="); break;
+      CASE_PRINT_REG(28, "S5="); break;
+      CASE_PRINT_REG(29, "S6="); break;
+      CASE_PRINT_REG(30, "S7="); break;
+      CASE_PRINT_REG(31, "S8="); break;
+    }
+# undef CASE_PRINT_REG
+    ++n;
+  }
 }
 
 void os::print_context(outputStream *st, const void *context) {

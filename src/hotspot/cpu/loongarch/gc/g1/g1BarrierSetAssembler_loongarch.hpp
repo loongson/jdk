@@ -43,7 +43,8 @@ class G1BarrierSetAssembler: public ModRefBarrierSetAssembler {
                             Register obj,
                             Register pre_val,
                             Register thread,
-                            Register tmp,
+                            Register tmp1,
+                            Register tmp2,
                             bool tosca_live,
                             bool expand_call);
 
@@ -51,7 +52,7 @@ class G1BarrierSetAssembler: public ModRefBarrierSetAssembler {
                              Register store_addr,
                              Register new_val,
                              Register thread,
-                             Register tmp,
+                             Register tmp1,
                              Register tmp2);
 
   virtual void oop_store_at(MacroAssembler* masm, DecoratorSet decorators, BasicType type,
@@ -65,7 +66,7 @@ class G1BarrierSetAssembler: public ModRefBarrierSetAssembler {
   void generate_c1_post_barrier_runtime_stub(StubAssembler* sasm);
 
   virtual void load_at(MacroAssembler* masm, DecoratorSet decorators, BasicType type,
-                       Register dst, Address src, Register tmp1, Register tmp_thread);
+                       Register dst, Address src, Register tmp1, Register tmp2);
 };
 
 #endif // CPU_LOONGARCH_GC_G1_G1BARRIERSETASSEMBLER_LOONGARCH_HPP

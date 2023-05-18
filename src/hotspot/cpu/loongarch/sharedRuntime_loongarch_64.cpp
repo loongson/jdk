@@ -1957,7 +1957,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
   // Unpack oop result, e.g. JNIHandles::resolve value.
   if (is_reference_type(ret_type)) {
-    __ resolve_jobject(V0, TREG, T4);
+    __ resolve_jobject(V0, SCR2, SCR1);
   }
 
   if (CheckJNICalls) {

@@ -108,14 +108,14 @@ static void do_oop_store(InterpreterMacroAssembler* _masm,
                          Register val,
                          DecoratorSet decorators = 0) {
   assert(val == noreg || val == V0, "parameter is just for looks");
-  __ store_heap_oop(dst, val, T4, T1, T3, decorators);
+  __ store_heap_oop(dst, val, T8, T1, T3, decorators);
 }
 
 static void do_oop_load(InterpreterMacroAssembler* _masm,
                         Address src,
                         Register dst,
                         DecoratorSet decorators = 0) {
-  __ load_heap_oop(dst, src, T4, T1, decorators);
+  __ load_heap_oop(dst, src, T4, T8, decorators);
 }
 
 // bytecode folding
@@ -476,7 +476,7 @@ void TemplateTable::fast_aldc(LdcType type) {
     Label notNull;
     __ li(rarg, (long)Universe::the_null_sentinel_addr());
     __ ld_d(tmp, Address(rarg));
-    __ resolve_oop_handle(tmp, T4);
+    __ resolve_oop_handle(tmp, SCR2, SCR1);
     __ bne(tmp, result, notNull);
     __ xorr(result, result, result);  // null object reference
     __ bind(notNull);
@@ -2217,7 +2217,7 @@ void TemplateTable::load_field_cp_cache_entry(Register obj,
     const int mirror_offset = in_bytes(Klass::java_mirror_offset());
     __ ld_d(obj, Address(obj, mirror_offset));
 
-    __ resolve_oop_handle(obj, T4);
+    __ resolve_oop_handle(obj, SCR2, SCR1);
   }
 }
 

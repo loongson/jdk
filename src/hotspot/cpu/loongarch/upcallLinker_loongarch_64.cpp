@@ -233,7 +233,7 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Method* entry,
 
   __ block_comment("{ receiver ");
   __ li(shuffle_reg, (intptr_t)receiver);
-  __ resolve_jobject(shuffle_reg, TREG, SCR2);
+  __ resolve_jobject(shuffle_reg, SCR2, SCR1);
   __ move(j_rarg0, shuffle_reg);
   __ block_comment("} receiver ");
 

@@ -288,7 +288,7 @@ void MethodHandles::generate_method_handle_dispatch(MacroAssembler* _masm,
   Register rm_method = Rmethod;   // eventual target of this invocation
   // temps used in this code are not used in *either* compiled or interpreted calling sequences
   Register temp1 = T8;
-  Register temp2 = T4;
+  Register temp2 = T3;
   Register temp3 = T5;
   if (for_compiler_entry) {
     assert(receiver_reg == (iid == vmIntrinsics::_linkToStatic || iid == vmIntrinsics::_linkToNative ? noreg : RECEIVER), "only valid assignment");

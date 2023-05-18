@@ -38,7 +38,7 @@
 #define __ masm->
 
 void BarrierSetAssembler::load_at(MacroAssembler* masm, DecoratorSet decorators, BasicType type,
-                                  Register dst, Address src, Register tmp1, Register tmp_thread) {
+                                  Register dst, Address src, Register tmp1, Register tmp2) {
   // RA is live. It must be saved around calls.
 
   bool in_heap = (decorators & IN_HEAP) != 0;
@@ -333,7 +333,7 @@ void BarrierSetAssembler::c2i_entry_barrier(MacroAssembler* masm) {
   // Is it a weak but alive CLD?
   __ push2(T2, T8);
   __ ld_d(T8, Address(SCR2, ClassLoaderData::holder_offset()));
-  __ resolve_weak_handle(T8, T2); // Assembler occupies SCR1.
+  __ resolve_weak_handle(T8, T2, SCR2); // Assembler occupies SCR1.
   __ move(SCR1, T8);
   __ pop2(T2, T8);
   __ bnez(SCR1, method_live);

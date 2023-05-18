@@ -344,7 +344,7 @@ void InterpreterMacroAssembler::load_resolved_reference_at_index(
   // load pointer for resolved_references[] objArray
   ld_d(result, result, ConstantPool::cache_offset_in_bytes());
   ld_d(result, result, ConstantPoolCache::resolved_references_offset_in_bytes());
-  resolve_oop_handle(result, tmp);
+  resolve_oop_handle(result, tmp, SCR1);
   // Add in the index
   alsl_d(result, index, result, LogBytesPerHeapOop - 1);
   load_heap_oop(result, Address(result, arrayOopDesc::base_offset_in_bytes(T_OBJECT)), tmp);

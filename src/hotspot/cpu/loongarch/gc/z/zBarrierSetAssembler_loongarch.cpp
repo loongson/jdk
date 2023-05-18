@@ -65,51 +65,36 @@ void ZBarrierSetAssembler::load_at(MacroAssembler* masm,
     return;
   }
 
-  // Allocate scratch register
-  Register scratch = tmp1;
-
-  assert_different_registers(dst, scratch, SCR1);
+  assert_different_registers(SCR1, SCR2, src.base());
+  assert_different_registers(SCR1, SCR2, dst);
 
   Label done;
 
-  //
-  // Fast Path
-  //
-
-  // Load address
-  __ lea(scratch, src);
-
-  // Load oop at address
-  __ ld_d(dst, scratch, 0);
-
-  // Test address bad mask
+  // Load bad mask into scratch register.
   __ ld_d(SCR1, address_bad_mask_from_thread(TREG));
+  __ lea(SCR2, src);
+  __ ld_d(dst, src);
+
+  // Test reference against bad mask. If mask bad, then we need to fix it up.
   __ andr(SCR1, dst, SCR1);
   __ beqz(SCR1, done);
 
-  //
-  // Slow path
-  //
   __ enter();
 
-  if (dst != V0) {
-    __ push(V0);
-  }
-  __ push_call_clobbered_registers_except(RegSet::of(V0));
+  __ push_call_clobbered_registers_except(RegSet::of(dst));
 
   if (dst != A0) {
     __ move(A0, dst);
   }
-  __ move(A1, scratch);
+  __ move(A1, SCR2);
   __ MacroAssembler::call_VM_leaf_base(ZBarrierSetRuntime::load_barrier_on_oop_field_preloaded_addr(decorators), 2);
-
-  __ pop_call_clobbered_registers_except(RegSet::of(V0));
 
   // Make sure dst has the return value.
   if (dst != V0) {
     __ move(dst, V0);
-    __ pop(V0);
   }
+
+  __ pop_call_clobbered_registers_except(RegSet::of(dst));
   __ leave();
 
   __ bind(done);

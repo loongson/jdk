@@ -390,7 +390,7 @@ address TemplateInterpreterGenerator::generate_currentThread() {
   address entry_point = __ pc();
 
   __ ld_d(A0, Address(TREG, JavaThread::vthread_offset()));
-  __ resolve_oop_handle(A0, T4);
+  __ resolve_oop_handle(A0, SCR2, SCR1);
   __ jr(RA);
 
   return entry_point;
@@ -858,7 +858,7 @@ void TemplateInterpreterGenerator::lock_method(void) {
     __ andi(T2, T0, JVM_ACC_STATIC);
     __ ld_d(T0, LVP, Interpreter::local_offset_in_bytes(0));
     __ beq(T2, R0, done);
-    __ load_mirror(T0, Rmethod, T4);
+    __ load_mirror(T0, Rmethod, SCR2, SCR1);
     __ bind(done);
   }
   // add space for monitor & lock
@@ -902,7 +902,7 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
   __ addi_d(BCP, BCP, in_bytes(ConstMethod::codes_offset())); // get codebase
   __ st_d(Rmethod, FP, (-++i) * wordSize);                              // save Method*
   // Get mirror and store it in the frame as GC root for this Method*
-  __ load_mirror(T2, Rmethod, T4);
+  __ load_mirror(T2, Rmethod, SCR2, SCR1);
   __ st_d(T2, FP, (-++i) * wordSize); // Mirror
 
   if (ProfileInterpreter) {
@@ -981,7 +981,7 @@ address TemplateInterpreterGenerator::generate_Reference_get_entry(void) {
   // Load the value of the referent field.
   const Address field_address(local_0, referent_offset);
   BarrierSetAssembler *bs = BarrierSet::barrier_set()->barrier_set_assembler();
-  bs->load_at(_masm, IN_HEAP | ON_WEAK_OOP_REF, T_OBJECT, local_0, field_address, /*tmp1*/ T4, /*tmp2*/ noreg);
+  bs->load_at(_masm, IN_HEAP | ON_WEAK_OOP_REF, T_OBJECT, local_0, field_address, /*tmp1*/ SCR2, /*tmp2*/ SCR1);
 
   // areturn
   __ move(SP, Rsender);
@@ -1251,7 +1251,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     __ beq(AT, R0, L);
 
     // get mirror
-    __ load_mirror(t, method, T4);
+    __ load_mirror(t, method, SCR2, SCR1);
     // copy mirror into activation frame
     __ st_d(t, FP, frame::interpreter_frame_oop_temp_offset * wordSize);
     // pass handle to mirror
@@ -1427,7 +1427,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     __ bne(AT, T0, no_oop);
     __ pop(ltos);
     // Unbox oop result, e.g. JNIHandles::resolve value.
-    __ resolve_jobject(V0, TREG, T4);
+    __ resolve_jobject(V0, SCR2, SCR1);
     __ st_d(V0, FP, (frame::interpreter_frame_oop_temp_offset)*wordSize);
     // keep stack depth as expected by pushing oop which will eventually be discarded
     __ push(ltos);

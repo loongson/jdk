@@ -123,7 +123,8 @@ void ZBarrierSetAssembler::store_at(MacroAssembler* masm,
                                         Address dst,
                                         Register val,
                                         Register tmp1,
-                                        Register tmp2) {
+                                        Register tmp2,
+                                        Register tmp3) {
   // Verify value
   if (is_reference_type(type)) {
     // Note that src could be noreg, which means we
@@ -131,7 +132,7 @@ void ZBarrierSetAssembler::store_at(MacroAssembler* masm,
     if (val != noreg) {
       Label done;
 
-      // tmp1 and tmp2 are often set to noreg.
+      // tmp1, tmp2 and tmp3 are often set to noreg.
 
       __ ld_d(AT, address_bad_mask_from_thread(TREG));
       __ andr(AT, val, AT);
@@ -143,7 +144,7 @@ void ZBarrierSetAssembler::store_at(MacroAssembler* masm,
   }
 
   // Store value
-  BarrierSetAssembler::store_at(masm, decorators, type, dst, val, tmp1, tmp2);
+  BarrierSetAssembler::store_at(masm, decorators, type, dst, val, tmp1, tmp2, noreg);
 }
 
 #endif // ASSERT

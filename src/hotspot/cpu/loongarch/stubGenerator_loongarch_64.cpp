@@ -2508,7 +2508,7 @@ class StubGenerator: public StubCodeGenerator {
     __ align(OptoLoopAlignment);
 
     __ bind(L_store_element);
-    __ store_heap_oop(Address(to, 0), copied_oop, tmp1, tmp2, AS_RAW); // store the oop
+    __ store_heap_oop(Address(to, 0), copied_oop, tmp1, tmp2, noreg, AS_RAW); // store the oop
     __ addi_d(to, to, UseCompressedOops ? 4 : 8);
     __ addi_d(count, count, -1);
     __ beqz(count, L_do_card_marks);

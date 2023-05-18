@@ -347,7 +347,7 @@ void InterpreterMacroAssembler::load_resolved_reference_at_index(
   resolve_oop_handle(result, tmp, SCR1);
   // Add in the index
   alsl_d(result, index, result, LogBytesPerHeapOop - 1);
-  load_heap_oop(result, Address(result, arrayOopDesc::base_offset_in_bytes(T_OBJECT)), tmp);
+  load_heap_oop(result, Address(result, arrayOopDesc::base_offset_in_bytes(T_OBJECT)), tmp, SCR1);
 }
 
 // load cpool->resolved_klass_at(index)

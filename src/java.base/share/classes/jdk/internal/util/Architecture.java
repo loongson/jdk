@@ -20,6 +20,14 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
+/*
+ * This file has been modified by Loongson Technology in 2023. These
+ * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ *
+ */
+
 package jdk.internal.util;
 
 import jdk.internal.vm.annotation.ForceInline;
@@ -38,6 +46,7 @@ public enum Architecture {
     X86,
     AARCH64,
     RISCV64,
+    LOONGARCH64,
     S390,
     PPC64,
     ;
@@ -66,6 +75,14 @@ public enum Architecture {
     @ForceInline
     public static boolean isRISCV64() {
         return PlatformProps.TARGET_ARCH_IS_RISCV64;
+    }
+
+    /**
+     * {@return {@code true} if the current architecture is LOONGARCH64}
+     */
+    @ForceInline
+    public static boolean isLOONGARCH64() {
+        return PlatformProps.TARGET_ARCH_IS_LOONGARCH64;
     }
 
     /**

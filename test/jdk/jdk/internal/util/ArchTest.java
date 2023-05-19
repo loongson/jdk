@@ -20,6 +20,14 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
+/*
+ * This file has been modified by Loongson Technology in 2023. These
+ * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ *
+ */
+
 import java.util.Locale;
 import java.util.stream.Stream;
 
@@ -30,6 +38,7 @@ import static jdk.internal.util.Architecture.OTHER;
 import static jdk.internal.util.Architecture.AARCH64;
 import static jdk.internal.util.Architecture.PPC64;
 import static jdk.internal.util.Architecture.RISCV64;
+import static jdk.internal.util.Architecture.LOONGARCH64;
 import static jdk.internal.util.Architecture.S390;
 import static jdk.internal.util.Architecture.X64;
 import static jdk.internal.util.Architecture.X86;
@@ -68,6 +77,7 @@ public class ArchTest {
             case "x86", "i386" -> X86;
             case "aarch64" -> AARCH64;
             case "riscv64" -> RISCV64;
+            case "loongarch64" -> LOONGARCH64;
             case "s390x", "s390" -> S390;
             case "ppc64", "ppc64le" -> PPC64;
             default -> OTHER;
@@ -85,6 +95,7 @@ public class ArchTest {
                 Arguments.of(X86, Architecture.isX86()),
                 Arguments.of(AARCH64, Architecture.isAARCH64()),
                 Arguments.of(RISCV64, Architecture.isRISCV64()),
+                Arguments.of(LOONGARCH64, Architecture.isLOONGARCH64()),
                 Arguments.of(S390, Architecture.isS390()),
                 Arguments.of(PPC64, Architecture.isPPC64())
         );

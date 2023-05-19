@@ -16589,13 +16589,19 @@ instruct insert32B(vecY dst, mRegI val, immIU5 idx) %{
   match(Set dst (VectorInsert (Binary dst val) idx));
   format %{ "xvinsert    $dst, $val, $idx\t# @insert32B" %}
   ins_encode %{
-    if ($idx$$constant < 16) {
-      __ vinsgr2vr_b($dst$$FloatRegister, $val$$Register, $idx$$constant);
-    } else {
-      __ xvpermi_d($dst$$FloatRegister, $dst$$FloatRegister, 0b01001110);
-      __ vinsgr2vr_b($dst$$FloatRegister, $val$$Register, $idx$$constant-16);
-      __ xvpermi_d($dst$$FloatRegister, $dst$$FloatRegister, 0b01001110);
+    int idx = $idx$$constant;
+    int msbw, lsbw;
+    switch (idx % 4) {
+      case 0: msbw =  7, lsbw =  0; break;
+      case 1: msbw = 15, lsbw =  8; break;
+      case 2: msbw = 23, lsbw = 16; break;
+      case 3: msbw = 31, lsbw = 24; break;
+      default:
+        ShouldNotReachHere();
     }
+    __ xvpickve2gr_w(SCR1, $dst$$FloatRegister, idx >> 2);
+    __ bstrins_w(SCR1, $val$$Register, msbw, lsbw);
+    __ xvinsgr2vr_w($dst$$FloatRegister, SCR1, idx >> 2);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -16605,13 +16611,12 @@ instruct insert16S(vecY dst, mRegI val, immIU4 idx) %{
   match(Set dst (VectorInsert (Binary dst val) idx));
   format %{ "xvinsert    $dst, $val, $idx\t# @insert16S" %}
   ins_encode %{
-    if ($idx$$constant < 8) {
-      __ vinsgr2vr_h($dst$$FloatRegister, $val$$Register, $idx$$constant);
-    } else {
-      __ xvpermi_d($dst$$FloatRegister, $dst$$FloatRegister, 0b01001110);
-      __ vinsgr2vr_h($dst$$FloatRegister, $val$$Register, $idx$$constant-8);
-      __ xvpermi_d($dst$$FloatRegister, $dst$$FloatRegister, 0b01001110);
-    }
+    int idx = $idx$$constant;
+    int msbw = (idx % 2) ? 31 : 15;
+    int lsbw = (idx % 2) ? 16 :  0;
+    __ xvpickve2gr_w(SCR1, $dst$$FloatRegister, idx >> 1);
+    __ bstrins_w(SCR1, $val$$Register, msbw, lsbw);
+    __ xvinsgr2vr_w($dst$$FloatRegister, SCR1, idx >> 1);
   %}
   ins_pipe( pipe_slow );
 %}

@@ -54,7 +54,7 @@ static int entry_barrier_offset(nmethod* nm) {
     case NMethodPatchingType::conc_data_patch:
       return -4 * (4 + slow_path_size(nm));
     case NMethodPatchingType::conc_instruction_and_data_patch:
-      return -4 * (9 + slow_path_size(nm));
+      return -4 * (10 + slow_path_size(nm));
   }
   ShouldNotReachHere();
   return 0;

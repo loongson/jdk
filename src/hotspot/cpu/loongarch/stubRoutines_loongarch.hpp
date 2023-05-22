@@ -39,7 +39,7 @@ enum platform_dependent_constants {
   _initial_stubs_code_size      = 20000,
   _continuation_stubs_code_size =  2000,
   _compiler_stubs_code_size     = 60000,
-  _final_stubs_code_size        = 60000
+  _final_stubs_code_size        = 60000 ZGC_ONLY(+477000)
 };
 
 class la {

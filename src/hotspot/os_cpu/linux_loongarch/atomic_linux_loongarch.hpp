@@ -216,6 +216,13 @@ inline T Atomic::PlatformCmpxchg<8>::operator()(T volatile* dest,
   return prev;
 }
 
+template<size_t byte_size>
+struct Atomic::PlatformOrderedLoad<byte_size, X_ACQUIRE>
+{
+  template <typename T>
+  T operator()(const volatile T* p) const { T data; __atomic_load(const_cast<T*>(p), &data, __ATOMIC_ACQUIRE); return data; }
+};
+
 template<>
 struct Atomic::PlatformOrderedStore<4, RELEASE_X>
 {

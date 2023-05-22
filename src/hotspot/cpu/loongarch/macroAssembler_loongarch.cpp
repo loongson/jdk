@@ -2545,6 +2545,14 @@ void MacroAssembler::lea(Register dst, AddressLiteral adr) {
   pcaddi(dst, (adr.target() - pc()) >> 2);
 }
 
+void MacroAssembler::lea_long(Register dst, AddressLiteral adr) {
+  code_section()->relocate(pc(), adr.rspec());
+  jint si12, si20;
+  split_simm32((adr.target() - pc()), si12, si20);
+  pcaddu12i(dst, si20);
+  addi_d(dst, dst, si12);
+}
+
 int MacroAssembler::patched_branch(int dest_pos, int inst, int inst_pos) {
   int v = (dest_pos - inst_pos) >> 2;
   switch(high(inst, 6)) {
@@ -3749,3 +3757,55 @@ void MacroAssembler::fast_unlock(Register obj, Register hdr, Register flag, Regi
 #endif
   st_w(tmp, Address(TREG, JavaThread::lock_stack_top_offset()));
 }
+
+#if INCLUDE_ZGC
+void MacroAssembler::patchable_li16(Register rd, uint16_t value) {
+  int count = 0;
+
+  if (is_simm(value, 12)) {
+    addi_d(rd, R0, value);
+    count++;
+  } else if (is_uimm(value, 12)) {
+    ori(rd, R0, value);
+    count++;
+  } else {
+    lu12i_w(rd, split_low20(value >> 12));
+    count++;
+    if (split_low12(value)) {
+      ori(rd, rd, split_low12(value));
+      count++;
+    }
+  }
+
+  while (count < 2) {
+    nop();
+    count++;
+  }
+}
+
+void MacroAssembler::z_color(Register dst, Register src, Register tmp) {
+  assert_different_registers(dst, tmp);
+  assert_different_registers(src, tmp);
+  relocate(barrier_Relocation::spec(), ZBarrierRelocationFormatStoreGoodBits);
+  if (src != noreg) {
+    patchable_li16(tmp, barrier_Relocation::unpatched);
+    slli_d(dst, src, ZPointerLoadShift);
+    orr(dst, dst, tmp);
+  } else {
+    patchable_li16(dst, barrier_Relocation::unpatched);
+  }
+}
+
+void MacroAssembler::z_uncolor(Register ref) {
+  srli_d(ref, ref, ZPointerLoadShift);
+}
+
+void MacroAssembler::check_color(Register ref, Register tmp, bool on_non_strong) {
+  assert_different_registers(ref, tmp);
+  int relocFormat = on_non_strong ? ZBarrierRelocationFormatMarkBadMask
+                                  : ZBarrierRelocationFormatLoadBadMask;
+  relocate(barrier_Relocation::spec(), relocFormat);
+  patchable_li16(tmp, barrier_Relocation::unpatched);
+  andr(tmp, ref, tmp);
+}
+#endif

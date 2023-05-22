@@ -52,6 +52,9 @@
 #if INCLUDE_JFR
 #include "jfr/support/jfrIntrinsics.hpp"
 #endif
+#if INCLUDE_ZGC
+#include "gc/z/zBarrierSetAssembler.hpp"
+#endif
 
 #if INCLUDE_ZGC
 #include "gc/z/zThreadLocalData.hpp"
@@ -785,19 +788,29 @@ class StubGenerator: public StubCodeGenerator {
   }
 
   // disjoint large copy
-  void generate_disjoint_large_copy(Label &entry, const char *name) {
+  void generate_disjoint_large_copy(DecoratorSet decorators, BasicType type, Label &entry, const char *name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
+
+    Register gct1 = S0;
+    Register gct2 = S1;
+    Register gct3 = S2;
+    BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
 
     {
       UnsafeCopyMemoryMark ucmm(this, true, true);
       Label loop, le32, le16, le8, lt8;
 
       __ bind(entry);
+#if INCLUDE_ZGC
+      if (UseZGC && ZGenerational && is_reference_type(type)) {
+        __ push(RegSet::of(gct1, gct2, gct3));
+      }
+#endif
       __ add_d(A3, A1, A2);
       __ add_d(A2, A0, A2);
-      __ ld_d(A6, A0, 0);
-      __ ld_d(A7, A2, -8);
+      bs->copy_load_at(_masm, decorators, type, 8, A6, Address(A0, 0), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, A7, Address(A2, -8), gct1);
 
       __ andi(T1, A1, 7);
       __ sub_d(T0, R0, T1);
@@ -810,59 +823,64 @@ class StubGenerator: public StubCodeGenerator {
       __ bgeu(A0, A4, le32);
 
       __ bind(loop);
-      __ ld_d(T0, A0, 0);
-      __ ld_d(T1, A0, 8);
-      __ ld_d(T2, A0, 16);
-      __ ld_d(T3, A0, 24);
-      __ ld_d(T4, A0, 32);
-      __ ld_d(T5, A0, 40);
-      __ ld_d(T6, A0, 48);
-      __ ld_d(T7, A0, 56);
+      bs->copy_load_at(_masm, decorators, type, 8, T0, Address(A0, 0),  gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T1, Address(A0, 8),  gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T2, Address(A0, 16), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T3, Address(A0, 24), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T4, Address(A0, 32), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T5, Address(A0, 40), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T6, Address(A0, 48), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T8, Address(A0, 56), gct1);
       __ addi_d(A0, A0, 64);
-      __ st_d(T0, A5, 0);
-      __ st_d(T1, A5, 8);
-      __ st_d(T2, A5, 16);
-      __ st_d(T3, A5, 24);
-      __ st_d(T4, A5, 32);
-      __ st_d(T5, A5, 40);
-      __ st_d(T6, A5, 48);
-      __ st_d(T7, A5, 56);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 0),  T0, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 8),  T1, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 16), T2, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 24), T3, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 32), T4, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 40), T5, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 48), T6, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 56), T8, gct1, gct2, gct3);
       __ addi_d(A5, A5, 64);
       __ bltu(A0, A4, loop);
 
       __ bind(le32);
       __ addi_d(A4, A2, -32);
       __ bgeu(A0, A4, le16);
-      __ ld_d(T0, A0, 0);
-      __ ld_d(T1, A0, 8);
-      __ ld_d(T2, A0, 16);
-      __ ld_d(T3, A0, 24);
+      bs->copy_load_at(_masm, decorators, type, 8, T0, Address(A0, 0),  gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T1, Address(A0, 8),  gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T2, Address(A0, 16), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T3, Address(A0, 24), gct1);
       __ addi_d(A0, A0, 32);
-      __ st_d(T0, A5, 0);
-      __ st_d(T1, A5, 8);
-      __ st_d(T2, A5, 16);
-      __ st_d(T3, A5, 24);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 0),  T0, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 8),  T1, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 16), T2, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 24), T3, gct1, gct2, gct3);
       __ addi_d(A5, A5, 32);
 
       __ bind(le16);
       __ addi_d(A4, A2, -16);
       __ bgeu(A0, A4, le8);
-      __ ld_d(T0, A0, 0);
-      __ ld_d(T1, A0, 8);
+      bs->copy_load_at(_masm, decorators, type, 8, T0, Address(A0, 0), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T1, Address(A0, 8), gct1);
       __ addi_d(A0, A0, 16);
-      __ st_d(T0, A5, 0);
-      __ st_d(T1, A5, 8);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 0), T0, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 8), T1, gct1, gct2, gct3);
       __ addi_d(A5, A5, 16);
 
       __ bind(le8);
       __ addi_d(A4, A2, -8);
       __ bgeu(A0, A4, lt8);
-      __ ld_d(T0, A0, 0);
-      __ st_d(T0, A5, 0);
+      bs->copy_load_at(_masm, decorators, type, 8, T0, Address(A0, 0), gct1);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, 0), T0, gct1, gct2, gct3);
 
       __ bind(lt8);
-      __ st_d(A6, A1, 0);
-      __ st_d(A7, A3, -8);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 0), A6, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A3, -8), A7, gct1, gct2, gct3);
+#if INCLUDE_ZGC
+      if (UseZGC && ZGenerational && is_reference_type(type)) {
+        __ pop(RegSet::of(gct1, gct2, gct3));
+      }
+#endif
     }
 
     __ move(A0, R0);
@@ -870,9 +888,17 @@ class StubGenerator: public StubCodeGenerator {
   }
 
   // disjoint large copy lsx
-  void generate_disjoint_large_copy_lsx(Label &entry, const char *name) {
+  void generate_disjoint_large_copy_lsx(DecoratorSet decorators, BasicType type, Label &entry, const char *name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
+
+    Register gct1 = T2;
+    Register gct2 = T3;
+    Register gct3 = T4;
+    Register gct4 = T5;
+    FloatRegister gcvt1 = FT8;
+    FloatRegister gcvt2 = FT9;
+    BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
 
     {
       UnsafeCopyMemoryMark ucmm(this, true, true);
@@ -881,8 +907,8 @@ class StubGenerator: public StubCodeGenerator {
       __ bind(entry);
       __ add_d(A3, A1, A2);
       __ add_d(A2, A0, A2);
-      __ vld(F0, A0, 0);
-      __ vld(F1, A2, -16);
+      bs->copy_load_at(_masm, decorators, type, 16, F0, Address(A0, 0),   gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, F1, Address(A2, -16), gct1, gct2, gcvt1);
 
       __ andi(T1, A1, 15);
       __ sub_d(T0, R0, T1);
@@ -895,59 +921,59 @@ class StubGenerator: public StubCodeGenerator {
       __ bgeu(A0, A4, le64);
 
       __ bind(loop);
-      __ vld(FT0, A0, 0);
-      __ vld(FT1, A0, 16);
-      __ vld(FT2, A0, 32);
-      __ vld(FT3, A0, 48);
-      __ vld(FT4, A0, 64);
-      __ vld(FT5, A0, 80);
-      __ vld(FT6, A0, 96);
-      __ vld(FT7, A0, 112);
+      bs->copy_load_at(_masm, decorators, type, 16, FT0, Address(A0, 0),   gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT1, Address(A0, 16),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT2, Address(A0, 32),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT3, Address(A0, 48),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT4, Address(A0, 64),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT5, Address(A0, 80),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT6, Address(A0, 96),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT7, Address(A0, 112), gct1, gct2, gcvt1);
       __ addi_d(A0, A0, 128);
-      __ vst(FT0, A5, 0);
-      __ vst(FT1, A5, 16);
-      __ vst(FT2, A5, 32);
-      __ vst(FT3, A5, 48);
-      __ vst(FT4, A5, 64);
-      __ vst(FT5, A5, 80);
-      __ vst(FT6, A5, 96);
-      __ vst(FT7, A5, 112);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 0),   FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 16),  FT1, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 32),  FT2, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 48),  FT3, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 64),  FT4, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 80),  FT5, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 96),  FT6, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 112), FT7, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
       __ addi_d(A5, A5, 128);
       __ bltu(A0, A4, loop);
 
       __ bind(le64);
       __ addi_d(A4, A2, -64);
       __ bgeu(A0, A4, le32);
-      __ vld(FT0, A0, 0);
-      __ vld(FT1, A0, 16);
-      __ vld(FT2, A0, 32);
-      __ vld(FT3, A0, 48);
+      bs->copy_load_at(_masm, decorators, type, 16, FT0, Address(A0, 0),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT1, Address(A0, 16), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT2, Address(A0, 32), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT3, Address(A0, 48), gct1, gct2, gcvt1);
       __ addi_d(A0, A0, 64);
-      __ vst(FT0, A5, 0);
-      __ vst(FT1, A5, 16);
-      __ vst(FT2, A5, 32);
-      __ vst(FT3, A5, 48);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 0),  FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 16), FT1, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 32), FT2, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 48), FT3, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
       __ addi_d(A5, A5, 64);
 
       __ bind(le32);
       __ addi_d(A4, A2, -32);
       __ bgeu(A0, A4, le16);
-      __ vld(FT0, A0, 0);
-      __ vld(FT1, A0, 16);
+      bs->copy_load_at(_masm, decorators, type, 16, FT0, Address(A0, 0),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT1, Address(A0, 16), gct1, gct2, gcvt1);
       __ addi_d(A0, A0, 32);
-      __ vst(FT0, A5, 0);
-      __ vst(FT1, A5, 16);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 0),  FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 16), FT1, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
       __ addi_d(A5, A5, 32);
 
       __ bind(le16);
       __ addi_d(A4, A2, -16);
       __ bgeu(A0, A4, lt16);
-      __ vld(FT0, A0, 0);
-      __ vst(FT0, A5, 0);
+      bs->copy_load_at(_masm, decorators, type, 16, FT0, Address(A0, 0), gct1, gct2, gcvt1);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, 0), FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
 
       __ bind(lt16);
-      __ vst(F0, A1, 0);
-      __ vst(F1, A3, -16);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A1, 0),   F0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A3, -16), F1, gct1, gct2, gct3, gct4, gcvt1, gcvt2, false /* need_save_restore */);
     }
 
     __ move(A0, R0);
@@ -955,9 +981,17 @@ class StubGenerator: public StubCodeGenerator {
   }
 
   // disjoint large copy lasx
-  void generate_disjoint_large_copy_lasx(Label &entry, const char *name) {
+  void generate_disjoint_large_copy_lasx(DecoratorSet decorators, BasicType type, Label &entry, const char *name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
+
+    Register gct1 = T2;
+    Register gct2 = T3;
+    Register gct3 = T4;
+    Register gct4 = T5;
+    FloatRegister gcvt1 = FT8;
+    FloatRegister gcvt2 = FT9;
+    BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
 
     {
       UnsafeCopyMemoryMark ucmm(this, true, true);
@@ -966,8 +1000,8 @@ class StubGenerator: public StubCodeGenerator {
       __ bind(entry);
       __ add_d(A3, A1, A2);
       __ add_d(A2, A0, A2);
-      __ xvld(F0, A0, 0);
-      __ xvld(F1, A2, -32);
+      bs->copy_load_at(_masm, decorators, type, 32, F0, Address(A0, 0),   gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, F1, Address(A2, -32), gct1, gct2, gcvt1);
 
       __ andi(T1, A1, 31);
       __ sub_d(T0, R0, T1);
@@ -980,59 +1014,59 @@ class StubGenerator: public StubCodeGenerator {
       __ bgeu(A0, A4, le128);
 
       __ bind(loop);
-      __ xvld(FT0, A0, 0);
-      __ xvld(FT1, A0, 32);
-      __ xvld(FT2, A0, 64);
-      __ xvld(FT3, A0, 96);
-      __ xvld(FT4, A0, 128);
-      __ xvld(FT5, A0, 160);
-      __ xvld(FT6, A0, 192);
-      __ xvld(FT7, A0, 224);
+      bs->copy_load_at(_masm, decorators, type, 32, FT0, Address(A0, 0),   gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT1, Address(A0, 32),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT2, Address(A0, 64),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT3, Address(A0, 96),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT4, Address(A0, 128), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT5, Address(A0, 160), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT6, Address(A0, 192), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT7, Address(A0, 224), gct1, gct2, gcvt1);
       __ addi_d(A0, A0, 256);
-      __ xvst(FT0, A5, 0);
-      __ xvst(FT1, A5, 32);
-      __ xvst(FT2, A5, 64);
-      __ xvst(FT3, A5, 96);
-      __ xvst(FT4, A5, 128);
-      __ xvst(FT5, A5, 160);
-      __ xvst(FT6, A5, 192);
-      __ xvst(FT7, A5, 224);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 0),   FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 32),  FT1, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 64),  FT2, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 96),  FT3, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 128), FT4, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 160), FT5, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 192), FT6, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 224), FT7, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
       __ addi_d(A5, A5, 256);
       __ bltu(A0, A4, loop);
 
       __ bind(le128);
       __ addi_d(A4, A2, -128);
       __ bgeu(A0, A4, le64);
-      __ xvld(FT0, A0, 0);
-      __ xvld(FT1, A0, 32);
-      __ xvld(FT2, A0, 64);
-      __ xvld(FT3, A0, 96);
+      bs->copy_load_at(_masm, decorators, type, 32, FT0, Address(A0, 0),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT1, Address(A0, 32), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT2, Address(A0, 64), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT3, Address(A0, 96), gct1, gct2, gcvt1);
       __ addi_d(A0, A0, 128);
-      __ xvst(FT0, A5, 0);
-      __ xvst(FT1, A5, 32);
-      __ xvst(FT2, A5, 64);
-      __ xvst(FT3, A5, 96);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 0),  FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 32), FT1, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 64), FT2, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 96), FT3, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
       __ addi_d(A5, A5, 128);
 
       __ bind(le64);
       __ addi_d(A4, A2, -64);
       __ bgeu(A0, A4, le32);
-      __ xvld(FT0, A0, 0);
-      __ xvld(FT1, A0, 32);
+      bs->copy_load_at(_masm, decorators, type, 32, FT0, Address(A0, 0),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT1, Address(A0, 32), gct1, gct2, gcvt1);
       __ addi_d(A0, A0, 64);
-      __ xvst(FT0, A5, 0);
-      __ xvst(FT1, A5, 32);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 0),  FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 32), FT1, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
       __ addi_d(A5, A5, 64);
 
       __ bind(le32);
       __ addi_d(A4, A2, -32);
       __ bgeu(A0, A4, lt32);
-      __ xvld(FT0, A0, 0);
-      __ xvst(FT0, A5, 0);
+      bs->copy_load_at(_masm, decorators, type, 32, FT0, Address(A0, 0), gct1, gct2, gcvt1);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, 0), FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
 
       __ bind(lt32);
-      __ xvst(F0, A1, 0);
-      __ xvst(F1, A3, -32);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A1, 0),   F0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A3, -32), F1, gct1, gct2, gct3, gct4, gcvt1, gcvt2, false /* need_save_restore */);
     }
 
     __ move(A0, R0);
@@ -1040,19 +1074,29 @@ class StubGenerator: public StubCodeGenerator {
   }
 
   // conjoint large copy
-  void generate_conjoint_large_copy(Label &entry, const char *name) {
+  void generate_conjoint_large_copy(DecoratorSet decorators, BasicType type, Label &entry, const char *name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
+
+    Register gct1 = S0;
+    Register gct2 = S1;
+    Register gct3 = S2;
+    BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
 
     {
       UnsafeCopyMemoryMark ucmm(this, true, true);
       Label loop, le32, le16, le8, lt8;
 
       __ bind(entry);
+#if INCLUDE_ZGC
+      if (UseZGC && ZGenerational && is_reference_type(type)) {
+        __ push(RegSet::of(gct1, gct2, gct3));
+      }
+#endif
       __ add_d(A3, A1, A2);
       __ add_d(A2, A0, A2);
-      __ ld_d(A6, A0, 0);
-      __ ld_d(A7, A2, -8);
+      bs->copy_load_at(_masm, decorators, type, 8, A6, Address(A0, 0), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, A7, Address(A2, -8), gct1);
 
       __ andi(T1, A3, 7);
       __ sub_d(A2, A2, T1);
@@ -1062,59 +1106,64 @@ class StubGenerator: public StubCodeGenerator {
       __ bgeu(A4, A2, le32);
 
       __ bind(loop);
-      __ ld_d(T0, A2, -8);
-      __ ld_d(T1, A2, -16);
-      __ ld_d(T2, A2, -24);
-      __ ld_d(T3, A2, -32);
-      __ ld_d(T4, A2, -40);
-      __ ld_d(T5, A2, -48);
-      __ ld_d(T6, A2, -56);
-      __ ld_d(T7, A2, -64);
+      bs->copy_load_at(_masm, decorators, type, 8, T0, Address(A2, -8),  gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T1, Address(A2, -16), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T2, Address(A2, -24), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T3, Address(A2, -32), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T4, Address(A2, -40), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T5, Address(A2, -48), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T6, Address(A2, -56), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T8, Address(A2, -64), gct1);
       __ addi_d(A2, A2, -64);
-      __ st_d(T0, A5, -8);
-      __ st_d(T1, A5, -16);
-      __ st_d(T2, A5, -24);
-      __ st_d(T3, A5, -32);
-      __ st_d(T4, A5, -40);
-      __ st_d(T5, A5, -48);
-      __ st_d(T6, A5, -56);
-      __ st_d(T7, A5, -64);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -8),  T0, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -16), T1, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -24), T2, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -32), T3, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -40), T4, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -48), T5, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -56), T6, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -64), T8, gct1, gct2, gct3);
       __ addi_d(A5, A5, -64);
       __ bltu(A4, A2, loop);
 
       __ bind(le32);
       __ addi_d(A4, A0, 32);
       __ bgeu(A4, A2, le16);
-      __ ld_d(T0, A2, -8);
-      __ ld_d(T1, A2, -16);
-      __ ld_d(T2, A2, -24);
-      __ ld_d(T3, A2, -32);
+      bs->copy_load_at(_masm, decorators, type, 8, T0, Address(A2, -8),  gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T1, Address(A2, -16), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T2, Address(A2, -24), gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T3, Address(A2, -32), gct1);
       __ addi_d(A2, A2, -32);
-      __ st_d(T0, A5, -8);
-      __ st_d(T1, A5, -16);
-      __ st_d(T2, A5, -24);
-      __ st_d(T3, A5, -32);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -8),  T0, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -16), T1, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -24), T2, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -32), T3, gct1, gct2, gct3);
       __ addi_d(A5, A5, -32);
 
       __ bind(le16);
       __ addi_d(A4, A0, 16);
       __ bgeu(A4, A2, le8);
-      __ ld_d(T0, A2, -8);
-      __ ld_d(T1, A2, -16);
+      bs->copy_load_at(_masm, decorators, type, 8, T0, Address(A2, -8),  gct1);
+      bs->copy_load_at(_masm, decorators, type, 8, T1, Address(A2, -16), gct1);
       __ addi_d(A2, A2, -16);
-      __ st_d(T0, A5, -8);
-      __ st_d(T1, A5, -16);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -8),  T0, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -16), T1, gct1, gct2, gct3);
       __ addi_d(A5, A5, -16);
 
       __ bind(le8);
       __ addi_d(A4, A0, 8);
       __ bgeu(A4, A2, lt8);
-      __ ld_d(T0, A2, -8);
-      __ st_d(T0, A5, -8);
+      bs->copy_load_at(_masm, decorators, type, 8, T0, Address(A2, -8), gct1);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A5, -8), T0, gct1, gct2, gct3);
 
       __ bind(lt8);
-      __ st_d(A6, A1, 0);
-      __ st_d(A7, A3, -8);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 0),  A6, gct1, gct2, gct3);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A3, -8), A7, gct1, gct2, gct3);
+#if INCLUDE_ZGC
+      if (UseZGC && ZGenerational && is_reference_type(type)) {
+        __ pop(RegSet::of(gct1, gct2, gct3));
+      }
+#endif
     }
 
     __ move(A0, R0);
@@ -1122,9 +1171,17 @@ class StubGenerator: public StubCodeGenerator {
   }
 
   // conjoint large copy lsx
-  void generate_conjoint_large_copy_lsx(Label &entry, const char *name) {
+  void generate_conjoint_large_copy_lsx(DecoratorSet decorators, BasicType type, Label &entry, const char *name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
+
+    Register gct1 = T2;
+    Register gct2 = T3;
+    Register gct3 = T4;
+    Register gct4 = T5;
+    FloatRegister gcvt1 = FT8;
+    FloatRegister gcvt2 = FT9;
+    BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
 
     {
       UnsafeCopyMemoryMark ucmm(this, true, true);
@@ -1133,8 +1190,8 @@ class StubGenerator: public StubCodeGenerator {
       __ bind(entry);
       __ add_d(A3, A1, A2);
       __ add_d(A2, A0, A2);
-      __ vld(F0, A0, 0);
-      __ vld(F1, A2, -16);
+      bs->copy_load_at(_masm, decorators, type, 16, F0, Address(A0, 0),   gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, F1, Address(A2, -16), gct1, gct2, gcvt1);
 
       __ andi(T1, A3, 15);
       __ sub_d(A2, A2, T1);
@@ -1144,59 +1201,59 @@ class StubGenerator: public StubCodeGenerator {
       __ bgeu(A4, A2, le64);
 
       __ bind(loop);
-      __ vld(FT0, A2, -16);
-      __ vld(FT1, A2, -32);
-      __ vld(FT2, A2, -48);
-      __ vld(FT3, A2, -64);
-      __ vld(FT4, A2, -80);
-      __ vld(FT5, A2, -96);
-      __ vld(FT6, A2, -112);
-      __ vld(FT7, A2, -128);
+      bs->copy_load_at(_masm, decorators, type, 16, FT0, Address(A2, -16),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT1, Address(A2, -32),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT2, Address(A2, -48),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT3, Address(A2, -64),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT4, Address(A2, -80),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT5, Address(A2, -96),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT6, Address(A2, -112), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT7, Address(A2, -128), gct1, gct2, gcvt1);
       __ addi_d(A2, A2, -128);
-      __ vst(FT0, A5, -16);
-      __ vst(FT1, A5, -32);
-      __ vst(FT2, A5, -48);
-      __ vst(FT3, A5, -64);
-      __ vst(FT4, A5, -80);
-      __ vst(FT5, A5, -96);
-      __ vst(FT6, A5, -112);
-      __ vst(FT7, A5, -128);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -16),  FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -32),  FT1, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -48),  FT2, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -64),  FT3, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -80),  FT4, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -96),  FT5, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -112), FT6, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -128), FT7, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
       __ addi_d(A5, A5, -128);
       __ bltu(A4, A2, loop);
 
       __ bind(le64);
       __ addi_d(A4, A0, 64);
       __ bgeu(A4, A2, le32);
-      __ vld(FT0, A2, -16);
-      __ vld(FT1, A2, -32);
-      __ vld(FT2, A2, -48);
-      __ vld(FT3, A2, -64);
+      bs->copy_load_at(_masm, decorators, type, 16, FT0, Address(A2, -16), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT1, Address(A2, -32), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT2, Address(A2, -48), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT3, Address(A2, -64), gct1, gct2, gcvt1);
       __ addi_d(A2, A2, -64);
-      __ vst(FT0, A5, -16);
-      __ vst(FT1, A5, -32);
-      __ vst(FT2, A5, -48);
-      __ vst(FT3, A5, -64);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -16), FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -32), FT1, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -48), FT2, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -64), FT3, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
       __ addi_d(A5, A5, -64);
 
       __ bind(le32);
       __ addi_d(A4, A0, 32);
       __ bgeu(A4, A2, le16);
-      __ vld(FT0, A2, -16);
-      __ vld(FT1, A2, -32);
+      bs->copy_load_at(_masm, decorators, type, 16, FT0, Address(A2, -16), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 16, FT1, Address(A2, -32), gct1, gct2, gcvt1);
       __ addi_d(A2, A2, -32);
-      __ vst(FT0, A5, -16);
-      __ vst(FT1, A5, -32);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -16), FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -32), FT1, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
       __ addi_d(A5, A5, -32);
 
       __ bind(le16);
       __ addi_d(A4, A0, 16);
       __ bgeu(A4, A2, lt16);
-      __ vld(FT0, A2, -16);
-      __ vst(FT0, A5, -16);
+      bs->copy_load_at(_masm, decorators, type, 16, FT0, Address(A2, -16), gct1, gct2, gcvt1);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A5, -16), FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
 
       __ bind(lt16);
-      __ vst(F0, A1, 0);
-      __ vst(F1, A3, -16);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A1, 0),   F0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 16, Address(A3, -16), F1, gct1, gct2, gct3, gct4, gcvt1, gcvt2, false /* need_save_restore */);
     }
 
     __ move(A0, R0);
@@ -1204,9 +1261,17 @@ class StubGenerator: public StubCodeGenerator {
   }
 
   // conjoint large copy lasx
-  void generate_conjoint_large_copy_lasx(Label &entry, const char *name) {
+  void generate_conjoint_large_copy_lasx(DecoratorSet decorators, BasicType type, Label &entry, const char *name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
+
+    Register gct1 = T2;
+    Register gct2 = T3;
+    Register gct3 = T4;
+    Register gct4 = T5;
+    FloatRegister gcvt1 = FT8;
+    FloatRegister gcvt2 = FT9;
+    BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
 
     {
       UnsafeCopyMemoryMark ucmm(this, true, true);
@@ -1215,8 +1280,8 @@ class StubGenerator: public StubCodeGenerator {
       __ bind(entry);
       __ add_d(A3, A1, A2);
       __ add_d(A2, A0, A2);
-      __ xvld(F0, A0, 0);
-      __ xvld(F1, A2, -32);
+      bs->copy_load_at(_masm, decorators, type, 32, F0, Address(A0, 0),   gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, F1, Address(A2, -32), gct1, gct2, gcvt1);
 
       __ andi(T1, A3, 31);
       __ sub_d(A2, A2, T1);
@@ -1226,59 +1291,59 @@ class StubGenerator: public StubCodeGenerator {
       __ bgeu(A4, A2, le128);
 
       __ bind(loop);
-      __ xvld(FT0, A2, -32);
-      __ xvld(FT1, A2, -64);
-      __ xvld(FT2, A2, -96);
-      __ xvld(FT3, A2, -128);
-      __ xvld(FT4, A2, -160);
-      __ xvld(FT5, A2, -192);
-      __ xvld(FT6, A2, -224);
-      __ xvld(FT7, A2, -256);
+      bs->copy_load_at(_masm, decorators, type, 32, FT0, Address(A2, -32),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT1, Address(A2, -64),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT2, Address(A2, -96),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT3, Address(A2, -128), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT4, Address(A2, -160), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT5, Address(A2, -192), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT6, Address(A2, -224), gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT7, Address(A2, -256), gct1, gct2, gcvt1);
       __ addi_d(A2, A2, -256);
-      __ xvst(FT0, A5, -32);
-      __ xvst(FT1, A5, -64);
-      __ xvst(FT2, A5, -96);
-      __ xvst(FT3, A5, -128);
-      __ xvst(FT4, A5, -160);
-      __ xvst(FT5, A5, -192);
-      __ xvst(FT6, A5, -224);
-      __ xvst(FT7, A5, -256);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -32),  FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -64),  FT1, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -96),  FT2, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -128), FT3, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -160), FT4, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -192), FT5, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -224), FT6, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -256), FT7, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
       __ addi_d(A5, A5, -256);
       __ bltu(A4, A2, loop);
 
       __ bind(le128);
       __ addi_d(A4, A0, 128);
       __ bgeu(A4, A2, le64);
-      __ xvld(FT0, A2, -32);
-      __ xvld(FT1, A2, -64);
-      __ xvld(FT2, A2, -96);
-      __ xvld(FT3, A2, -128);
+      bs->copy_load_at(_masm, decorators, type, 32, FT0, Address(A2, -32),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT1, Address(A2, -64),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT2, Address(A2, -96),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT3, Address(A2, -128), gct1, gct2, gcvt1);
       __ addi_d(A2, A2, -128);
-      __ xvst(FT0, A5, -32);
-      __ xvst(FT1, A5, -64);
-      __ xvst(FT2, A5, -96);
-      __ xvst(FT3, A5, -128);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -32),  FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -64),  FT1, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -96),  FT2, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -128), FT3, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
       __ addi_d(A5, A5, -128);
 
       __ bind(le64);
       __ addi_d(A4, A0, 64);
       __ bgeu(A4, A2, le32);
-      __ xvld(FT0, A2, -32);
-      __ xvld(FT1, A2, -64);
+      bs->copy_load_at(_masm, decorators, type, 32, FT0, Address(A2, -32),  gct1, gct2, gcvt1);
+      bs->copy_load_at(_masm, decorators, type, 32, FT1, Address(A2, -64),  gct1, gct2, gcvt1);
       __ addi_d(A2, A2, -64);
-      __ xvst(FT0, A5, -32);
-      __ xvst(FT1, A5, -64);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -32),  FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -64),  FT1, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
       __ addi_d(A5, A5, -64);
 
       __ bind(le32);
       __ addi_d(A4, A0, 32);
       __ bgeu(A4, A2, lt32);
-      __ xvld(FT0, A2, -32);
-      __ xvst(FT0, A5, -32);
+      bs->copy_load_at(_masm, decorators, type, 32, FT0, Address(A2, -32), gct1, gct2, gcvt1);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A5, -32), FT0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
 
       __ bind(lt32);
-      __ xvst(F0, A1, 0);
-      __ xvst(F1, A3, -32);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A1, 0),   F0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+      bs->copy_store_at(_masm, decorators, type, 32, Address(A3, -32), F1, gct1, gct2, gct3, gct4, gcvt1, gcvt2, false /* need_save_restore */);
     }
 
     __ move(A0, R0);
@@ -2235,84 +2300,94 @@ class StubGenerator: public StubCodeGenerator {
   }
 
   // Long small copy: less than { int:4, lsx:4, lasx:5 } elements.
-  void generate_long_small_copy(Label &entry, const char *name) {
+  void generate_long_small_copy(DecoratorSet decorators, BasicType type, Label &entry, const char *name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", name);
 
-    Label L;
+    Register gct1 = T2;
+    Register gct2 = T3;
+    Register gct3 = T4;
+    Register gct4 = T5;
+    FloatRegister gcvt1 = FT8;
+    FloatRegister gcvt2 = FT9;
+    BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
+
+    Label L, L1, L2, L3, L4;
     __ bind(entry);
-    __ lipc(AT, L);
-    __ slli_d(A2, A2, 5);
-    __ add_d(AT, AT, A2);
-    __ jr(AT);
+    __ beqz(A2, L);
+    __ li(SCR1, 1);
+    __ beq(A2, SCR1, L1);
+    __ li(SCR1, 2);
+    __ beq(A2, SCR1, L2);
+    __ li(SCR1, 3);
+    __ beq(A2, SCR1, L3);
+    __ li(SCR1, 4);
+    __ beq(A2, SCR1, L4);
 
     __ bind(L);
     // 0:
     __ move(A0, R0);
     __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
 
     {
       UnsafeCopyMemoryMark ucmm(this, true, true);
       // 1:
-      __ ld_d(AT, A0, 0);
-      __ st_d(AT, A1, 0);
+      __ bind(L1);
+      bs->copy_load_at(_masm, decorators, type, 8, T8, Address(A0, 0), gct1);
+      bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 0), T8, gct1, gct2, gct3);
       __ move(A0, R0);
       __ jr(RA);
-      __ nop();
-      __ nop();
-      __ nop();
-      __ nop();
 
       // 2:
-      if (UseLSX) {
-        __ vld(F0, A0, 0);
-        __ vst(F0, A1, 0);
+      __ bind(L2);
+      if (UseLSX && !ZGenerational) {
+        bs->copy_load_at(_masm, decorators, type, 16, F0, Address(A0, 0), gct1, gct2, gcvt1);
+        bs->copy_store_at(_masm, decorators, type, 16, Address(A1, 0), F0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
         __ move(A0, R0);
         __ jr(RA);
-        __ nop();
-        __ nop();
       } else {
-        __ ld_d(AT, A0, 0);
-        __ ld_d(A2, A0, 8);
-        __ st_d(AT, A1, 0);
-        __ st_d(A2, A1, 8);
+        bs->copy_load_at(_masm, decorators, type, 8, T8, Address(A0, 0), gct1);
+        bs->copy_load_at(_masm, decorators, type, 8, A2, Address(A0, 8), gct1);
+        bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 0), T8, gct1, gct2, gct3);
+        bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 8), A2, gct1, gct2, gct3);
         __ move(A0, R0);
         __ jr(RA);
       }
-      __ nop();
-      __ nop();
 
       // 3:
-      if (UseLSX) {
-        __ vld(F0, A0, 0);
-        __ ld_d(AT, A0, 16);
-        __ vst(F0, A1, 0);
-        __ st_d(AT, A1, 16);
+      __ bind(L3);
+      if (UseLSX && !ZGenerational) {
+        bs->copy_load_at(_masm, decorators, type, 16, F0, Address(A0, 0), gct1, gct2, gcvt1);
+        bs->copy_load_at(_masm, decorators, type, 8,  T8, Address(A0, 16), gct1);
+        bs->copy_store_at(_masm, decorators, type, 16, Address(A1, 0), F0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
+        bs->copy_store_at(_masm, decorators, type, 8,  Address(A1, 16), T8, gct1, gct2, gct3);
         __ move(A0, R0);
         __ jr(RA);
-        __ nop();
-        __ nop();
       } else {
-        __ ld_d(AT, A0, 0);
-        __ ld_d(A2, A0, 8);
-        __ ld_d(A3, A0, 16);
-        __ st_d(AT, A1, 0);
-        __ st_d(A2, A1, 8);
-        __ st_d(A3, A1, 16);
+        bs->copy_load_at(_masm, decorators, type, 8, T8, Address(A0, 0),  gct1);
+        bs->copy_load_at(_masm, decorators, type, 8, A2, Address(A0, 8),  gct1);
+        bs->copy_load_at(_masm, decorators, type, 8, A3, Address(A0, 16), gct1);
+        bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 0),  T8, gct1, gct2, gct3);
+        bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 8),  A2, gct1, gct2, gct3);
+        bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 16), A3, gct1, gct2, gct3);
         __ move(A0, R0);
         __ jr(RA);
       }
 
+      __ bind(L4);
       // 4:
       if (UseLASX) {
-        __ xvld(F0, A0, 0);
-        __ xvst(F0, A1, 0);
+        bs->copy_load_at(_masm, decorators, type, 32, F0, Address(A0, 0), gct1, gct2, gcvt1);
+        bs->copy_store_at(_masm, decorators, type, 32, Address(A1, 0), F0, gct1, gct2, gct3, gct4, gcvt1, gcvt2, false /* need_save_restore */);
+      } else {
+        bs->copy_load_at(_masm, decorators, type, 8, T8, Address(A0, 0),  gct1);
+        bs->copy_load_at(_masm, decorators, type, 8, A2, Address(A0, 8),  gct1);
+        bs->copy_load_at(_masm, decorators, type, 8, A3, Address(A0, 16), gct1);
+        bs->copy_load_at(_masm, decorators, type, 8, A4, Address(A0, 32), gct1);
+        bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 0),  T8, gct1, gct2, gct3);
+        bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 8),  A2, gct1, gct2, gct3);
+        bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 16), A3, gct1, gct2, gct3);
+        bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 32), A4, gct1, gct2, gct3);
       }
     }
 
@@ -2375,7 +2450,7 @@ class StubGenerator: public StubCodeGenerator {
     address start = __ pc();
 
     if (is_oop) {
-      array_overlap_test(StubRoutines::oop_disjoint_arraycopy(), 3);
+      array_overlap_test(StubRoutines::oop_disjoint_arraycopy(dest_uninitialized /* ZGC */), 3);
     } else {
       array_overlap_test(StubRoutines::jlong_disjoint_arraycopy(), 3);
     }
@@ -2442,6 +2517,7 @@ class StubGenerator: public StubCodeGenerator {
     const Register oop_klass   = S3; // oop._klass
     const Register tmp1        = A5;
     const Register tmp2        = A6;
+    const Register tmp3        = A7;
 
     //---------------------------------------------------------------
     // Assembler stub will be used for this call to arraycopy
@@ -2508,14 +2584,18 @@ class StubGenerator: public StubCodeGenerator {
     __ align(OptoLoopAlignment);
 
     __ bind(L_store_element);
-    __ store_heap_oop(Address(to, 0), copied_oop, tmp1, tmp2, noreg, AS_RAW); // store the oop
+    bs->copy_store_at(_masm, decorators, T_OBJECT, UseCompressedOops ? 4 : 8,
+                      Address(to, 0), copied_oop,
+                      tmp1, tmp2, tmp3);
     __ addi_d(to, to, UseCompressedOops ? 4 : 8);
     __ addi_d(count, count, -1);
     __ beqz(count, L_do_card_marks);
 
     // ======== loop entry is here ========
     __ bind(L_load_element);
-    __ load_heap_oop(copied_oop, Address(from, 0), tmp1, tmp2, AS_RAW); // load the oop
+    bs->copy_load_at(_masm, decorators, T_OBJECT, UseCompressedOops ? 4 : 8,
+                     copied_oop, Address(from, 0),
+                     tmp1);
     __ addi_d(from, from, UseCompressedOops ? 4 : 8);
     __ beqz(copied_oop, L_store_element);
 
@@ -2901,29 +2981,66 @@ class StubGenerator: public StubCodeGenerator {
 
   void generate_arraycopy_stubs() {
     Label disjoint_large_copy, conjoint_large_copy;
+#if INCLUDE_ZGC
+    Label disjoint_large_copy_oop, conjoint_large_copy_oop;
+    Label disjoint_large_copy_oop_uninit, conjoint_large_copy_oop_uninit;
+#endif
     Label byte_small_copy, short_small_copy, int_small_copy, long_small_copy;
+#if INCLUDE_ZGC
+    Label long_small_copy_oop, long_small_copy_oop_uninit;
+#endif
     int int_oop_small_limit, long_oop_small_limit;
 
     if (UseLASX) {
       int_oop_small_limit = 9;
       long_oop_small_limit = 5;
-      generate_disjoint_large_copy_lasx(disjoint_large_copy, "disjoint_large_copy_lasx");
-      generate_conjoint_large_copy_lasx(conjoint_large_copy, "conjoint_large_copy_lasx");
+      generate_disjoint_large_copy_lasx(DECORATORS_NONE, T_LONG, disjoint_large_copy, "disjoint_large_copy_lasx");
+      generate_conjoint_large_copy_lasx(DECORATORS_NONE, T_LONG, conjoint_large_copy, "conjoint_large_copy_lasx");
+#if INCLUDE_ZGC
+      if (UseZGC && ZGenerational) {
+        generate_disjoint_large_copy_lasx(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT, T_OBJECT, disjoint_large_copy_oop, "disjoint_large_copy_oop_lasx");
+        generate_conjoint_large_copy_lasx(IN_HEAP | IS_ARRAY, T_OBJECT, conjoint_large_copy_oop, "conjoint_large_copy_oop_lasx");
+        generate_disjoint_large_copy_lasx(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT | IS_DEST_UNINITIALIZED, T_OBJECT, disjoint_large_copy_oop_uninit, "disjoint_large_copy_oop_uninit_lasx");
+        generate_conjoint_large_copy_lasx(IN_HEAP | IS_ARRAY | IS_DEST_UNINITIALIZED, T_OBJECT, conjoint_large_copy_oop_uninit, "conjoint_large_copy_oop_uninit_lasx");
+      }
+#endif
     } else if (UseLSX) {
       int_oop_small_limit = 7;
       long_oop_small_limit = 4;
-      generate_disjoint_large_copy_lsx(disjoint_large_copy, "disjoint_large_copy_lsx");
-      generate_conjoint_large_copy_lsx(conjoint_large_copy, "conjoint_large_copy_lsx");
+      generate_disjoint_large_copy_lsx(DECORATORS_NONE, T_LONG, disjoint_large_copy, "disjoint_large_copy_lsx");
+      generate_conjoint_large_copy_lsx(DECORATORS_NONE, T_LONG, conjoint_large_copy, "conjoint_large_copy_lsx");
+#if INCLUDE_ZGC
+      if (UseZGC && ZGenerational) {
+        generate_disjoint_large_copy_lsx(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT, T_OBJECT, disjoint_large_copy_oop, "disjoint_large_copy_oop_lsx");
+        generate_conjoint_large_copy_lsx(IN_HEAP | IS_ARRAY, T_OBJECT, conjoint_large_copy_oop, "conjoint_large_copy_oop_lsx");
+        generate_disjoint_large_copy_lsx(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT | IS_DEST_UNINITIALIZED, T_OBJECT, disjoint_large_copy_oop_uninit, "disjoint_large_copy_oop_uninit_lsx");
+        generate_conjoint_large_copy_lsx(IN_HEAP | IS_ARRAY | IS_DEST_UNINITIALIZED, T_OBJECT, conjoint_large_copy_oop_uninit, "conjoint_large_copy_oop_uninit_lsx");
+      }
+#endif
     } else {
       int_oop_small_limit = 7;
       long_oop_small_limit = 4;
-      generate_disjoint_large_copy(disjoint_large_copy, "disjoint_large_copy_int");
-      generate_conjoint_large_copy(conjoint_large_copy, "conjoint_large_copy_int");
+      generate_disjoint_large_copy(DECORATORS_NONE, T_LONG, disjoint_large_copy, "disjoint_large_copy_int");
+      generate_conjoint_large_copy(DECORATORS_NONE, T_LONG, conjoint_large_copy, "conjoint_large_copy_int");
+#if INCLUDE_ZGC
+    if (UseZGC && ZGenerational) {
+      generate_disjoint_large_copy(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT, T_OBJECT, disjoint_large_copy_oop, "disjoint_large_copy_oop");
+      generate_conjoint_large_copy(IN_HEAP | IS_ARRAY, T_OBJECT, conjoint_large_copy_oop, "conjoint_large_copy_oop");
+      generate_disjoint_large_copy(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT | IS_DEST_UNINITIALIZED, T_OBJECT, disjoint_large_copy_oop_uninit, "disjoint_large_copy_oop_uninit");
+      generate_conjoint_large_copy(IN_HEAP | IS_ARRAY | IS_DEST_UNINITIALIZED, T_OBJECT, conjoint_large_copy_oop_uninit, "conjoint_large_copy_oop_uninit");
+    }
+#endif
     }
     generate_byte_small_copy(byte_small_copy, "jbyte_small_copy");
     generate_short_small_copy(short_small_copy, "jshort_small_copy");
     generate_int_small_copy(int_small_copy, "jint_small_copy");
-    generate_long_small_copy(long_small_copy, "jlong_small_copy");
+    generate_long_small_copy(DECORATORS_NONE, T_LONG, long_small_copy, "jlong_small_copy");
+#if INCLUDE_ZGC
+    if (UseZGC && ZGenerational) {
+      generate_long_small_copy(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT, T_OBJECT, long_small_copy_oop, "jlong_small_copy_oop");
+      generate_long_small_copy(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT | IS_DEST_UNINITIALIZED, T_OBJECT, long_small_copy_oop_uninit, "jlong_small_copy_oop_uninit");
+    }
+#endif
 
     if (UseCompressedOops) {
       StubRoutines::_oop_disjoint_arraycopy        = generate_disjoint_int_oop_copy(false, true, int_small_copy, disjoint_large_copy,
@@ -2935,14 +3052,29 @@ class StubGenerator: public StubCodeGenerator {
       StubRoutines::_oop_arraycopy_uninit          = generate_conjoint_int_oop_copy(false, true, int_small_copy, conjoint_large_copy,
                                                                                     "oop_arraycopy_uninit", int_oop_small_limit, true);
     } else {
-      StubRoutines::_oop_disjoint_arraycopy        = generate_disjoint_long_oop_copy(false, true, long_small_copy, disjoint_large_copy,
-                                                                                     "oop_disjoint_arraycopy", long_oop_small_limit);
-      StubRoutines::_oop_disjoint_arraycopy_uninit = generate_disjoint_long_oop_copy(false, true, long_small_copy, disjoint_large_copy,
-                                                                                     "oop_disjoint_arraycopy_uninit", long_oop_small_limit, true);
-      StubRoutines::_oop_arraycopy                 = generate_conjoint_long_oop_copy(false, true, long_small_copy, conjoint_large_copy,
-                                                                                     "oop_arraycopy", long_oop_small_limit);
-      StubRoutines::_oop_arraycopy_uninit          = generate_conjoint_long_oop_copy(false, true, long_small_copy, conjoint_large_copy,
-                                                                                     "oop_arraycopy_uninit", long_oop_small_limit, true);
+#if INCLUDE_ZGC
+      if (UseZGC && ZGenerational) {
+        StubRoutines::_oop_disjoint_arraycopy        = generate_disjoint_long_oop_copy(false, true, long_small_copy_oop, disjoint_large_copy_oop,
+                                                                                       "oop_disjoint_arraycopy", long_oop_small_limit);
+        StubRoutines::_oop_disjoint_arraycopy_uninit = generate_disjoint_long_oop_copy(false, true, long_small_copy_oop_uninit, disjoint_large_copy_oop_uninit,
+                                                                                       "oop_disjoint_arraycopy_uninit", long_oop_small_limit, true);
+        StubRoutines::_oop_arraycopy                 = generate_conjoint_long_oop_copy(false, true, long_small_copy_oop, conjoint_large_copy_oop,
+                                                                                       "oop_arraycopy", long_oop_small_limit);
+        StubRoutines::_oop_arraycopy_uninit          = generate_conjoint_long_oop_copy(false, true, long_small_copy_oop_uninit, conjoint_large_copy_oop_uninit,
+                                                                                       "oop_arraycopy_uninit", long_oop_small_limit, true);
+      } else {
+#endif
+        StubRoutines::_oop_disjoint_arraycopy        = generate_disjoint_long_oop_copy(false, true, long_small_copy, disjoint_large_copy,
+                                                                                       "oop_disjoint_arraycopy", long_oop_small_limit);
+        StubRoutines::_oop_disjoint_arraycopy_uninit = generate_disjoint_long_oop_copy(false, true, long_small_copy, disjoint_large_copy,
+                                                                                       "oop_disjoint_arraycopy_uninit", long_oop_small_limit, true);
+        StubRoutines::_oop_arraycopy                 = generate_conjoint_long_oop_copy(false, true, long_small_copy, conjoint_large_copy,
+                                                                                       "oop_arraycopy", long_oop_small_limit);
+        StubRoutines::_oop_arraycopy_uninit          = generate_conjoint_long_oop_copy(false, true, long_small_copy, conjoint_large_copy,
+                                                                                       "oop_arraycopy_uninit", long_oop_small_limit, true);
+#if INCLUDE_ZGC
+      }
+#endif
     }
 
     StubRoutines::_jbyte_disjoint_arraycopy        = generate_disjoint_byte_copy(false, byte_small_copy, disjoint_large_copy, "jbyte_disjoint_arraycopy");
@@ -2994,25 +3126,31 @@ class StubGenerator: public StubCodeGenerator {
     StubRoutines::_arrayof_jshort_fill = generate_fill(T_SHORT, true, "arrayof_jshort_fill");
     StubRoutines::_arrayof_jint_fill = generate_fill(T_INT, true, "arrayof_jint_fill");
 
-    Copy::_conjoint_words = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::jlong_arraycopy());
-    Copy::_disjoint_words = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::jlong_disjoint_arraycopy());
-    Copy::_disjoint_words_atomic = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::jlong_disjoint_arraycopy());
-    Copy::_aligned_conjoint_words = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::jlong_arraycopy());
-    Copy::_aligned_disjoint_words = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::jlong_disjoint_arraycopy());
-    Copy::_conjoint_bytes = reinterpret_cast<Copy::CopyByte>(StubRoutines::jbyte_arraycopy());
-    Copy::_conjoint_bytes_atomic = reinterpret_cast<Copy::CopyByte>(StubRoutines::jbyte_arraycopy());
-    Copy::_conjoint_jshorts_atomic = reinterpret_cast<Copy::CopyShort>(StubRoutines::jshort_arraycopy());
-    Copy::_conjoint_jints_atomic = reinterpret_cast<Copy::CopyInt>(StubRoutines::jint_arraycopy());
-    Copy::_conjoint_jlongs_atomic = reinterpret_cast<Copy::CopyLong>(StubRoutines::jlong_arraycopy());
-    Copy::_conjoint_oops_atomic = reinterpret_cast<Copy::CopyOop>(StubRoutines::jlong_arraycopy());
-    Copy::_arrayof_conjoint_bytes = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jbyte_arraycopy());
-    Copy::_arrayof_conjoint_jshorts = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jshort_arraycopy());
-    Copy::_arrayof_conjoint_jints = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jint_arraycopy());
-    Copy::_arrayof_conjoint_jlongs = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jlong_arraycopy());
-    Copy::_arrayof_conjoint_oops = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jlong_arraycopy());
-    Copy::_fill_to_words = reinterpret_cast<Copy::FillHeapWord>(generate_fill(T_LONG, false, "jlong_fill"));
-    Copy::_fill_to_aligned_words = reinterpret_cast<Copy::FillHeapWord>(generate_fill(T_LONG, true, "arrayof_jlong_fill"));;
-    Copy::_fill_to_bytes = reinterpret_cast<Copy::FillByte>(StubRoutines::_jbyte_fill);
+#if INCLUDE_ZGC
+    if (!(UseZGC && ZGenerational)) {
+#endif
+      Copy::_conjoint_words = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::jlong_arraycopy());
+      Copy::_disjoint_words = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::jlong_disjoint_arraycopy());
+      Copy::_disjoint_words_atomic = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::jlong_disjoint_arraycopy());
+      Copy::_aligned_conjoint_words = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::jlong_arraycopy());
+      Copy::_aligned_disjoint_words = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::jlong_disjoint_arraycopy());
+      Copy::_conjoint_bytes = reinterpret_cast<Copy::CopyByte>(StubRoutines::jbyte_arraycopy());
+      Copy::_conjoint_bytes_atomic = reinterpret_cast<Copy::CopyByte>(StubRoutines::jbyte_arraycopy());
+      Copy::_conjoint_jshorts_atomic = reinterpret_cast<Copy::CopyShort>(StubRoutines::jshort_arraycopy());
+      Copy::_conjoint_jints_atomic = reinterpret_cast<Copy::CopyInt>(StubRoutines::jint_arraycopy());
+      Copy::_conjoint_jlongs_atomic = reinterpret_cast<Copy::CopyLong>(StubRoutines::jlong_arraycopy());
+      Copy::_conjoint_oops_atomic = reinterpret_cast<Copy::CopyOop>(StubRoutines::jlong_arraycopy());
+      Copy::_arrayof_conjoint_bytes = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jbyte_arraycopy());
+      Copy::_arrayof_conjoint_jshorts = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jshort_arraycopy());
+      Copy::_arrayof_conjoint_jints = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jint_arraycopy());
+      Copy::_arrayof_conjoint_jlongs = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jlong_arraycopy());
+      Copy::_arrayof_conjoint_oops = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jlong_arraycopy());
+      Copy::_fill_to_words = reinterpret_cast<Copy::FillHeapWord>(generate_fill(T_LONG, false, "jlong_fill"));
+      Copy::_fill_to_aligned_words = reinterpret_cast<Copy::FillHeapWord>(generate_fill(T_LONG, true, "arrayof_jlong_fill"));;
+      Copy::_fill_to_bytes = reinterpret_cast<Copy::FillByte>(StubRoutines::_jbyte_fill);
+#if INCLUDE_ZGC
+    }
+#endif
   }
 
   address generate_method_entry_barrier() {
@@ -3029,7 +3167,7 @@ class StubGenerator: public StubCodeGenerator {
     if (bs_asm->nmethod_patching_type() == NMethodPatchingType::conc_instruction_and_data_patch) {
       BarrierSetNMethod* bs_nm = BarrierSet::barrier_set()->barrier_set_nmethod();
       Address thread_epoch_addr(TREG, in_bytes(bs_nm->thread_disarmed_guard_value_offset()) + 4);
-      __ lea(SCR1, ExternalAddress(bs_asm->patching_epoch_addr()));
+      __ lea_long(SCR1, ExternalAddress(bs_asm->patching_epoch_addr()));
       __ ld_wu(SCR1, SCR1, 0);
       __ st_w(SCR1, thread_epoch_addr);
       __ ibar(0);
@@ -4830,7 +4968,7 @@ class StubGenerator: public StubCodeGenerator {
       framesize // inclusive of return address
     };
 
-    CodeBuffer code("jfr_write_checkpoint", 512, 64);
+    CodeBuffer code("jfr_write_checkpoint", 1024, 64);
     MacroAssembler* _masm = new MacroAssembler(&code);
 
     address start = __ pc();
@@ -4846,7 +4984,7 @@ class StubGenerator: public StubCodeGenerator {
     __ reset_last_Java_frame(true);
     // A0 is jobject handle result, unpack and process it through a barrier.
     // For zBarrierSet, tmp1 shall not be SCR1 or same as dst
-    __ resolve_global_jobject(A0, SCR2, noreg);
+    __ resolve_global_jobject(A0, SCR2, SCR1);
 
     __ leave();
     __ jr(RA);
@@ -4901,7 +5039,7 @@ class StubGenerator: public StubCodeGenerator {
       framesize // inclusive of return address
     };
 
-    const int insts_size = 512;
+    const int insts_size = 1024;
     const int locs_size  = 64;
 
     CodeBuffer code(name, insts_size, locs_size);
@@ -5531,7 +5669,7 @@ class StubGenerator: public StubCodeGenerator {
 
     // Initialize table for copy memory (arraycopy) check.
     if (UnsafeCopyMemory::_table == nullptr) {
-      UnsafeCopyMemory::create_table(8);
+      UnsafeCopyMemory::create_table(8 ZGC_ONLY(+ (UseZGC && ZGenerational ? 14 : 0)));
     }
 
     if (UseCRC32Intrinsics) {

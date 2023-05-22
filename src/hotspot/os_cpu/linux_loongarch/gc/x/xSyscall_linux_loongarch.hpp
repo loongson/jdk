@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -22,9 +22,20 @@
  * questions.
  */
 
-#ifndef CPU_LOONGARCH_GC_Z_ZGLOBALS_LOONGARCH_HPP
-#define CPU_LOONGARCH_GC_Z_ZGLOBALS_LOONGARCH_HPP
+#ifndef OS_CPU_LINUX_LOONGARCH_GC_X_XSYSCALL_LINUX_LOONGARCH_HPP
+#define OS_CPU_LINUX_LOONGARCH_GC_X_XSYSCALL_LINUX_LOONGARCH_HPP
 
-const size_t ZPlatformCacheLineSize = 64;
+#include <sys/syscall.h>
 
-#endif // CPU_LOONGARCH_GC_Z_ZGLOBALS_LOONGARCH_HPP
+//
+// Support for building on older Linux systems
+//
+
+#ifndef SYS_memfd_create
+#define SYS_memfd_create     279
+#endif
+#ifndef SYS_fallocate
+#define SYS_fallocate        47
+#endif
+
+#endif // OS_CPU_LINUX_LOONGARCH_GC_X_XSYSCALL_LINUX_LOONGARCH_HPP

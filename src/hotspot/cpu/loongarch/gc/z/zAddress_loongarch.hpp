@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -22,9 +22,14 @@
  * questions.
  */
 
-#ifndef CPU_LOONGARCH_GC_Z_ZGLOBALS_LOONGARCH_HPP
-#define CPU_LOONGARCH_GC_Z_ZGLOBALS_LOONGARCH_HPP
+#ifndef CPU_LOONGARCH64_GC_Z_ZADDRESS_LOONGARCH64_HPP
+#define CPU_LOONGARCH64_GC_Z_ZADDRESS_LOONGARCH64_HPP
 
-const size_t ZPlatformCacheLineSize = 64;
+#include "utilities/globalDefinitions.hpp"
 
-#endif // CPU_LOONGARCH_GC_Z_ZGLOBALS_LOONGARCH_HPP
+const size_t ZPointerLoadShift = 16;
+
+size_t ZPlatformAddressOffsetBits();
+size_t ZPlatformAddressHeapBaseShift();
+
+#endif // CPU_LOONGARCH64_GC_Z_ZADDRESS_LOONGARCH64_HPP

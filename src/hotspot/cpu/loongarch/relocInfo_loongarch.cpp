@@ -42,7 +42,8 @@ void Relocation::pd_set_data_value(address x, intptr_t o, bool verify_only) {
          which == Assembler::narrow_oop_operand ||
          which == Assembler::imm_operand, "format unpacks ok");
   if (type() == relocInfo::internal_word_type ||
-      type() == relocInfo::section_word_type) {
+      type() == relocInfo::section_word_type  ||
+      type() == relocInfo::external_word_type) {
     MacroAssembler::pd_patch_instruction(addr(), x);
   } else if (which == Assembler::imm_operand) {
     if (verify_only) {

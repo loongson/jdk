@@ -155,6 +155,100 @@ void BarrierSetAssembler::store_at(MacroAssembler* masm, DecoratorSet decorators
   }
 }
 
+void BarrierSetAssembler::copy_load_at(MacroAssembler* masm,
+                                       DecoratorSet decorators,
+                                       BasicType type,
+                                       size_t bytes,
+                                       Register dst,
+                                       Address src,
+                                       Register tmp) {
+  if (bytes == 1) {
+    __ ld_bu(dst, src);
+  } else if (bytes == 2) {
+    __ ld_hu(dst, src);
+  } else if (bytes == 4) {
+    __ ld_wu(dst, src);
+  } else if (bytes == 8) {
+    __ ld_d(dst, src);
+  } else {
+    // Not the right size
+    ShouldNotReachHere();
+  }
+  if ((decorators & ARRAYCOPY_CHECKCAST) != 0 && UseCompressedOops) {
+    __ decode_heap_oop(dst);
+  }
+}
+
+void BarrierSetAssembler::copy_store_at(MacroAssembler* masm,
+                                        DecoratorSet decorators,
+                                        BasicType type,
+                                        size_t bytes,
+                                        Address dst,
+                                        Register src,
+                                        Register tmp1,
+                                        Register tmp2,
+                                        Register tmp3) {
+  if ((decorators & ARRAYCOPY_CHECKCAST) != 0 && UseCompressedOops) {
+    __ encode_heap_oop(src);
+  }
+
+  if (bytes == 1) {
+    __ st_b(src, dst);
+  } else if (bytes == 2) {
+    __ st_h(src, dst);
+  } else if (bytes == 4) {
+    __ st_w(src, dst);
+  } else if (bytes == 8) {
+    __ st_d(src, dst);
+  } else {
+    // Not the right size
+    ShouldNotReachHere();
+  }
+}
+
+void BarrierSetAssembler::copy_load_at(MacroAssembler* masm,
+                                       DecoratorSet decorators,
+                                       BasicType type,
+                                       size_t bytes,
+                                       FloatRegister dst,
+                                       Address src,
+                                       Register tmp1,
+                                       Register tmp2,
+                                       FloatRegister vec_tmp,
+                                       bool need_save_restore) {
+  assert(bytes > 8, "can only deal with vector registers");
+  if (UseLSX && bytes == 16) {
+    __ vld(dst, src.base(), src.disp());
+  } else if (UseLASX && bytes == 32) {
+    __ xvld(dst, src.base(), src.disp());
+  } else {
+    ShouldNotReachHere();
+  }
+}
+
+void BarrierSetAssembler::copy_store_at(MacroAssembler* masm,
+                                        DecoratorSet decorators,
+                                        BasicType type,
+                                        size_t bytes,
+                                        Address dst,
+                                        FloatRegister src,
+                                        Register tmp1,
+                                        Register tmp2,
+                                        Register tmp3,
+                                        Register tmp4,
+                                        FloatRegister vec_tmp1,
+                                        FloatRegister vec_tmp2,
+                                        bool need_save_restore) {
+  assert(bytes > 8, "can only deal with vector registers");
+  if (UseLSX && bytes == 16) {
+    __ vst(src, dst.base(), dst.disp());
+  } else if (UseLASX && bytes == 32) {
+    __ xvst(src, dst.base(), dst.disp());
+  } else {
+    ShouldNotReachHere();
+  }
+}
+
 void BarrierSetAssembler::obj_equals(MacroAssembler* masm,
                                      Register obj1, Address obj2) {
   Unimplemented();
@@ -277,7 +371,7 @@ void BarrierSetAssembler::nmethod_entry_barrier(MacroAssembler* masm, Label* slo
         // last nmethod was disarmed. This implies that the required
         // fencing has been performed for all preceding nmethod disarms
         // as well. Therefore, we do not need any further fencing.
-        __ lea(SCR2, ExternalAddress((address)&_patching_epoch));
+        __ lea_long(SCR2, ExternalAddress((address)&_patching_epoch));
         // Embed an artificial data dependency to order the guard load
         // before the epoch load.
         __ srli_d(RA, SCR1, 32);

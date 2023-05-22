@@ -33,6 +33,13 @@
 
 class OopMap;
 
+#if INCLUDE_ZGC
+const int ZBarrierRelocationFormatLoadBadMask = 0;
+const int ZBarrierRelocationFormatMarkBadMask = 1;
+const int ZBarrierRelocationFormatStoreGoodBits = 2;
+const int ZBarrierRelocationFormatStoreBadMask = 3;
+#endif
+
 // MacroAssembler extends Assembler by frequently used macros.
 //
 // Instructions for which a 'better' code sequence exists depending
@@ -587,6 +594,7 @@ class MacroAssembler: public Assembler {
   void orr (Register rd, Register rj, Register rk) {  OR(rd, rj, rk); }
   void lea (Register rd, Address src);
   void lea(Register dst, AddressLiteral adr);
+  void lea_long(Register dst, AddressLiteral adr);
   static int  patched_branch(int dest_pos, int inst, int inst_pos);
 
   // Conditional move
@@ -696,6 +704,13 @@ class MacroAssembler: public Assembler {
 
   void fast_lock(Register obj, Register hdr, Register flag, Register tmp, Label& slow);
   void fast_unlock(Register obj, Register hdr, Register flag, Register tmp, Label& slow);
+
+#if INCLUDE_ZGC
+  void patchable_li16(Register rd, uint16_t value);
+  void z_color(Register dst, Register src, Register tmp);
+  void z_uncolor(Register ref);
+  void check_color(Register ref, Register tmp, bool on_non_strong);
+#endif
 
 private:
   void push(unsigned int bitset);

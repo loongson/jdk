@@ -899,11 +899,13 @@ void reg_mask_init() {
     _PTR_REG_mask.SUBTRACT(_FP_REG_mask);
   }
 
+#if INCLUDE_ZGC || INCLUDE_SHENANDOAHGC
   if (UseZGC || UseShenandoahGC) {
     _ANY_REG32_mask.Remove(OptoReg::as_OptoReg(r16->as_VMReg()));
     _ANY_REG_mask.SUBTRACT(_T4_LONG_REG_mask);
     _PTR_REG_mask.SUBTRACT(_T4_LONG_REG_mask);
   }
+#endif
 
   _NO_CR_REG_mask = _PTR_REG_mask;
   _NO_CR_REG_mask.SUBTRACT(_T0_LONG_REG_mask);

@@ -53,6 +53,49 @@ public:
   virtual void arraycopy_epilogue(MacroAssembler* masm, DecoratorSet decorators, bool is_oop,
                                   Register dst, Register count, Register scratch, RegSet saved_regs) {}
 
+  virtual void copy_load_at(MacroAssembler* masm,
+                            DecoratorSet decorators,
+                            BasicType type,
+                            size_t bytes,
+                            Register dst,
+                            Address src,
+                            Register tmp);
+
+  virtual void copy_store_at(MacroAssembler* masm,
+                             DecoratorSet decorators,
+                             BasicType type,
+                             size_t bytes,
+                             Address dst,
+                             Register src,
+                             Register tmp1,
+                             Register tmp2,
+                             Register tmp3);
+
+  virtual void copy_load_at(MacroAssembler* masm,
+                            DecoratorSet decorators,
+                            BasicType type,
+                            size_t bytes,
+                            FloatRegister dst,
+                            Address src,
+                            Register tmp1,
+                            Register tmp2,
+                            FloatRegister vec_tmp,
+                            bool need_save_restore = true);
+
+  virtual void copy_store_at(MacroAssembler* masm,
+                             DecoratorSet decorators,
+                             BasicType type,
+                             size_t bytes,
+                             Address dst,
+                             FloatRegister src,
+                             Register tmp1,
+                             Register tmp2,
+                             Register tmp3,
+                             Register tmp4,
+                             FloatRegister vec_tmp1,
+                             FloatRegister vec_tmp2,
+                             bool need_save_restore = true);
+
   virtual void load_at(MacroAssembler* masm, DecoratorSet decorators, BasicType type,
                        Register dst, Address src, Register tmp1, Register tmp2);
   virtual void store_at(MacroAssembler* masm, DecoratorSet decorators, BasicType type,

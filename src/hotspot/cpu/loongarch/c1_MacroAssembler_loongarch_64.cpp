@@ -46,7 +46,7 @@ int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr
   verify_oop(obj);
 
   // save object being locked into the BasicObjectLock
-  st_d(obj, Address(disp_hdr, BasicObjectLock::obj_offset_in_bytes()));
+  st_d(obj, Address(disp_hdr, BasicObjectLock::obj_offset()));
 
   null_check_offset = offset();
 
@@ -117,7 +117,7 @@ void C1_MacroAssembler::unlock_object(Register hdr, Register obj, Register disp_
   }
 
   // load object
-  ld_d(obj, Address(disp_hdr, BasicObjectLock::obj_offset_in_bytes()));
+  ld_d(obj, Address(disp_hdr, BasicObjectLock::obj_offset()));
   verify_oop(obj);
   if (LockingMode == LM_LIGHTWEIGHT) {
     ld_d(hdr, Address(obj, oopDesc::mark_offset_in_bytes()));

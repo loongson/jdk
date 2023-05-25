@@ -207,7 +207,7 @@ address MethodHandles::generate_method_handle_interpreter_entry(MacroAssembler* 
 
     Label L;
     BLOCK_COMMENT("verify_intrinsic_id {");
-    __ ld_hu(AT, rm_method, Method::intrinsic_id_offset_in_bytes());
+    __ ld_hu(AT, Address(rm_method, Method::intrinsic_id_offset()));
     guarantee(Assembler::is_simm(vmIntrinsics::as_int(iid), 12), "Oops, iid is not simm12! Change the instructions.");
     __ addi_d(AT, AT, -1 * (int) iid);
     __ beq(AT, R0, L);

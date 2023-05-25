@@ -865,7 +865,7 @@ void TemplateInterpreterGenerator::lock_method(void) {
   __ addi_d(SP, SP, (-1) * entry_size);           // add space for a monitor entry
   __ st_d(SP, FP, frame::interpreter_frame_monitor_block_top_offset * wordSize);
   // set new monitor block top
-  __ st_d(T0, SP, BasicObjectLock::obj_offset_in_bytes());   // store object
+  __ st_d(T0, Address(SP, BasicObjectLock::obj_offset()));   // store object
 
   const Register lock_reg = T0;
   __ move(lock_reg, SP);      // object address
@@ -918,7 +918,7 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
 
   __ ld_d(T2, Rmethod, in_bytes(Method::const_offset()));
   __ ld_d(T2, T2, in_bytes(ConstMethod::constants_offset()));
-  __ ld_d(T2, T2, ConstantPool::cache_offset_in_bytes());
+  __ ld_d(T2, Address(T2, ConstantPool::cache_offset()));
   __ st_d(T2, FP, (-++i) * wordSize);                    // set constant pool cache
   if (native_call) {
     __ st_d(R0, FP, (-++i) * wordSize);          // no bcp
@@ -1417,7 +1417,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 
   // reset handle block
   __ ld_d(t, TREG, in_bytes(JavaThread::active_handles_offset()));
-  __ st_w(R0, t, JNIHandleBlock::top_offset_in_bytes());
+  __ st_w(R0, Address(t, JNIHandleBlock::top_offset()));
 
   // If result was an oop then unbox and save it in the frame
   {
@@ -1488,7 +1488,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
       // an explicit monitorexit bytecode.
       // address of first monitor
 
-      __ ld_d(t, monitor_reg, BasicObjectLock::obj_offset_in_bytes());
+      __ ld_d(t, Address(monitor_reg, BasicObjectLock::obj_offset()));
       __ bne(t, R0, unlock);
 
       // Entry already unlocked, need to throw exception

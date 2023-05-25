@@ -1236,7 +1236,7 @@ void MacroAssembler::resolve_weak_handle(Register result, Register tmp1, Registe
 void MacroAssembler::load_mirror(Register mirror, Register method, Register tmp1, Register tmp2) {
   ld_d(mirror, Address(method, Method::const_offset()));
   ld_d(mirror, Address(mirror, ConstMethod::constants_offset()));
-  ld_d(mirror, Address(mirror, ConstantPool::pool_holder_offset_in_bytes()));
+  ld_d(mirror, Address(mirror, ConstantPool::pool_holder_offset()));
   ld_d(mirror, Address(mirror, Klass::java_mirror_offset()));
   resolve_oop_handle(mirror, tmp1, tmp2);
 }
@@ -1650,7 +1650,7 @@ void MacroAssembler::pop_vp(unsigned int bitset) {
 void MacroAssembler::load_method_holder(Register holder, Register method) {
   ld_d(holder, Address(method, Method::const_offset()));                      // ConstMethod*
   ld_d(holder, Address(holder, ConstMethod::constants_offset()));             // ConstantPool*
-  ld_d(holder, Address(holder, ConstantPool::pool_holder_offset_in_bytes())); // InstanceKlass*
+  ld_d(holder, Address(holder, ConstantPool::pool_holder_offset())); // InstanceKlass*
 }
 
 void MacroAssembler::load_method_holder_cld(Register rresult, Register rmethod) {
@@ -2363,7 +2363,7 @@ void MacroAssembler::lookup_interface_method(Register recv_klass,
 
   // Compute start of first itableOffsetEntry (which is at the end of the vtable)
   int vtable_base = in_bytes(Klass::vtable_start_offset());
-  int itentry_off = itableMethodEntry::method_offset_in_bytes();
+  int itentry_off = in_bytes(itableMethodEntry::method_offset());
   int scan_step   = itableOffsetEntry::size() * wordSize;
   int vte_size    = vtableEntry::size() * wordSize;
   Address::ScaleFactor times_vte_scale = Address::times_ptr;
@@ -2389,7 +2389,7 @@ void MacroAssembler::lookup_interface_method(Register recv_klass,
 
   Label search, found_method;
 
-  ld_d(method_result, Address(scan_temp, itableOffsetEntry::interface_offset_in_bytes()));
+  ld_d(method_result, Address(scan_temp, itableOffsetEntry::interface_offset()));
   beq(intf_klass, method_result, found_method);
 
   bind(search);
@@ -2398,13 +2398,13 @@ void MacroAssembler::lookup_interface_method(Register recv_klass,
   // same as when the caller was compiled.
   beqz(method_result, L_no_such_interface);
   addi_d(scan_temp, scan_temp, scan_step);
-  ld_d(method_result, Address(scan_temp, itableOffsetEntry::interface_offset_in_bytes()));
+  ld_d(method_result, Address(scan_temp, itableOffsetEntry::interface_offset()));
   bne(intf_klass, method_result, search);
 
   bind(found_method);
   if (return_method) {
     // Got a hit.
-    ld_wu(scan_temp, Address(scan_temp, itableOffsetEntry::offset_offset_in_bytes()));
+    ld_wu(scan_temp, Address(scan_temp, itableOffsetEntry::offset_offset()));
     ldx_d(method_result, recv_klass, scan_temp);
   }
 }
@@ -2413,7 +2413,6 @@ void MacroAssembler::lookup_interface_method(Register recv_klass,
 void MacroAssembler::lookup_virtual_method(Register recv_klass,
                                            RegisterOrConstant vtable_index,
                                            Register method_result) {
-  const int base = in_bytes(Klass::vtable_start_offset());
   assert(vtableEntry::size() * wordSize == wordSize, "else adjust the scaling in the code below");
 
   if (vtable_index.is_constant()) {
@@ -2423,7 +2422,7 @@ void MacroAssembler::lookup_virtual_method(Register recv_klass,
     alsl_d(AT, vtable_index.as_register(), recv_klass, Address::times_ptr - 1);
   }
 
-  ld_d(method_result, AT, base + vtableEntry::method_offset_in_bytes());
+  ld_d(method_result, AT, in_bytes(Klass::vtable_start_offset() + vtableEntry::method_offset()));
 }
 
 void MacroAssembler::load_byte_map_base(Register reg) {

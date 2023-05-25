@@ -342,8 +342,8 @@ void InterpreterMacroAssembler::load_resolved_reference_at_index(
 
   get_constant_pool(result);
   // load pointer for resolved_references[] objArray
-  ld_d(result, result, ConstantPool::cache_offset_in_bytes());
-  ld_d(result, result, ConstantPoolCache::resolved_references_offset_in_bytes());
+  ld_d(result, Address(result, ConstantPool::cache_offset()));
+  ld_d(result, Address(result, ConstantPoolCache::resolved_references_offset()));
   resolve_oop_handle(result, tmp, SCR1);
   // Add in the index
   alsl_d(result, index, result, LogBytesPerHeapOop - 1);
@@ -356,7 +356,7 @@ void InterpreterMacroAssembler::load_resolved_klass_at_index(Register cpool,
   alsl_d(AT, index, cpool, Address::times_ptr - 1);
   ld_h(index, AT, sizeof(ConstantPool));
   Register resolved_klasses = cpool;
-  ld_d(resolved_klasses, Address(cpool, ConstantPool::resolved_klasses_offset_in_bytes()));
+  ld_d(resolved_klasses, Address(cpool, ConstantPool::resolved_klasses_offset()));
   alsl_d(AT, index, resolved_klasses, Address::times_ptr - 1);
   ld_d(klass, AT, Array<Klass*>::base_offset_in_bytes());
 }
@@ -673,7 +673,7 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
                           - (int) sizeof(BasicObjectLock));
 
   // address of first monitor
-  ld_d(AT, monitor_reg, BasicObjectLock::obj_offset_in_bytes());
+  ld_d(AT, Address(monitor_reg, BasicObjectLock::obj_offset()));
   bnez(AT, unlock);
 
   pop(state);
@@ -745,7 +745,7 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
 
     bind(loop);
     // check if current entry is used
-    ld_d(AT, monitor_reg, BasicObjectLock::obj_offset_in_bytes());
+    ld_d(AT, Address(monitor_reg, BasicObjectLock::obj_offset()));
     bnez(AT, exception);
 
     // otherwise advance to next entry
@@ -805,8 +805,8 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
     Label count, done, slow_case;
     const Register tmp_reg = T2;
     const Register scr_reg = T1;
-    const int obj_offset = BasicObjectLock::obj_offset_in_bytes();
-    const int lock_offset = BasicObjectLock::lock_offset_in_bytes ();
+    const int obj_offset = in_bytes(BasicObjectLock::obj_offset());
+    const int lock_offset = in_bytes(BasicObjectLock::lock_offset());
     const int mark_offset = lock_offset + BasicLock::displaced_header_offset_in_bytes();
 
     // Load object pointer into scr_reg
@@ -897,13 +897,13 @@ void InterpreterMacroAssembler::unlock_object(Register lock_reg) {
     if (LockingMode != LM_LIGHTWEIGHT) {
       // Convert from BasicObjectLock structure to object and BasicLock
       // structure Store the BasicLock address into tmp_reg
-      lea(tmp_reg, Address(lock_reg, BasicObjectLock::lock_offset_in_bytes()));
+      lea(tmp_reg, Address(lock_reg, BasicObjectLock::lock_offset()));
     }
 
     // Load oop into scr_reg
-    ld_d(scr_reg, lock_reg, BasicObjectLock::obj_offset_in_bytes());
+    ld_d(scr_reg, Address(lock_reg, BasicObjectLock::obj_offset()));
     // free entry
-    st_d(R0, lock_reg, BasicObjectLock::obj_offset_in_bytes());
+    st_d(R0, Address(lock_reg, BasicObjectLock::obj_offset()));
 
     if (LockingMode == LM_LIGHTWEIGHT) {
       Label slow_case;
@@ -936,7 +936,7 @@ void InterpreterMacroAssembler::unlock_object(Register lock_reg) {
       cmpxchg(Address(scr_reg, 0), tmp_reg, hdr_reg, AT, false, false, count);
     }
     // Call the runtime routine for slow case.
-    st_d(scr_reg, lock_reg, BasicObjectLock::obj_offset_in_bytes()); // restore obj
+    st_d(scr_reg, Address(lock_reg, BasicObjectLock::obj_offset())); // restore obj
     call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit), lock_reg);
     b(done);
 
@@ -1802,7 +1802,7 @@ void InterpreterMacroAssembler::profile_return_type(Register mdp, Register ret, 
       beqz(AT, do_profile);
 
       get_method(tmp);
-      ld_hu(tmp, tmp, Method::intrinsic_id_offset_in_bytes());
+      ld_hu(tmp, Address(tmp, Method::intrinsic_id_offset()));
       li(AT, static_cast<int>(vmIntrinsics::_compiledLambdaForm));
       bne(tmp, AT, profile_continue);
 

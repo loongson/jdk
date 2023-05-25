@@ -105,12 +105,12 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   void get_constant_pool_cache(Register reg) {
     get_constant_pool(reg);
-    ld_d(reg, reg, ConstantPool::cache_offset_in_bytes());
+    ld_d(reg, reg, in_bytes(ConstantPool::cache_offset()));
   }
 
   void get_cpool_and_tags(Register cpool, Register tags) {
     get_constant_pool(cpool);
-    ld_d(tags, cpool, ConstantPool::tags_offset_in_bytes());
+    ld_d(tags, cpool, in_bytes(ConstantPool::tags_offset()));
   }
 
   void get_unsigned_2_byte_index_at_bcp(Register reg, int bcp_offset);

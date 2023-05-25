@@ -1707,7 +1707,7 @@ void TemplateTable::branch(bool is_jsr, bool is_wide) {
     // BCP: bcp
     __ beq(V0, R0, dispatch);
     // nmethod may have been invalidated (VM may block upon call_VM return)
-    __ ld_b(T3, V0, nmethod::state_offset());
+    __ ld_b(T3, Address(V0, nmethod::state_offset()));
     __ li(AT, nmethod::in_use);
     __ bne(AT, T3, dispatch);
 
@@ -1735,7 +1735,7 @@ void TemplateTable::branch(bool is_jsr, bool is_wide) {
 
     // push the (possibly adjusted) return address
     // refer to osr_entry in c1_LIRAssembler_loongarch.cpp
-    __ ld_d(AT, Rnext, nmethod::osr_entry_point_offset());
+    __ ld_d(AT, Address(Rnext, nmethod::osr_entry_point_offset()));
     __ jr(AT);
   }
 }
@@ -3891,7 +3891,7 @@ void TemplateTable::monitorenter() {
 
     // free slot?
     __ bind(loop);
-    __ ld_d(AT, T2, BasicObjectLock::obj_offset_in_bytes());
+    __ ld_d(AT, Address(T2, BasicObjectLock::obj_offset()));
     __ bne(AT, R0, next);
     __ move(monitor_reg, T2);
 
@@ -3932,7 +3932,7 @@ void TemplateTable::monitorenter() {
   // The object has already been popped from the stack, so the
   // expression stack looks correct.
   __ addi_d(BCP, BCP, 1);
-  __ st_d(FSR, monitor_reg, BasicObjectLock::obj_offset_in_bytes());
+  __ st_d(FSR, Address(monitor_reg, BasicObjectLock::obj_offset()));
   __ lock_object(monitor_reg);
   // check to make sure this monitor doesn't cause stack overflow after locking
   __ save_bcp();  // in case of exception
@@ -3964,7 +3964,7 @@ void TemplateTable::monitorexit() {
     __ b(entry);
 
     __ bind(loop);
-    __ ld_d(AT, monitor_top, BasicObjectLock::obj_offset_in_bytes());
+    __ ld_d(AT, Address(monitor_top, BasicObjectLock::obj_offset()));
     __ beq(FSR, AT, found);
     __ addi_d(monitor_top, monitor_top, entry_size);
     __ bind(entry);

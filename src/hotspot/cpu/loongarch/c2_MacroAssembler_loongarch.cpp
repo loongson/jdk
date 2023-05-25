@@ -105,7 +105,7 @@ void C2_MacroAssembler::fast_lock_c2(Register oop, Register box, Register flag,
   //
   // Try to CAS m->owner from null to current thread.
   move(AT, R0);
-  addi_d(tmp, disp_hdr, ObjectMonitor::owner_offset_in_bytes() - markWord::monitor_value);
+  addi_d(tmp, disp_hdr, in_bytes(ObjectMonitor::owner_offset()) - markWord::monitor_value);
   cmpxchg(Address(tmp, 0), AT, TREG, flag, true, false);
   if (LockingMode != LM_LIGHTWEIGHT) {
     // Store a non-null value into the box to avoid looking like a re-entrant
@@ -121,7 +121,7 @@ void C2_MacroAssembler::fast_lock_c2(Register oop, Register box, Register flag,
 
   // Recursive lock case
   li(flag, 1);
-  increment(Address(disp_hdr, ObjectMonitor::recursions_offset_in_bytes() - markWord::monitor_value), 1);
+  increment(Address(disp_hdr, in_bytes(ObjectMonitor::recursions_offset()) - markWord::monitor_value), 1);
 
   bind(cont);
   // flag == 1 indicates success
@@ -182,7 +182,7 @@ void C2_MacroAssembler::fast_unlock_c2(Register oop, Register box, Register flag
   if (LockingMode == LM_LIGHTWEIGHT) {
     // If the owner is anonymous, we need to fix it -- in an outline stub.
     Register tmp2 = disp_hdr;
-    ld_d(tmp2, Address(tmp, ObjectMonitor::owner_offset_in_bytes()));
+    ld_d(tmp2, Address(tmp, ObjectMonitor::owner_offset()));
     // We cannot use tbnz here, the target might be too far away and cannot
     // be encoded.
     assert_different_registers(tmp2, AT);
@@ -194,26 +194,26 @@ void C2_MacroAssembler::fast_unlock_c2(Register oop, Register box, Register flag
     bind(stub->continuation());
   }
 
-  ld_d(disp_hdr, Address(tmp, ObjectMonitor::recursions_offset_in_bytes()));
+  ld_d(disp_hdr, Address(tmp, ObjectMonitor::recursions_offset()));
 
   Label notRecursive;
   beqz(disp_hdr, notRecursive);
 
   // Recursive lock
   addi_d(disp_hdr, disp_hdr, -1);
-  st_d(disp_hdr, Address(tmp, ObjectMonitor::recursions_offset_in_bytes()));
+  st_d(disp_hdr, Address(tmp, ObjectMonitor::recursions_offset()));
   li(flag, 1);
   b(cont);
 
   bind(notRecursive);
-  ld_d(flag, Address(tmp, ObjectMonitor::EntryList_offset_in_bytes()));
-  ld_d(disp_hdr, Address(tmp, ObjectMonitor::cxq_offset_in_bytes()));
+  ld_d(flag, Address(tmp, ObjectMonitor::EntryList_offset()));
+  ld_d(disp_hdr, Address(tmp, ObjectMonitor::cxq_offset()));
   orr(AT, flag, disp_hdr);
 
   move(flag, R0);
   bnez(AT, cont);
 
-  addi_d(AT, tmp, ObjectMonitor::owner_offset_in_bytes());
+  addi_d(AT, tmp, in_bytes(ObjectMonitor::owner_offset()));
   amswap_db_d(tmp, R0, AT);
   li(flag, 1);
 

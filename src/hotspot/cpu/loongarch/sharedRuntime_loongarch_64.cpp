@@ -697,8 +697,8 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
     //add for compressedoops
     __ load_klass(temp, receiver);
 
-    __ ld_d(AT, holder, CompiledICHolder::holder_klass_offset());
-    __ ld_d(Rmethod, holder, CompiledICHolder::holder_metadata_offset());
+    __ ld_d(AT, Address(holder, CompiledICHolder::holder_klass_offset()));
+    __ ld_d(Rmethod, Address(holder, CompiledICHolder::holder_metadata_offset()));
     __ bne(AT, temp, missed);
     // Method might have been compiled since the call site was patched to
     // interpreted if that is the case treat it as a miss so we can get
@@ -1967,7 +1967,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
   // reset handle block
   __ ld_d(AT, TREG, in_bytes(JavaThread::active_handles_offset()));
-  __ st_w(R0, AT, JNIHandleBlock::top_offset_in_bytes());
+  __ st_w(R0, AT, in_bytes(JNIHandleBlock::top_offset()));
 
   __ leave();
 
@@ -2311,7 +2311,7 @@ void SharedRuntime::generate_deopt_blob() {
   // Move the unpack kind to a safe place in the UnrollBlock because
   // we are very short of registers
 
-  Address unpack_kind(unroll, Deoptimization::UnrollBlock::unpack_kind_offset_in_bytes());
+  Address unpack_kind(unroll, Deoptimization::UnrollBlock::unpack_kind_offset());
   __ st_w(reason, unpack_kind);
   // save the unpack_kind value
   // Retrieve the possible live values (return values)
@@ -2362,34 +2362,34 @@ void SharedRuntime::generate_deopt_blob() {
   Register count = T3;
 
   // Pop deoptimized frame
-  __ ld_w(T8, unroll, Deoptimization::UnrollBlock::size_of_deoptimized_frame_offset_in_bytes());
+  __ ld_w(T8, Address(unroll, Deoptimization::UnrollBlock::size_of_deoptimized_frame_offset()));
   __ add_d(SP, SP, T8);
   // sp should be pointing at the return address to the caller (3)
 
   // Load array of frame pcs into pcs
-  __ ld_d(pcs, unroll, Deoptimization::UnrollBlock::frame_pcs_offset_in_bytes());
+  __ ld_d(pcs, Address(unroll, Deoptimization::UnrollBlock::frame_pcs_offset()));
   __ addi_d(SP, SP, wordSize);  // trash the old pc
   // Load array of frame sizes into T6
-  __ ld_d(sizes, unroll, Deoptimization::UnrollBlock::frame_sizes_offset_in_bytes());
+  __ ld_d(sizes, Address(unroll, Deoptimization::UnrollBlock::frame_sizes_offset()));
 
 #ifdef ASSERT
   // Compilers generate code that bang the stack by as much as the
   // interpreter would need. So this stack banging should never
   // trigger a fault. Verify that it does not on non product builds.
-  __ ld_w(TSR, unroll, Deoptimization::UnrollBlock::total_frame_sizes_offset_in_bytes());
+  __ ld_w(TSR, Address(unroll, Deoptimization::UnrollBlock::total_frame_sizes_offset()));
   __ bang_stack_size(TSR, T8);
 #endif
 
   // Load count of frams into T3
-  __ ld_w(count, unroll, Deoptimization::UnrollBlock::number_of_frames_offset_in_bytes());
+  __ ld_w(count, Address(unroll, Deoptimization::UnrollBlock::number_of_frames_offset()));
   // Pick up the initial fp we should save
-  __ ld_d(FP, unroll, Deoptimization::UnrollBlock::initial_info_offset_in_bytes());
+  __ ld_d(FP, Address(unroll, Deoptimization::UnrollBlock::initial_info_offset()));
    // Now adjust the caller's stack to make up for the extra locals
   // but record the original sp so that we can save it in the skeletal interpreter
   // frame and the stack walking of interpreter_sender will get the unextended sp
   // value and not the "real" sp value.
   __ move(sender_sp, SP);
-  __ ld_w(AT, unroll, Deoptimization::UnrollBlock::caller_adjustment_offset_in_bytes());
+  __ ld_w(AT, Address(unroll, Deoptimization::UnrollBlock::caller_adjustment_offset()));
   __ sub_d(SP, SP, AT);
 
   Label loop;
@@ -2525,7 +2525,7 @@ void SharedRuntime::generate_uncommon_trap_blob() {
 
 #ifdef ASSERT
   { Label L;
-    __ ld_d(AT, unroll, Deoptimization::UnrollBlock::unpack_kind_offset_in_bytes());
+    __ ld_d(AT, Address(unroll, Deoptimization::UnrollBlock::unpack_kind_offset()));
     __ li(T4, Deoptimization::Unpack_uncommon_trap);
     __ beq(AT, T4, L);
     __ stop("SharedRuntime::generate_uncommon_trap_blob: expected Unpack_uncommon_trap");
@@ -2545,14 +2545,14 @@ void SharedRuntime::generate_uncommon_trap_blob() {
   __ addi_d(SP, SP, framesize * BytesPerInt);
 
   // Pop deoptimized frame
-  __ ld_w(T8, unroll, Deoptimization::UnrollBlock::size_of_deoptimized_frame_offset_in_bytes());
+  __ ld_w(T8, Address(unroll, Deoptimization::UnrollBlock::size_of_deoptimized_frame_offset()));
   __ add_d(SP, SP, T8);
 
 #ifdef ASSERT
   // Compilers generate code that bang the stack by as much as the
   // interpreter would need. So this stack banging should never
   // trigger a fault. Verify that it does not on non product builds.
-  __ ld_w(TSR, unroll, Deoptimization::UnrollBlock::total_frame_sizes_offset_in_bytes());
+  __ ld_w(TSR, Address(unroll, Deoptimization::UnrollBlock::total_frame_sizes_offset()));
   __ bang_stack_size(TSR, T8);
 #endif
 
@@ -2567,21 +2567,21 @@ void SharedRuntime::generate_uncommon_trap_blob() {
 
   // sp should be pointing at the return address to the caller (4)
   // Load array of frame pcs
-  __ ld_d(pcs, unroll, Deoptimization::UnrollBlock::frame_pcs_offset_in_bytes());
+  __ ld_d(pcs, Address(unroll, Deoptimization::UnrollBlock::frame_pcs_offset()));
 
   // Load array of frame sizes
-  __ ld_d(sizes, unroll, Deoptimization::UnrollBlock::frame_sizes_offset_in_bytes());
-  __ ld_wu(count, unroll, Deoptimization::UnrollBlock::number_of_frames_offset_in_bytes());
+  __ ld_d(sizes, Address(unroll, Deoptimization::UnrollBlock::frame_sizes_offset()));
+  __ ld_wu(count, Address(unroll, Deoptimization::UnrollBlock::number_of_frames_offset()));
 
   // Pick up the initial fp we should save
-  __ ld_d(FP, unroll, Deoptimization::UnrollBlock::initial_info_offset_in_bytes());
+  __ ld_d(FP, Address(unroll, Deoptimization::UnrollBlock::initial_info_offset()));
 
   // Now adjust the caller's stack to make up for the extra locals
   // but record the original sp so that we can save it in the skeletal interpreter
   // frame and the stack walking of interpreter_sender will get the unextended sp
   // value and not the "real" sp value.
   __ move(sender_sp, SP);
-  __ ld_w(AT, unroll, Deoptimization::UnrollBlock::caller_adjustment_offset_in_bytes());
+  __ ld_w(AT, Address(unroll, Deoptimization::UnrollBlock::caller_adjustment_offset()));
   __ sub_d(SP, SP, AT);
 
   // Push interpreter frames in a loop

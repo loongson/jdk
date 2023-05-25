@@ -199,8 +199,8 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
 
   Label L_no_such_interface;
 
-  __ ld_d(resolved_klass_reg, icholder_reg, CompiledICHolder::holder_klass_offset());
-  __ ld_d(holder_klass_reg,   icholder_reg, CompiledICHolder::holder_metadata_offset());
+  __ ld_d(resolved_klass_reg, Address(icholder_reg, CompiledICHolder::holder_klass_offset()));
+  __ ld_d(holder_klass_reg,   Address(icholder_reg, CompiledICHolder::holder_metadata_offset()));
 
   // get receiver klass (also an implicit null-check)
   address npe_addr = __ pc();
@@ -219,7 +219,7 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
   {
     Label hit, entry;
 
-    __ ld_d(AT, t3, itableOffsetEntry::interface_offset_in_bytes());
+    __ ld_d(AT, Address(t3, itableOffsetEntry::interface_offset()));
     __ beq(AT, resolved_klass_reg, hit);
 
     __ bind(entry);
@@ -229,7 +229,7 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
     __ beqz(AT, L_no_such_interface);
 
     __ addi_d(t3, t3, itableOffsetEntry::size() * wordSize);
-    __ ld_d(AT, t3, itableOffsetEntry::interface_offset_in_bytes());
+    __ ld_d(AT, Address(t3, itableOffsetEntry::interface_offset()));
     __ bne(AT, resolved_klass_reg, entry);
 
     __ bind(hit);
@@ -238,7 +238,7 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
   {
     Label hit, entry;
 
-    __ ld_d(AT, t2, itableOffsetEntry::interface_offset_in_bytes());
+    __ ld_d(AT, Address(t2, itableOffsetEntry::interface_offset()));
     __ beq(AT, holder_klass_reg, hit);
 
     __ bind(entry);
@@ -248,18 +248,18 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
     __ beqz(AT, L_no_such_interface);
 
     __ addi_d(t2, t2, itableOffsetEntry::size() * wordSize);
-    __ ld_d(AT, t2, itableOffsetEntry::interface_offset_in_bytes());
+    __ ld_d(AT, Address(t2, itableOffsetEntry::interface_offset()));
     __ bne(AT, holder_klass_reg, entry);
 
     __ bind(hit);
   }
 
   // We found a hit, move offset into T4
-  __ ld_wu(t2, t2, itableOffsetEntry::offset_offset_in_bytes());
+  __ ld_wu(t2, Address(t2, itableOffsetEntry::offset_offset()));
 
   // Compute itableMethodEntry.
   const int method_offset = (itableMethodEntry::size() * wordSize * itable_index) +
-                            itableMethodEntry::method_offset_in_bytes();
+                            in_bytes(itableMethodEntry::method_offset());
 
   // Get Method* and entrypoint for compiler
   const Register method = Rmethod;

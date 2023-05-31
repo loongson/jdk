@@ -929,7 +929,7 @@ static void verify_oop_args(MacroAssembler* masm,
                             const VMRegPair* regs) {
   if (VerifyOops) {
     // verify too many args may overflow the code buffer
-    int arg_size = MIN2(64, method->size_of_parameters());
+    int arg_size = MIN2(64, (int)(method->size_of_parameters()));
 
     for (int i = 0; i < arg_size; i++) {
       if (is_reference_type(sig_bt[i])) {

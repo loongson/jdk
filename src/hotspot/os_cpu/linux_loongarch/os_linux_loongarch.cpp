@@ -266,6 +266,24 @@ bool PosixSignals::pd_hotspot_signal_handler(int sig, siginfo_t* info,
 #ifdef PRINT_SIGNAL_HANDLE
         tty->print_cr("continuation_for_implicit_exception stub: %lx", stub);
 #endif
+      } else if (sig == SIGILL && nativeInstruction_at(pc)->is_stop()) {
+        // Pull a pointer to the error message out of the instruction
+        // stream.
+        const uint64_t *detail_msg_ptr
+          = (uint64_t*)(pc + 4/*NativeInstruction::instruction_size*/);
+        const char *detail_msg = (const char *)*detail_msg_ptr;
+        const char *msg = "stop";
+        if (TraceTraps) {
+          tty->print_cr("trap: %s: (SIGILL)", msg);
+        }
+
+        // End life with a fatal error, message and detail message and the context.
+        // Note: no need to do any post-processing here (e.g. signal chaining)
+        va_list va_dummy;
+        VMError::report_and_die(thread, uc, nullptr, 0, msg, detail_msg, va_dummy);
+        va_end(va_dummy);
+
+        ShouldNotReachHere();
       }
     } else if ((thread->thread_state() == _thread_in_vm ||
                  thread->thread_state() == _thread_in_native) &&
@@ -456,9 +474,8 @@ void os::print_tos_pc(outputStream *st, const void *context) {
   // point to garbage if entry point in an nmethod is corrupted. Leave
   // this at the end, and hope for the best.
   address pc = os::fetch_frame_from_context(uc).pc();
-  st->print_cr("Instructions: (pc=" PTR_FORMAT ")", p2i(pc));
-  print_hex_dump(st, pc - 64, pc + 64, sizeof(char));
-  Disassembler::decode(pc - 80, pc + 80, st);
+  print_instructions(st, pc, 4/*native instruction size*/);
+  st->cr();
 }
 
 void os::setup_fpu() {

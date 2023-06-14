@@ -414,6 +414,7 @@ static void patch_callers_callsite(MacroAssembler *masm) {
   __ beqz(AT, L);
 
   __ enter();
+  __ bstrins_d(SP, R0, 3, 0);  // align the stack
   __ push_call_clobbered_registers();
 
   // VM needs caller's callsite
@@ -427,8 +428,6 @@ static void patch_callers_callsite(MacroAssembler *masm) {
 
   __ move(c_rarg0, Rmethod);
   __ move(c_rarg1, RA);
-  assert(StackAlignmentInBytes == 16, "must be");
-  __ bstrins_d(SP, R0, 3, 0);  // align the stack
   __ call(CAST_FROM_FN_PTR(address, SharedRuntime::fixup_callers_callsite),
           relocInfo::runtime_call_type);
 

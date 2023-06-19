@@ -51,7 +51,7 @@ void ParallelArguments::initialize() {
   GCArguments::initialize();
   assert(UseParallelGC, "Error");
 
-#ifdef LOONGARCH64
+#if defined(LOONGARCH64) && !defined(ZERO)
   if (FLAG_IS_DEFAULT(UseNUMA)) {
     FLAG_SET_DEFAULT(UseNUMA, true);
   }

@@ -171,7 +171,7 @@ void G1Arguments::initialize() {
   GCArguments::initialize();
   assert(UseG1GC, "Error");
 
-#ifdef LOONGARCH64
+#if defined(LOONGARCH64) && !defined(ZERO)
   if (FLAG_IS_DEFAULT(UseNUMA)) {
     FLAG_SET_DEFAULT(UseNUMA, true);
   }

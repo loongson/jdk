@@ -4394,7 +4394,7 @@ void os::Linux::numa_init() {
       // If there's only one node (they start from 0) or if the process
       // is bound explicitly to a single node using membind, disable NUMA
       UseNUMA = false;
-#ifdef LOONGARCH64
+#if defined(LOONGARCH64) && !defined(ZERO)
     } else if (InitialHeapSize < NUMAMinHeapSizePerNode * os::numa_get_groups_num()) {
       // The MaxHeapSize is not actually used by the JVM unless your program
       // creates enough objects to require it. A much smaller amount, called

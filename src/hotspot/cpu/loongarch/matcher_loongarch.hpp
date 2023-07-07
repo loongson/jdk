@@ -34,7 +34,7 @@
   // Whether this platform implements the scalable vector feature
   static const bool implements_scalable_vector = false;
 
-  static const bool supports_scalable_vector() {
+  static bool supports_scalable_vector() {
     return false;
   }
 
@@ -134,7 +134,7 @@
   }
 
   // Some microarchitectures have mask registers used on vectors
-  static const bool has_predicated_vectors(void) {
+  static bool has_predicated_vectors(void) {
     return false;
   }
 

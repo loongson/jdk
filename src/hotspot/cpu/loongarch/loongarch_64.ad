@@ -1093,10 +1093,6 @@ const bool Matcher::vector_needs_partial_operations(Node* node, const TypeVect* 
   return false;
 }
 
-const bool Matcher::vector_needs_load_shuffle(BasicType elem_bt, int vlen) {
-  return false;
-}
-
 const RegMask* Matcher::predicate_reg_mask(void) {
   return nullptr;
 }
@@ -4181,7 +4177,8 @@ opclass memory( indirect, indOffset12, indOffset12I2L, indIndex, indIndexI2L,
 opclass memory_loadRange(indOffset12, indirect);
 
 opclass mRegLorI2L(mRegI2L, mRegL);
-opclass mRegIorL2I( mRegI, mRegL2I);
+opclass mRegIorL2I(mRegI, mRegL2I);
+opclass mRegLorP(mRegL, mRegP);
 
 //----------PIPELINE-----------------------------------------------------------
 // Rules which define the behavior of the target architectures pipeline.
@@ -8112,12 +8109,53 @@ instruct cmovD_cmpD_reg_reg(regD dst, regD src, regD tmp1, regD tmp2, cmpOp cop 
   ins_pipe( pipe_slow );
 %}
 
+instruct cmovD_cmpF_reg_reg(regD dst, regD src, regF tmp1, regF tmp2, cmpOp cop ) %{
+  match(Set dst (CMoveD (Binary cop (CmpF tmp1 tmp2)) (Binary dst src)));
+  ins_cost(200);
+  format %{
+             "CMP$cop  $tmp1, $tmp2\t  @cmovD_cmpF_reg_reg\n"
+             "\tCMOV  $dst,$src \t @cmovD_cmpF_reg_reg"
+         %}
+  ins_encode %{
+    FloatRegister reg_op1 = as_FloatRegister($tmp1$$reg);
+    FloatRegister reg_op2 = as_FloatRegister($tmp2$$reg);
+    FloatRegister dst = as_FloatRegister($dst$$reg);
+    FloatRegister src = as_FloatRegister($src$$reg);
+    int flag = $cop$$cmpcode;
+
+    __ cmp_cmov(reg_op1, reg_op2, dst, src, (MacroAssembler::CMCompare) flag, true /* is_float */);
+  %}
+
+  ins_pipe( pipe_slow );
+%}
+
 instruct cmovF_cmpI_reg_reg(regF dst, regF src, mRegI tmp1, mRegI tmp2, cmpOp cop) %{
   match(Set dst (CMoveF (Binary cop (CmpI tmp1 tmp2)) (Binary dst src)));
   ins_cost(200);
   format %{
              "CMP$cop  $tmp1, $tmp2\t  @cmovF_cmpI_reg_reg\n"
              "\tCMOV  $dst, $src \t @cmovF_cmpI_reg_reg"
+         %}
+
+  ins_encode %{
+    Register op1 = $tmp1$$Register;
+    Register op2 = $tmp2$$Register;
+    FloatRegister dst = as_FloatRegister($dst$$reg);
+    FloatRegister src = as_FloatRegister($src$$reg);
+    int     flag = $cop$$cmpcode;
+
+    __ cmp_cmov(op1, op2, dst, src, (MacroAssembler::CMCompare) flag);
+  %}
+
+  ins_pipe( pipe_slow );
+%}
+
+instruct cmovF_cmpL_reg_reg(regF dst, regF src, mRegL tmp1, mRegL tmp2, cmpOp cop) %{
+  match(Set dst (CMoveF (Binary cop (CmpL tmp1 tmp2)) (Binary dst src)));
+  ins_cost(200);
+  format %{
+             "CMP$cop  $tmp1, $tmp2\t  @cmovF_cmpL_reg_reg\n"
+             "\tCMOV  $dst, $src \t @cmovF_cmpL_reg_reg"
          %}
 
   ins_encode %{
@@ -8154,12 +8192,13 @@ instruct cmovD_cmpI_reg_reg(regD dst, regD src, mRegI tmp1, mRegI tmp2, cmpOp co
   ins_pipe( pipe_slow );
 %}
 
-instruct cmovD_cmpP_reg_reg(regD dst, regD src, mRegP tmp1, mRegP tmp2, cmpOp cop) %{
+instruct cmovD_cmpLorP_reg_reg(regD dst, regD src, mRegLorP tmp1, mRegLorP tmp2, cmpOp cop) %{
   match(Set dst (CMoveD (Binary cop (CmpP tmp1 tmp2)) (Binary dst src)));
+  match(Set dst (CMoveD (Binary cop (CmpL tmp1 tmp2)) (Binary dst src)));
   ins_cost(200);
   format %{
-             "CMP$cop  $tmp1, $tmp2\t  @cmovD_cmpP_reg_reg\n"
-             "\tCMOV  $dst, $src \t @cmovD_cmpP_reg_reg"
+             "CMP$cop  $tmp1, $tmp2\t  @cmovD_cmpLorP_reg_reg\n"
+             "\tCMOV  $dst, $src \t @cmovD_cmpLorP_reg_reg"
          %}
 
   ins_encode %{
@@ -8217,6 +8256,26 @@ instruct cmovF_cmpF_reg_reg(regF dst, regF src, regF tmp1, regF tmp2, cmpOp cop 
     int flag = $cop$$cmpcode;
 
     __ cmp_cmov(reg_op1, reg_op2, dst, src, (MacroAssembler::CMCompare) flag, true /* is_float */);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct cmovF_cmpD_reg_reg(regF dst, regF src, regD tmp1, regD tmp2, cmpOp cop ) %{
+  match(Set dst (CMoveF (Binary cop (CmpD tmp1 tmp2)) (Binary dst src)));
+  ins_cost(200);
+  format %{
+             "CMP$cop  $tmp1, $tmp2\t  @cmovF_cmpD_reg_reg\n"
+             "\tCMOV  $dst,$src \t @cmovF_cmpD_reg_reg"
+         %}
+
+  ins_encode %{
+    FloatRegister reg_op1 = $tmp1$$FloatRegister;
+    FloatRegister reg_op2 = $tmp2$$FloatRegister;
+    FloatRegister dst = $dst$$FloatRegister;
+    FloatRegister src = $src$$FloatRegister;
+    int flag = $cop$$cmpcode;
+
+    __ cmp_cmov(reg_op1, reg_op2, dst, src, (MacroAssembler::CMCompare) flag, false /* is_float */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -17203,6 +17262,38 @@ instruct loadconV32(vecY dst, immI_0 src) %{
     }
     __ li(AT, (long)(StubRoutines::la::vector_iota_indices() + offset));
     __ xvld($dst$$FloatRegister, AT, (int)0);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+// ---------------------------- LOAD_SHUFFLE ----------------------------------
+
+instruct loadShuffle16B(vecX dst) %{
+  predicate(Matcher::vector_length(n) == 16 && Matcher::vector_element_basic_type(n) == T_BYTE);
+  match(Set dst (VectorLoadShuffle dst));
+  format %{ "vld_shuffle    $dst\t# @loadShuffle16B" %}
+  ins_encode %{
+    // empty
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct loadShuffle32B(vecY dst) %{
+  predicate(Matcher::vector_length(n) == 32 && Matcher::vector_element_basic_type(n) == T_BYTE);
+  match(Set dst (VectorLoadShuffle dst));
+  format %{ "xvld_shuffle    $dst\t# @loadShuffle32B" %}
+  ins_encode %{
+    // empty
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct loadShuffle16S(vecY dst, vecX src) %{
+  predicate(Matcher::vector_length(n) == 16 && Matcher::vector_element_basic_type(n) == T_SHORT);
+  match(Set dst (VectorLoadShuffle src));
+  format %{ "vext2xv.hu.bu    $dst, $src\t# @loadShuffle16S" %}
+  ins_encode %{
+    __ vext2xv_hu_bu($dst$$FloatRegister, $src$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}

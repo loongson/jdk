@@ -20,6 +20,13 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
+/*
+ * This file has been modified by Loongson Technology in 2023. These
+ * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 package jdk.vm.ci.services;
 
 import java.util.ArrayList;
@@ -372,6 +379,7 @@ public final class Services {
             case ARM: return "arm";
             case S390: return "s390";
             case PPC64: return "ppc64";
+            case LOONGARCH64: return "loongarch64";
             case OTHER: return "other";
             default: throw new InternalError("missing case for " + arch);
         }

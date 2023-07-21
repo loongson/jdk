@@ -29,6 +29,7 @@
 const int BytesPerInstWord = 4;
 
 const int StackAlignmentInBytes = (2*wordSize);
+const size_t pd_segfault_address = 1024;
 
 // Indicates whether the C calling conventions require that
 // 32-bit integer argument values are properly extended to 64 bits.

@@ -463,7 +463,7 @@ void ShenandoahBarrierSetAssembler::try_resolve_jobject_in_native(MacroAssembler
 //
 // Clobbers SCR1, SCR2
 void ShenandoahBarrierSetAssembler::cmpxchg_oop(MacroAssembler* masm,
-                                                Register mem,
+                                                Address addr,
                                                 Register expected,
                                                 Register new_val,
                                                 bool acquire, bool is_cae,
@@ -472,10 +472,9 @@ void ShenandoahBarrierSetAssembler::cmpxchg_oop(MacroAssembler* masm,
   Register tmp2 = SCR1;
   bool is_narrow = UseCompressedOops;
 
-  assert_different_registers(mem, expected, tmp1, tmp2);
-  assert_different_registers(mem, new_val,  tmp1, tmp2);
+  assert_different_registers(addr.base(), expected, tmp1, tmp2);
+  assert_different_registers(addr.base(), new_val,  tmp1, tmp2);
 
-  Address  addr(mem);
   Label step4, done_succ, done_fail, done;
 
   // There are two ways to reach this label.  Initial entry into the

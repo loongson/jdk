@@ -190,11 +190,11 @@ void VM_Version::get_processor_features() {
   int min_vector_size = 0;
   if (UseLASX) {
     max_vector_size = 32;
-    min_vector_size = 16;
+    min_vector_size = 4;
   }
   else if (UseLSX) {
     max_vector_size = 16;
-    min_vector_size = 16;
+    min_vector_size = 4;
   }
 
   if (!FLAG_IS_DEFAULT(MaxVectorSize)) {

@@ -1317,16 +1317,26 @@ void C2_MacroAssembler::reduce(Register dst, Register src, FloatRegister vsrc, F
   } else if (vector_size == 16) {
     vpermi_w(tmp1, vsrc, 0b00001110);
     reduce_ins_v(tmp1, vsrc, tmp1, type, opcode);
+  } else if (vector_size == 8) {
+    vshuf4i_w(tmp1, vsrc, 0b00000001);
+    reduce_ins_v(tmp1, vsrc, tmp1, type, opcode);
+  } else if (vector_size == 4) {
+    vshuf4i_h(tmp1, vsrc, 0b00000001);
+    reduce_ins_v(tmp1, vsrc, tmp1, type, opcode);
   } else {
     ShouldNotReachHere();
   }
 
   if (type != T_LONG) {
-    vshuf4i_w(tmp2, tmp1, 0b00000001);
-    reduce_ins_v(tmp1, tmp2, tmp1, type, opcode);
-    if (type != T_INT) {
-      vshuf4i_h(tmp2, tmp1, 0b00000001);
+    if (vector_size > 8) {
+      vshuf4i_w(tmp2, tmp1, 0b00000001);
       reduce_ins_v(tmp1, tmp2, tmp1, type, opcode);
+    }
+    if (type != T_INT) {
+      if (vector_size > 4) {
+        vshuf4i_h(tmp2, tmp1, 0b00000001);
+        reduce_ins_v(tmp1, tmp2, tmp1, type, opcode);
+      }
       if (type != T_SHORT) {
         vshuf4i_b(tmp2, tmp1, 0b00000001);
         reduce_ins_v(tmp1, tmp2, tmp1, type, opcode);
@@ -1414,6 +1424,11 @@ void C2_MacroAssembler::reduce(FloatRegister dst, FloatRegister src, FloatRegist
       default:
         ShouldNotReachHere();
     }
+  } else if (vector_size == 8) {
+    assert(type == T_FLOAT, "must be");
+    vpermi_w(tmp, vsrc, 0b00000001);
+    reduce_ins_f(dst, vsrc, src, type, opcode);
+    reduce_ins_f(dst, tmp, dst, type, opcode);
   } else {
     ShouldNotReachHere();
   }
@@ -1487,8 +1502,8 @@ void C2_MacroAssembler::vector_compare(FloatRegister dst, FloatRegister src1, Fl
         case BoolTest::eq: xvfcmp_ceq_s (dst, src1, src2); break;
         case BoolTest::ge: xvfcmp_cle_s (dst, src2, src1); break;
         case BoolTest::gt: xvfcmp_clt_s (dst, src2, src1); break;
-        case BoolTest::le: xvfcmp_cule_s(dst, src1, src2); break;
-        case BoolTest::lt: xvfcmp_cult_s(dst, src1, src2); break;
+        case BoolTest::le: xvfcmp_cle_s (dst, src1, src2); break;
+        case BoolTest::lt: xvfcmp_clt_s (dst, src1, src2); break;
         default:
           ShouldNotReachHere();
       }
@@ -1498,15 +1513,15 @@ void C2_MacroAssembler::vector_compare(FloatRegister dst, FloatRegister src1, Fl
         case BoolTest::eq: xvfcmp_ceq_d (dst, src1, src2); break;
         case BoolTest::ge: xvfcmp_cle_d (dst, src2, src1); break;
         case BoolTest::gt: xvfcmp_clt_d (dst, src2, src1); break;
-        case BoolTest::le: xvfcmp_cule_d(dst, src1, src2); break;
-        case BoolTest::lt: xvfcmp_cult_d(dst, src1, src2); break;
+        case BoolTest::le: xvfcmp_cle_d (dst, src1, src2); break;
+        case BoolTest::lt: xvfcmp_clt_d (dst, src1, src2); break;
         default:
           ShouldNotReachHere();
       }
     } else {
       ShouldNotReachHere();
     }
-  } else if (vector_size == 16) {
+  } else if (vector_size == 16 || vector_size == 8 || vector_size == 4) {
     if (bt == T_BYTE) {
       switch (cond) {
         case BoolTest::ne:  vseq_b (dst, src1, src2); vxori_b(dst, dst, 0xff); break;
@@ -1573,8 +1588,8 @@ void C2_MacroAssembler::vector_compare(FloatRegister dst, FloatRegister src1, Fl
         case BoolTest::eq: vfcmp_ceq_s (dst, src1, src2); break;
         case BoolTest::ge: vfcmp_cle_s (dst, src2, src1); break;
         case BoolTest::gt: vfcmp_clt_s (dst, src2, src1); break;
-        case BoolTest::le: vfcmp_cule_s(dst, src1, src2); break;
-        case BoolTest::lt: vfcmp_cult_s(dst, src1, src2); break;
+        case BoolTest::le: vfcmp_cle_s (dst, src1, src2); break;
+        case BoolTest::lt: vfcmp_clt_s (dst, src1, src2); break;
         default:
           ShouldNotReachHere();
       }
@@ -1584,8 +1599,8 @@ void C2_MacroAssembler::vector_compare(FloatRegister dst, FloatRegister src1, Fl
         case BoolTest::eq: vfcmp_ceq_d (dst, src1, src2); break;
         case BoolTest::ge: vfcmp_cle_d (dst, src2, src1); break;
         case BoolTest::gt: vfcmp_clt_d (dst, src2, src1); break;
-        case BoolTest::le: vfcmp_cule_d(dst, src1, src2); break;
-        case BoolTest::lt: vfcmp_cult_d(dst, src1, src2); break;
+        case BoolTest::le: vfcmp_cle_d (dst, src1, src2); break;
+        case BoolTest::lt: vfcmp_clt_d (dst, src1, src2); break;
         default:
           ShouldNotReachHere();
       }

@@ -11723,6 +11723,7 @@ instruct partialSubtypeCheckVsZero_short( mRegP sub, mRegP super, mRegP tmp1, mR
 
 instruct compareAndSwapI(mRegI res, mRegP mem_ptr, mRegI oldval, mRegI newval) %{
   match(Set res (CompareAndSwapI mem_ptr (Binary oldval newval)));
+  effect(TEMP_DEF res);
   ins_cost(3 * MEMORY_REF_COST);
   format %{ "CMPXCHG $newval, [$mem_ptr], $oldval @ compareAndSwapI" %}
   ins_encode %{
@@ -11731,12 +11732,7 @@ instruct compareAndSwapI(mRegI res, mRegP mem_ptr, mRegI oldval, mRegI newval) %
     Register res    = $res$$Register;
     Address  addr($mem_ptr$$Register, 0);
 
-    if (res != addr.base() && res != oldval && res != newval) {
-      __ cmpxchg32(addr, oldval, newval, res, true, false, true);
-    } else {
-      __ cmpxchg32(addr, oldval, newval, AT, true, false, true);
-      __ move(res, AT);
-    }
+    __ cmpxchg32(addr, oldval, newval, res, true, false, true);
   %}
   ins_pipe( long_memory_op );
 %}
@@ -11744,6 +11740,7 @@ instruct compareAndSwapI(mRegI res, mRegP mem_ptr, mRegI oldval, mRegI newval) %
 instruct compareAndSwapL(mRegI res, mRegP mem_ptr, mRegL oldval, mRegL newval) %{
   predicate(VM_Version::supports_cx8());
   match(Set res (CompareAndSwapL mem_ptr (Binary oldval newval)));
+  effect(TEMP_DEF res);
   ins_cost(3 * MEMORY_REF_COST);
   format %{ "CMPXCHG $newval, [$mem_ptr], $oldval @ compareAndSwapL" %}
   ins_encode %{
@@ -11752,18 +11749,14 @@ instruct compareAndSwapL(mRegI res, mRegP mem_ptr, mRegL oldval, mRegL newval) %
     Register res    = $res$$Register;
     Address  addr($mem_ptr$$Register, 0);
 
-    if (res != addr.base() && res != oldval && res != newval) {
-      __ cmpxchg(addr, oldval, newval, res, false, true);
-    } else {
-      __ cmpxchg(addr, oldval, newval, AT, false, true);
-      __ move(res, AT);
-    }
+    __ cmpxchg(addr, oldval, newval, res, false, true);
   %}
   ins_pipe( long_memory_op );
 %}
 
 instruct compareAndSwapP(mRegI res, mRegP mem_ptr, mRegP oldval, mRegP newval) %{
   match(Set res (CompareAndSwapP mem_ptr (Binary oldval newval)));
+  effect(TEMP_DEF res);
   predicate(n->as_LoadStore()->barrier_data() == 0);
   ins_cost(3 * MEMORY_REF_COST);
   format %{ "CMPXCHG $newval, [$mem_ptr], $oldval @ compareAndSwapP" %}
@@ -11773,18 +11766,14 @@ instruct compareAndSwapP(mRegI res, mRegP mem_ptr, mRegP oldval, mRegP newval) %
     Register res    = $res$$Register;
     Address  addr($mem_ptr$$Register, 0);
 
-    if (res != addr.base() && res != oldval && res != newval) {
-      __ cmpxchg(addr, oldval, newval, res, false, true);
-    } else {
-      __ cmpxchg(addr, oldval, newval, AT, false, true);
-      __ move(res, AT);
-    }
+    __ cmpxchg(addr, oldval, newval, res, false, true);
   %}
   ins_pipe( long_memory_op );
 %}
 
 instruct compareAndSwapN(mRegI res, mRegP mem_ptr, mRegN oldval, mRegN newval) %{
   match(Set res (CompareAndSwapN mem_ptr (Binary oldval newval)));
+  effect(TEMP_DEF res);
   ins_cost(3 * MEMORY_REF_COST);
   format %{ "CMPXCHG $newval, [$mem_ptr], $oldval @ compareAndSwapN" %}
   ins_encode %{
@@ -11793,12 +11782,7 @@ instruct compareAndSwapN(mRegI res, mRegP mem_ptr, mRegN oldval, mRegN newval) %
     Register res    = $res$$Register;
     Address  addr($mem_ptr$$Register, 0);
 
-    if (res != addr.base() && res != oldval && res != newval) {
-      __ cmpxchg32(addr, oldval, newval, res, false, false, true);
-    } else {
-      __ cmpxchg32(addr, oldval, newval, AT, false, false, true);
-      __ move(res, AT);
-    }
+    __ cmpxchg32(addr, oldval, newval, res, false, false, true);
   %}
   ins_pipe( long_memory_op );
 %}
@@ -11942,6 +11926,7 @@ instruct compareAndExchangeI(mRegI res, indirect mem, mRegI oldval, mRegI newval
     Register oldval = $oldval$$Register;
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
+
     __ cmpxchg32(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* barrier */, false /* weak */, true /* exchange */);
   %}
   ins_pipe( pipe_slow );
@@ -11960,6 +11945,7 @@ instruct compareAndExchangeL(mRegL res, indirect mem, mRegL oldval, mRegL newval
     Register oldval = $oldval$$Register;
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
+
     __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* barrier */, false /* weak */, true /* exchange */);
   %}
   ins_pipe( pipe_slow );
@@ -11978,6 +11964,7 @@ instruct compareAndExchangeP(mRegP res, indirect mem, mRegP oldval, mRegP newval
     Register oldval = $oldval$$Register;
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
+
     __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* barrier */, false /* weak */, true /* exchange */);
   %}
   ins_pipe( pipe_slow );
@@ -12004,6 +11991,7 @@ instruct compareAndExchangeN(mRegN res, indirect mem, mRegN oldval, mRegN newval
 instruct weakCompareAndSwapI(mRegI res, indirect mem, mRegI oldval, mRegI newval) %{
 
   match(Set res (WeakCompareAndSwapI mem (Binary oldval newval)));
+  effect(TEMP_DEF res);
   ins_cost(2 * MEMORY_REF_COST);
   format %{
     "cmpxchg32 $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapI"
@@ -12013,12 +12001,7 @@ instruct weakCompareAndSwapI(mRegI res, indirect mem, mRegI oldval, mRegI newval
     Register oldval = $oldval$$Register;
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
-    if (res != addr.base() && res != oldval && res != newval) {
-      __ cmpxchg32(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
-    } else {
-      __ cmpxchg32(addr, oldval, newval, AT, true /* sign */, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
-      __ move(res, AT);
-    }
+    __ cmpxchg32(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -12026,6 +12009,7 @@ instruct weakCompareAndSwapI(mRegI res, indirect mem, mRegI oldval, mRegI newval
 instruct weakCompareAndSwapL(mRegI res, indirect mem, mRegL oldval, mRegL newval) %{
 
   match(Set res (WeakCompareAndSwapL mem (Binary oldval newval)));
+  effect(TEMP_DEF res);
   ins_cost(2 * MEMORY_REF_COST);
   format %{
     "cmpxchg $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @WeakCompareAndSwapL"
@@ -12035,12 +12019,8 @@ instruct weakCompareAndSwapL(mRegI res, indirect mem, mRegL oldval, mRegL newval
     Register oldval = $oldval$$Register;
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
-    if (res != addr.base() && res != oldval && res != newval) {
-      __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
-    } else {
-      __ cmpxchg(addr, oldval, newval, AT, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
-      __ move(res, AT);
-    }
+
+    __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -12048,6 +12028,7 @@ instruct weakCompareAndSwapL(mRegI res, indirect mem, mRegL oldval, mRegL newval
 instruct weakCompareAndSwapP(mRegI res, indirect mem, mRegP oldval, mRegP newval) %{
   predicate((((CompareAndSwapNode*)n)->order() != MemNode::acquire && ((CompareAndSwapNode*)n)->order() != MemNode::seqcst) && n->as_LoadStore()->barrier_data() == 0);
   match(Set res (WeakCompareAndSwapP mem (Binary oldval newval)));
+  effect(TEMP_DEF res);
   ins_cost(MEMORY_REF_COST);
   format %{
     "cmpxchg $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapP"
@@ -12057,12 +12038,8 @@ instruct weakCompareAndSwapP(mRegI res, indirect mem, mRegP oldval, mRegP newval
     Register oldval = $oldval$$Register;
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
-    if (res != addr.base() && res != oldval && res != newval) {
-      __ cmpxchg(addr, oldval, newval, res, false /* retold */, false /* barrier */, true /* weak */, false /* exchange */);
-    } else {
-      __ cmpxchg(addr, oldval, newval, AT, false /* retold */, false /* barrier */, true /* weak */, false /* exchange */);
-      __ move(res, AT);
-    }
+
+  __ cmpxchg(addr, oldval, newval, res, false /* retold */, false /* barrier */, true /* weak */, false /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -12070,6 +12047,7 @@ instruct weakCompareAndSwapP(mRegI res, indirect mem, mRegP oldval, mRegP newval
 instruct weakCompareAndSwapP_acq(mRegI res, indirect mem, mRegP oldval, mRegP newval) %{
   predicate(n->as_LoadStore()->barrier_data() == 0);
   match(Set res (WeakCompareAndSwapP mem (Binary oldval newval)));
+  effect(TEMP_DEF res);
   ins_cost(2 * MEMORY_REF_COST);
   format %{
     "cmpxchg $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapP"
@@ -12079,12 +12057,8 @@ instruct weakCompareAndSwapP_acq(mRegI res, indirect mem, mRegP oldval, mRegP ne
     Register oldval = $oldval$$Register;
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
-    if (res != addr.base() && res != oldval && res != newval) {
-      __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
-    } else {
-      __ cmpxchg(addr, oldval, newval, AT, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
-      __ move(res, AT);
-    }
+
+    __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -12092,6 +12066,7 @@ instruct weakCompareAndSwapP_acq(mRegI res, indirect mem, mRegP oldval, mRegP ne
 instruct weakCompareAndSwapN(mRegI res, indirect mem, mRegN oldval, mRegN newval) %{
 
   match(Set res (WeakCompareAndSwapN mem (Binary oldval newval)));
+  effect(TEMP_DEF res);
   ins_cost(2 * MEMORY_REF_COST);
   format %{
     "cmpxchg32 $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapN"
@@ -12101,12 +12076,8 @@ instruct weakCompareAndSwapN(mRegI res, indirect mem, mRegN oldval, mRegN newval
     Register oldval = $oldval$$Register;
     Register res    = $res$$Register;
     Address addr(as_Register($mem$$base));
-    if (res != addr.base() && res != oldval && res != newval) {
-      __ cmpxchg32(addr, oldval, newval, res, false /* sign */, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
-    } else {
-      __ cmpxchg32(addr, oldval, newval, AT, false /* sign */, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
-      __ move(res, AT);
-    }
+
+    __ cmpxchg32(addr, oldval, newval, res, false /* sign */, false /* retold */, true /* barrier */, true /* weak */, false /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}

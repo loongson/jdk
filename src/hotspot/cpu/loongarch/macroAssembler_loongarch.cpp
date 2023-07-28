@@ -2213,7 +2213,7 @@ void MacroAssembler::check_klass_subtype_slow_path(Register sub_klass,
   // Don't worry too much about pre-existing connections with the input regs.
 
 #ifndef PRODUCT
-  int* pst_counter = &SharedRuntime::_partial_subtype_ctr;
+  uint* pst_counter = &SharedRuntime::_partial_subtype_ctr;
   ExternalAddress pst_counter_addr((address) pst_counter);
 #endif //PRODUCT
 

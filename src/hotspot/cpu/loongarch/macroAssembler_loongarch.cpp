@@ -1353,33 +1353,66 @@ void MacroAssembler::cmpxchg(Address addr, Register oldval, Register newval,
   assert(addr.base() != resflag, "addr.base() != resflag");
   Label again, succ, fail;
 
-  bind(again);
-  ll_d(resflag, addr);
-  bne(resflag, oldval, fail);
-  move(resflag, newval);
-  sc_d(resflag, addr);
-  if (weak) {
-    b(succ);
-  } else {
-    beqz(resflag, again);
-  }
-  if (exchange) {
-    move(resflag, oldval);
-  }
-  b(succ);
+  if (UseAMCAS) {
+    move(resflag, oldval/* compare_value */);
+    if (addr.disp() != 0) {
+      assert_different_registers(AT, oldval);
+      assert_different_registers(AT, newval);
+      assert_different_registers(AT, resflag);
 
-  bind(fail);
-  if (acquire) {
-    membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
+      if (Assembler::is_simm(addr.disp(), 12)) {
+        addi_d(AT, addr.base(), addr.disp());
+      } else {
+        li(AT, addr.disp());
+        add_d(AT, addr.base(), AT);
+      }
+      amcas_db_d(resflag, newval, AT);
+    } else {
+      amcas_db_d(resflag, newval, addr.base());
+    }
+    bne(resflag, oldval, fail);
+    if (!exchange) {
+      ori(resflag, R0, 1);
+    }
+    b(succ);
+    bind(fail);
+    if (retold && oldval != R0) {
+      move(oldval, resflag);
+    }
+    if (!exchange) {
+      move(resflag, R0);
+    }
+    bind(succ);
+
   } else {
-    dbar(0x700);
+    bind(again);
+    ll_d(resflag, addr);
+    bne(resflag, oldval, fail);
+    move(resflag, newval);
+    sc_d(resflag, addr);
+    if (weak) {
+      b(succ);
+    } else {
+      beqz(resflag, again);
+    }
+    if (exchange) {
+      move(resflag, oldval);
+    }
+    b(succ);
+
+    bind(fail);
+    if (acquire) {
+      membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
+    } else {
+      dbar(0x700);
+    }
+    if (retold && oldval != R0)
+      move(oldval, resflag);
+    if (!exchange) {
+      move(resflag, R0);
+    }
+    bind(succ);
   }
-  if (retold && oldval != R0)
-    move(oldval, resflag);
-  if (!exchange) {
-    move(resflag, R0);
-  }
-  bind(succ);
 }
 
 void MacroAssembler::cmpxchg(Address addr, Register oldval, Register newval,
@@ -1388,24 +1421,48 @@ void MacroAssembler::cmpxchg(Address addr, Register oldval, Register newval,
   assert(newval != tmp, "newval != tmp");
   Label again, neq;
 
-  bind(again);
-  ll_d(tmp, addr);
-  bne(tmp, oldval, neq);
-  move(tmp, newval);
-  sc_d(tmp, addr);
-  beqz(tmp, again);
-  b(succ);
+  if (UseAMCAS) {
+    move(tmp, oldval);
+    if (addr.disp() != 0) {
+      assert_different_registers(AT, oldval);
+      assert_different_registers(AT, newval);
+      assert_different_registers(AT, tmp);
 
-  bind(neq);
-  if (acquire) {
-    membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
+      if (Assembler::is_simm(addr.disp(), 12)) {
+        addi_d(AT, addr.base(), addr.disp());
+      } else {
+        li(AT, addr.disp());
+        add_d(AT, addr.base(), AT);
+      }
+      amcas_db_d(tmp, newval, AT);
+    } else {
+      amcas_db_d(tmp, newval, addr.base());
+    }
+    bne(tmp, oldval, neq);
+    b(succ);
+    bind(neq);
+    if (fail) {
+      b(*fail);
+    }
   } else {
-    dbar(0x700);
+    bind(again);
+    ll_d(tmp, addr);
+    bne(tmp, oldval, neq);
+    move(tmp, newval);
+    sc_d(tmp, addr);
+    beqz(tmp, again);
+    b(succ);
+    bind(neq);
+    if (acquire) {
+      membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
+    } else {
+      dbar(0x700);
+    }
+    if (retold && oldval != R0)
+      move(oldval, tmp);
+    if (fail)
+      b(*fail);
   }
-  if (retold && oldval != R0)
-    move(oldval, tmp);
-  if (fail)
-    b(*fail);
 }
 
 void MacroAssembler::cmpxchg32(Address addr, Register oldval, Register newval,
@@ -1416,35 +1473,70 @@ void MacroAssembler::cmpxchg32(Address addr, Register oldval, Register newval,
   assert(addr.base() != resflag, "addr.base() != resflag");
   Label again, succ, fail;
 
-  bind(again);
-  ll_w(resflag, addr);
-  if (!sign)
-    lu32i_d(resflag, 0);
-  bne(resflag, oldval, fail);
-  move(resflag, newval);
-  sc_w(resflag, addr);
-  if (weak) {
-    b(succ);
-  } else {
-    beqz(resflag, again);
-  }
-  if (exchange) {
-    move(resflag, oldval);
-  }
-  b(succ);
+  if (UseAMCAS) {
+    move(resflag, oldval/* compare_value */);
+    if (addr.disp() != 0) {
+      assert_different_registers(AT, oldval);
+      assert_different_registers(AT, newval);
+      assert_different_registers(AT, resflag);
 
-  bind(fail);
-  if (acquire) {
-    membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
+      if (Assembler::is_simm(addr.disp(), 12)) {
+        addi_d(AT, addr.base(), addr.disp());
+      } else {
+        li(AT, addr.disp());
+        add_d(AT, addr.base(), AT);
+      }
+      amcas_db_w(resflag, newval, AT);
+    } else {
+      amcas_db_w(resflag, newval, addr.base());
+    }
+    if (!sign) {
+      lu32i_d(resflag, 0);
+    }
+    bne(resflag, oldval, fail);
+    if (!exchange) {
+      ori(resflag, R0, 1);
+    }
+    b(succ);
+    bind(fail);
+    if (retold && oldval != R0) {
+      move(oldval, resflag);
+    }
+    if (!exchange) {
+      move(resflag, R0);
+    }
+    bind(succ);
   } else {
-    dbar(0x700);
+    bind(again);
+    ll_w(resflag, addr);
+    if (!sign)
+      lu32i_d(resflag, 0);
+    bne(resflag, oldval, fail);
+    move(resflag, newval);
+    sc_w(resflag, addr);
+    if (weak) {
+      b(succ);
+    } else {
+      beqz(resflag, again);
+    }
+    if (exchange) {
+      move(resflag, oldval);
+    }
+    b(succ);
+
+    bind(fail);
+    if (acquire) {
+      membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
+    } else {
+      dbar(0x700);
+    }
+    if (retold && oldval != R0)
+      move(oldval, resflag);
+    if (!exchange) {
+      move(resflag, R0);
+    }
+    bind(succ);
   }
-  if (retold && oldval != R0)
-    move(oldval, resflag);
-  if (!exchange) {
-    move(resflag, R0);
-  }
-  bind(succ);
 }
 
 void MacroAssembler::cmpxchg32(Address addr, Register oldval, Register newval, Register tmp,
@@ -1453,26 +1545,214 @@ void MacroAssembler::cmpxchg32(Address addr, Register oldval, Register newval, R
   assert(newval != tmp, "newval != tmp");
   Label again, neq;
 
-  bind(again);
-  ll_w(tmp, addr);
-  if (!sign)
-    lu32i_d(tmp, 0);
-  bne(tmp, oldval, neq);
-  move(tmp, newval);
-  sc_w(tmp, addr);
-  beqz(tmp, again);
-  b(succ);
+  if (UseAMCAS) {
+    move(tmp, oldval);
+    if (addr.disp() != 0) {
+      assert_different_registers(AT, oldval);
+      assert_different_registers(AT, newval);
+      assert_different_registers(AT, tmp);
 
-  bind(neq);
-  if (acquire) {
-    membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
+      if (Assembler::is_simm(addr.disp(), 12)) {
+        addi_d(AT, addr.base(), addr.disp());
+      } else {
+        li(AT, addr.disp());
+        add_d(AT, addr.base(), AT);
+      }
+      amcas_db_w(tmp, newval, AT);
+    } else {
+      amcas_db_w(tmp, newval, addr.base());
+    }
+    if (!sign) {
+      lu32i_d(tmp, 0);
+    }
+    bne(tmp, oldval, neq);
+    b(succ);
+    bind(neq);
+    if (fail) {
+      b(*fail);
+    }
   } else {
-    dbar(0x700);
+    bind(again);
+    ll_w(tmp, addr);
+    if (!sign)
+      lu32i_d(tmp, 0);
+    bne(tmp, oldval, neq);
+    move(tmp, newval);
+    sc_w(tmp, addr);
+    beqz(tmp, again);
+    b(succ);
+
+    bind(neq);
+    if (acquire) {
+      membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
+    } else {
+      dbar(0x700);
+    }
+    if (retold && oldval != R0)
+      move(oldval, tmp);
+    if (fail)
+      b(*fail);
   }
-  if (retold && oldval != R0)
+}
+
+void MacroAssembler::cmpxchg16(Address addr, Register oldval, Register newval,
+                               Register resflag, bool sign, bool retold, bool acquire,
+                               bool weak, bool exchange) {
+  assert(oldval != resflag, "oldval != resflag");
+  assert(newval != resflag, "newval != resflag");
+  assert(addr.base() != resflag, "addr.base() != resflag");
+  assert(UseAMCAS == true, "UseAMCAS == true");
+  Label again, succ, fail;
+
+  move(resflag, oldval/* compare_value */);
+  if (addr.disp() != 0) {
+    assert_different_registers(AT, oldval);
+    assert_different_registers(AT, newval);
+    assert_different_registers(AT, resflag);
+
+    if (Assembler::is_simm(addr.disp(), 12)) {
+      addi_d(AT, addr.base(), addr.disp());
+    } else {
+      li(AT, addr.disp());
+      add_d(AT, addr.base(), AT);
+    }
+    amcas_db_h(resflag, newval, AT);
+  } else {
+    amcas_db_h(resflag, newval, addr.base());
+  }
+  if (!sign) {
+    bstrpick_w(resflag, resflag, 15, 0);
+  }
+  bne(resflag, oldval, fail);
+  if (!exchange) {
+    ori(resflag, R0, 1);
+  }
+  b(succ);
+  bind(fail);
+  if (retold && oldval != R0) {
+    move(oldval, resflag);
+  }
+  if (!exchange) {
+    move(resflag, R0);
+  }
+  bind(succ);
+}
+
+void MacroAssembler::cmpxchg16(Address addr, Register oldval, Register newval, Register tmp,
+                               bool sign, bool retold, bool acquire, Label& succ, Label* fail) {
+  assert(oldval != tmp, "oldval != tmp");
+  assert(newval != tmp, "newval != tmp");
+  assert(UseAMCAS == true, "UseAMCAS == true");
+  Label again, neq;
+
+  move(tmp, oldval);
+  if (addr.disp() != 0) {
+    assert_different_registers(AT, oldval);
+    assert_different_registers(AT, newval);
+    assert_different_registers(AT, tmp);
+
+    if (Assembler::is_simm(addr.disp(), 12)) {
+      addi_d(AT, addr.base(), addr.disp());
+    } else {
+      li(AT, addr.disp());
+      add_d(AT, addr.base(), AT);
+    }
+    amcas_db_h(tmp, newval, AT);
+  } else {
+    amcas_db_h(tmp, newval, addr.base());
+  }
+  if (!sign) {
+    bstrpick_w(tmp, tmp, 15, 0);
+  }
+  bne(tmp, oldval, neq);
+  b(succ);
+  bind(neq);
+  if (retold && oldval != R0) {
     move(oldval, tmp);
-  if (fail)
+  }
+  if (fail) {
     b(*fail);
+  }
+}
+
+void MacroAssembler::cmpxchg8(Address addr, Register oldval, Register newval,
+                               Register resflag, bool sign, bool retold, bool acquire,
+                               bool weak, bool exchange) {
+  assert(oldval != resflag, "oldval != resflag");
+  assert(newval != resflag, "newval != resflag");
+  assert(addr.base() != resflag, "addr.base() != resflag");
+  assert(UseAMCAS == true, "UseAMCAS == true");
+  Label again, succ, fail;
+
+  move(resflag, oldval/* compare_value */);
+  if (addr.disp() != 0) {
+    assert_different_registers(AT, oldval);
+    assert_different_registers(AT, newval);
+    assert_different_registers(AT, resflag);
+
+    if (Assembler::is_simm(addr.disp(), 12)) {
+      addi_d(AT, addr.base(), addr.disp());
+    } else {
+      li(AT, addr.disp());
+      add_d(AT, addr.base(), AT);
+    }
+    amcas_db_b(resflag, newval, AT);
+  } else {
+    amcas_db_b(resflag, newval, addr.base());
+  }
+  if (!sign) {
+    andi(resflag, resflag, 0xFF);
+  }
+  bne(resflag, oldval, fail);
+  if (!exchange) {
+    ori(resflag, R0, 1);
+  }
+  b(succ);
+  bind(fail);
+  if (retold && oldval != R0) {
+    move(oldval, resflag);
+  }
+  if (!exchange) {
+    move(resflag, R0);
+  }
+  bind(succ);
+}
+
+void MacroAssembler::cmpxchg8(Address addr, Register oldval, Register newval, Register tmp,
+                               bool sign, bool retold, bool acquire, Label& succ, Label* fail) {
+  assert(oldval != tmp, "oldval != tmp");
+  assert(newval != tmp, "newval != tmp");
+  assert(UseAMCAS == true, "UseAMCAS == true");
+  Label again, neq;
+
+  move(tmp, oldval);
+  if (addr.disp() != 0) {
+    assert_different_registers(AT, oldval);
+    assert_different_registers(AT, newval);
+    assert_different_registers(AT, tmp);
+
+    if (Assembler::is_simm(addr.disp(), 12)) {
+      addi_d(AT, addr.base(), addr.disp());
+    } else {
+      li(AT, addr.disp());
+      add_d(AT, addr.base(), AT);
+    }
+    amcas_db_b(tmp, newval, AT);
+  } else {
+    amcas_db_b(tmp, newval, addr.base());
+  }
+  if (!sign) {
+    andi(tmp, tmp, 0xFF);
+  }
+  bne(tmp, oldval, neq);
+  b(succ);
+  bind(neq);
+  if (retold && oldval != R0) {
+    move(oldval, tmp);
+  }
+  if (fail) {
+    b(*fail);
+  }
 }
 
 void MacroAssembler::push_cont_fastpath(Register java_thread) {

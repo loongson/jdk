@@ -739,6 +739,22 @@ class Assembler : public AbstractAssembler  {
     vstx_op            = 0b00111000010001000,
     xvldx_op           = 0b00111000010010000,
     xvstx_op           = 0b00111000010011000,
+    amcas_b_op         = 0b00111000010110000,
+    amcas_h_op         = 0b00111000010110001,
+    amcas_w_op         = 0b00111000010110010,
+    amcas_d_op         = 0b00111000010110011,
+    amcas_db_b_op      = 0b00111000010110100,
+    amcas_db_h_op      = 0b00111000010110101,
+    amcas_db_w_op      = 0b00111000010110110,
+    amcas_db_d_op      = 0b00111000010110111,
+    amswap_b_op        = 0b00111000010111000,
+    amswap_h_op        = 0b00111000010111001,
+    amadd_b_op         = 0b00111000010111010,
+    amadd_h_op         = 0b00111000010111011,
+    amswap_db_b_op     = 0b00111000010111100,
+    amswap_db_h_op     = 0b00111000010111101,
+    amadd_db_b_op      = 0b00111000010111110,
+    amadd_db_h_op      = 0b00111000010111111,
     amswap_w_op        = 0b00111000011000000,
     amswap_d_op        = 0b00111000011000001,
     amadd_w_op         = 0b00111000011000010,
@@ -2148,8 +2164,16 @@ public:
   void fst_s (FloatRegister fd, const Address &dst);
   void fst_d (FloatRegister fd, const Address &dst);
 
+  void amcas_b   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amcas_b_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amcas_h   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amcas_h_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amcas_w   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amcas_w_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amcas_d   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amcas_d_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amswap_b   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amswap_b_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amswap_h   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amswap_h_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void amswap_w   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amswap_w_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void amswap_d   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amswap_d_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amadd_b    (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amadd_b_op,     (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amadd_h    (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amadd_h_op,     (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void amadd_w    (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amadd_w_op,     (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void amadd_d    (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amadd_d_op,     (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void amand_w    (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amand_w_op,     (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
@@ -2166,8 +2190,16 @@ public:
   void ammax_du   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(ammax_du_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void ammin_wu   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(ammin_wu_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void ammin_du   (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(ammin_du_op,    (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amcas_db_b(Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amcas_db_b_op, (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amcas_db_h(Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amcas_db_h_op, (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amcas_db_w(Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amcas_db_w_op, (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amcas_db_d(Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amcas_db_d_op, (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amswap_db_b(Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amswap_db_b_op, (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amswap_db_h(Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amswap_db_h_op, (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void amswap_db_w(Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amswap_db_w_op, (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void amswap_db_d(Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amswap_db_d_op, (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amadd_db_b (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amadd_db_b_op,  (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
+  void amadd_db_h (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amadd_db_h_op,  (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void amadd_db_w (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amadd_db_w_op,  (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void amadd_db_d (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amadd_db_d_op,  (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
   void amand_db_w (Register rd, Register rk, Register rj) { assert_different_registers(rd, rj); assert_different_registers(rd, rk); emit_int32(insn_RRR(amand_db_w_op,  (int)rk->encoding(), (int)rj->encoding(), (int)rd->encoding())); }
@@ -3169,6 +3201,7 @@ public:
 #undef ASSERT_LASX
 
 public:
+  enum operand_size { byte, halfword, word, dword };
   // Creation
   Assembler(CodeBuffer* code) : AbstractAssembler(code) {}
 

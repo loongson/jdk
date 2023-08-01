@@ -132,6 +132,10 @@ uint32_t VM_Version::get_feature_flags_by_cpucfg() {
 
   if (_cpuid_info.cpucfg_info_id2.bits.FP_CFG != 0)
     result |= CPU_FP;
+  if (_cpuid_info.cpucfg_info_id2.bits.LAM_BH != 0)
+    result |= CPU_LAM_BH;
+  if (_cpuid_info.cpucfg_info_id2.bits.LAMCAS != 0)
+    result |= CPU_LAMCAS;
 
   if (_cpuid_info.cpucfg_info_id3.bits.CCDMA != 0)
     result |= CPU_CCDMA;
@@ -185,6 +189,23 @@ void VM_Version::get_processor_features() {
     FLAG_SET_DEFAULT(UseLASX, false);
   }
 
+  if (supports_lam_bh()) {
+    if (FLAG_IS_DEFAULT(UseAMBH)) {
+      FLAG_SET_DEFAULT(UseAMBH, true);
+    }
+  } else if (UseAMBH) {
+    warning("AM{SWAP/ADD}{_DB}.{B/H} instructions are not available on this CPU");
+    FLAG_SET_DEFAULT(UseAMBH, false);
+  }
+
+  if (supports_lamcas()) {
+    if (FLAG_IS_DEFAULT(UseAMCAS)) {
+      FLAG_SET_DEFAULT(UseAMCAS, true);
+    }
+  } else if (UseAMCAS) {
+    warning("AMCAS{_DB}.{B/H/W/D} instructions are not available on this CPU");
+    FLAG_SET_DEFAULT(UseAMCAS, false);
+  }
 #ifdef COMPILER2
   int max_vector_size = 0;
   int min_vector_size = 0;
@@ -226,7 +247,7 @@ void VM_Version::get_processor_features() {
   //   Features may have one comma at the end.
   //   Furthermore, use one, and only one, separator space between features.
   //   Multiple spaces are considered separate tokens, messing up everything.
-  jio_snprintf(buf, sizeof(buf), "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s, "
+  jio_snprintf(buf, sizeof(buf), "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s, "
     "0x%lx, fp_ver: %d, lvz_ver: %d, ",
     (is_la64()             ?  "la64"  : ""),
     (is_la32()             ?  "la32"  : ""),
@@ -244,6 +265,8 @@ void VM_Version::get_processor_features() {
     (needs_llsync()        ?  ", needs_llsync" : ""),
     (needs_tgtsync()       ?  ", needs_tgtsync": ""),
     (needs_ulsync()        ?  ", needs_ulsync": ""),
+    (supports_lam_bh()     ?  ", lam_bh" : ""),
+    (supports_lamcas()     ?  ", lamcas" : ""),
     _cpuid_info.cpucfg_info_id0.bits.PRID,
     _cpuid_info.cpucfg_info_id2.bits.FP_VER,
     _cpuid_info.cpucfg_info_id2.bits.LVZ_VER);

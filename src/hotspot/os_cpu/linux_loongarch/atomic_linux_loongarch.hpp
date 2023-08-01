@@ -27,6 +27,7 @@
 #define OS_CPU_LINUX_LOONGARCH_ATOMIC_LINUX_LOONGARCH_HPP
 
 #include "runtime/vm_version.hpp"
+#include "amcas_asm.h"
 
 // Implementation of class atomic
 
@@ -165,36 +166,75 @@ inline T Atomic::PlatformCmpxchg<4>::operator()(T volatile* dest,
   STATIC_ASSERT(4 == sizeof(T));
   T prev, temp;
 
-  switch (order) {
-  case memory_order_relaxed:
-  case memory_order_release:
-    asm volatile (
-      "1: ll.w %[prev], %[dest]     \n\t"
-      "   bne  %[prev], %[_old], 2f \n\t"
-      "   move %[temp], %[_new]     \n\t"
-      "   sc.w %[temp], %[dest]     \n\t"
-      "   beqz %[temp], 1b          \n\t"
-      "   b    3f                   \n\t"
-      "2: dbar 0x700                \n\t"
-      "3:                           \n\t"
-      : [prev] "=&r" (prev), [temp] "=&r" (temp)
-      : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "ZC" (*dest)
-      : "memory");
-    break;
-  default:
-    asm volatile (
-      "1: ll.w %[prev], %[dest]     \n\t"
-      "   bne  %[prev], %[_old], 2f \n\t"
-      "   move %[temp], %[_new]     \n\t"
-      "   sc.w %[temp], %[dest]     \n\t"
-      "   beqz %[temp], 1b          \n\t"
-      "   b    3f                   \n\t"
-      "2: dbar 0x14                \n\t"
-      "3:                           \n\t"
-      : [prev] "=&r" (prev), [temp] "=&r" (temp)
-      : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "ZC" (*dest)
-      : "memory");
-    break;
+  if (UseAMCAS) {
+    switch (order) {
+    case memory_order_relaxed:
+      asm volatile (
+        " move %[prev], %[_old] \n\t"
+        " amcas_w %[prev], %[_new], %[dest] \n\t"
+        : [prev] "+&r" (prev)
+        : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "r" (dest)
+        : "memory");
+      break;
+    case memory_order_acquire:
+      asm volatile (
+        " move %[prev], %[_old] \n\t"
+        " amcas_w %[prev], %[_new], %[dest] \n\t"
+        " dbar 0x14 \n\t"
+        : [prev] "+&r" (prev)
+        : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "r" (dest)
+        : "memory");
+      break;
+    case memory_order_release:
+      asm volatile (
+        " move %[prev], %[_old] \n\t"
+        " dbar 0x12 \n\t"
+        " amcas_w %[prev], %[_new], %[dest] \n\t"
+        : [prev] "+&r" (prev)
+        : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "r" (dest)
+        : "memory");
+      break;
+    default:
+      asm volatile (
+        " move %[prev], %[_old] \n\t"
+        " amcas_db_w %[prev], %[_new], %[dest] \n\t"
+        : [prev] "+&r" (prev)
+        : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "r" (dest)
+        : "memory");
+      break;
+    }
+  } else {
+    switch (order) {
+    case memory_order_relaxed:
+    case memory_order_release:
+      asm volatile (
+        "1: ll.w %[prev], %[dest]     \n\t"
+        "   bne  %[prev], %[_old], 2f \n\t"
+        "   move %[temp], %[_new]     \n\t"
+        "   sc.w %[temp], %[dest]     \n\t"
+        "   beqz %[temp], 1b          \n\t"
+        "   b    3f                   \n\t"
+        "2: dbar 0x700                \n\t"
+        "3:                           \n\t"
+        : [prev] "=&r" (prev), [temp] "=&r" (temp)
+        : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "ZC" (*dest)
+        : "memory");
+      break;
+    default:
+      asm volatile (
+        "1: ll.w %[prev], %[dest]     \n\t"
+        "   bne  %[prev], %[_old], 2f \n\t"
+        "   move %[temp], %[_new]     \n\t"
+        "   sc.w %[temp], %[dest]     \n\t"
+        "   beqz %[temp], 1b          \n\t"
+        "   b    3f                   \n\t"
+        "2: dbar 0x14                 \n\t"
+        "3:                           \n\t"
+        : [prev] "=&r" (prev), [temp] "=&r" (temp)
+        : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "ZC" (*dest)
+        : "memory");
+      break;
+    }
   }
 
   return prev;
@@ -209,36 +249,75 @@ inline T Atomic::PlatformCmpxchg<8>::operator()(T volatile* dest,
   STATIC_ASSERT(8 == sizeof(T));
   T prev, temp;
 
-  switch (order) {
-  case memory_order_relaxed:
-  case memory_order_release:
-    asm volatile (
-      "1: ll.d %[prev], %[dest]     \n\t"
-      "   bne  %[prev], %[_old], 2f \n\t"
-      "   move %[temp], %[_new]     \n\t"
-      "   sc.d %[temp], %[dest]     \n\t"
-      "   beqz %[temp], 1b          \n\t"
-      "   b    3f                   \n\t"
-      "2: dbar 0x700                \n\t"
-      "3:                           \n\t"
-      : [prev] "=&r" (prev), [temp] "=&r" (temp)
-      : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "ZC" (*dest)
-      : "memory");
-    break;
-  default:
-    asm volatile (
-      "1: ll.d %[prev], %[dest]     \n\t"
-      "   bne  %[prev], %[_old], 2f \n\t"
-      "   move %[temp], %[_new]     \n\t"
-      "   sc.d %[temp], %[dest]     \n\t"
-      "   beqz %[temp], 1b          \n\t"
-      "   b    3f                   \n\t"
-      "2: dbar 0x14                 \n\t"
-      "3:                           \n\t"
-      : [prev] "=&r" (prev), [temp] "=&r" (temp)
-      : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "ZC" (*dest)
-      : "memory");
-    break;
+  if (UseAMCAS) {
+    switch (order) {
+    case memory_order_relaxed:
+      asm volatile (
+        " move %[prev], %[_old] \n\t"
+        " amcas_d %[prev], %[_new], %[dest] \n\t"
+        : [prev] "+&r" (prev)
+        : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "r" (dest)
+        : "memory");
+      break;
+    case memory_order_acquire:
+      asm volatile (
+        " move %[prev], %[_old] \n\t"
+        " amcas_d %[prev], %[_new], %[dest] \n\t"
+        " dbar 0x14 \n\t"
+        : [prev] "+&r" (prev)
+        : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "r" (dest)
+        : "memory");
+      break;
+    case memory_order_release:
+      asm volatile (
+        " move %[prev], %[_old] \n\t"
+        " dbar 0x12 \n\t"
+        " amcas_d %[prev], %[_new], %[dest] \n\t"
+        : [prev] "+&r" (prev)
+        : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "r" (dest)
+        : "memory");
+      break;
+    default:
+      asm volatile (
+        " move %[prev], %[_old] \n\t"
+        " amcas_db_d %[prev], %[_new], %[dest] \n\t"
+        : [prev] "+&r" (prev)
+        : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "r" (dest)
+        : "memory");
+      break;
+    }
+  } else {
+    switch (order) {
+    case memory_order_relaxed:
+    case memory_order_release:
+      asm volatile (
+        "1: ll.d %[prev], %[dest]     \n\t"
+        "   bne  %[prev], %[_old], 2f \n\t"
+        "   move %[temp], %[_new]     \n\t"
+        "   sc.d %[temp], %[dest]     \n\t"
+        "   beqz %[temp], 1b          \n\t"
+        "   b    3f                   \n\t"
+        "2: dbar 0x700                \n\t"
+        "3:                           \n\t"
+        : [prev] "=&r" (prev), [temp] "=&r" (temp)
+        : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "ZC" (*dest)
+        : "memory");
+      break;
+    default:
+      asm volatile (
+        "1: ll.d %[prev], %[dest]     \n\t"
+        "   bne  %[prev], %[_old], 2f \n\t"
+        "   move %[temp], %[_new]     \n\t"
+        "   sc.d %[temp], %[dest]     \n\t"
+        "   beqz %[temp], 1b          \n\t"
+        "   b    3f                   \n\t"
+        "2: dbar 0x14                 \n\t"
+        "3:                           \n\t"
+        : [prev] "=&r" (prev), [temp] "=&r" (temp)
+        : [_old] "r" (compare_value), [_new] "r" (exchange_value), [dest] "ZC" (*dest)
+        : "memory");
+      break;
+    }
   }
 
   return prev;

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,7 @@
 #include "jvmci/jvmciRuntime.hpp"
 #include "jvmci/jvmciCompilerToVM.hpp"
 #include "jvmci/jvmciJavaClasses.hpp"
+#include "oops/compressedKlass.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/jniHandles.hpp"

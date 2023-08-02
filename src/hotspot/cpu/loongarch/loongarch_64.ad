@@ -1609,7 +1609,7 @@ uint MachSpillCopyNode::implementation( CodeBuffer *cbuf, PhaseRegAlloc *ra_, bo
           __ st_d(as_Register(Matcher::_regEncode[src_first]), Address(SP, offset));
 #ifndef PRODUCT
         } else {
-          st->print("\tst_d    %s, [SP + #%d] # spill 8",
+          st->print("\tst_d    %s, [SP + #%d]\t# spill 8",
                     Matcher::regName[src_first],
                     offset);
 #endif
@@ -1659,8 +1659,7 @@ uint MachSpillCopyNode::implementation( CodeBuffer *cbuf, PhaseRegAlloc *ra_, bo
               __ add_d(as_Register(Matcher::_regEncode[dst_first]), as_Register(Matcher::_regEncode[src_first]), R0);
 #ifndef PRODUCT
         } else {
-          st->print("\n\t");
-          st->print("move(32-bit)    %s <-- %s\t# spill 11",
+          st->print("\tmove(32-bit)    %s <-- %s\t# spill 11",
                     Matcher::regName[dst_first],
                     Matcher::regName[src_first]);
 #endif
@@ -1677,8 +1676,7 @@ uint MachSpillCopyNode::implementation( CodeBuffer *cbuf, PhaseRegAlloc *ra_, bo
           __ movgr2fr_d(as_FloatRegister(Matcher::_regEncode[dst_first]), as_Register(Matcher::_regEncode[src_first]));
 #ifndef PRODUCT
         } else {
-          st->print("\n\t");
-          st->print("movgr2fr_d   %s, %s\t# spill 12",
+          st->print("\tmovgr2fr_d   %s, %s\t# spill 12",
                     Matcher::regName[dst_first],
                     Matcher::regName[src_first]);
 #endif
@@ -1692,8 +1690,7 @@ uint MachSpillCopyNode::implementation( CodeBuffer *cbuf, PhaseRegAlloc *ra_, bo
           __ movgr2fr_w(as_FloatRegister(Matcher::_regEncode[dst_first]), as_Register(Matcher::_regEncode[src_first]));
 #ifndef PRODUCT
         } else {
-          st->print("\n\t");
-          st->print("movgr2fr_w   %s, %s\t# spill 13",
+          st->print("\tmovgr2fr_w   %s, %s\t# spill 13",
                     Matcher::regName[dst_first],
                     Matcher::regName[src_first]);
 #endif
@@ -1714,8 +1711,7 @@ uint MachSpillCopyNode::implementation( CodeBuffer *cbuf, PhaseRegAlloc *ra_, bo
           __ fst_d( as_FloatRegister(Matcher::_regEncode[src_first]), Address(SP, offset) );
 #ifndef PRODUCT
         } else {
-          st->print("\n\t");
-          st->print("fst_d   %s, [SP + #%d]\t# spill 14",
+          st->print("\tfst_d   %s, [SP + #%d]\t# spill 14",
                     Matcher::regName[src_first],
                     offset);
 #endif
@@ -1730,8 +1726,7 @@ uint MachSpillCopyNode::implementation( CodeBuffer *cbuf, PhaseRegAlloc *ra_, bo
           __ fst_s(as_FloatRegister(Matcher::_regEncode[src_first]), Address(SP, offset));
 #ifndef PRODUCT
         } else {
-          st->print("\n\t");
-          st->print("fst_s   %s, [SP + #%d]\t# spill 15",
+          st->print("\tfst_s   %s, [SP + #%d]\t# spill 15",
                     Matcher::regName[src_first],
                     offset);
 #endif
@@ -1748,8 +1743,7 @@ uint MachSpillCopyNode::implementation( CodeBuffer *cbuf, PhaseRegAlloc *ra_, bo
           __ movfr2gr_d( as_Register(Matcher::_regEncode[dst_first]), as_FloatRegister(Matcher::_regEncode[src_first]));
 #ifndef PRODUCT
         } else {
-          st->print("\n\t");
-          st->print("movfr2gr_d   %s, %s\t# spill 16",
+          st->print("\tmovfr2gr_d   %s, %s\t# spill 16",
                     Matcher::regName[dst_first],
                     Matcher::regName[src_first]);
 #endif
@@ -1763,8 +1757,7 @@ uint MachSpillCopyNode::implementation( CodeBuffer *cbuf, PhaseRegAlloc *ra_, bo
           __ movfr2gr_s( as_Register(Matcher::_regEncode[dst_first]), as_FloatRegister(Matcher::_regEncode[src_first]));
 #ifndef PRODUCT
         } else {
-          st->print("\n\t");
-          st->print("movfr2gr_s   %s, %s\t# spill 17",
+          st->print("\tmovfr2gr_s   %s, %s\t# spill 17",
                     Matcher::regName[dst_first],
                     Matcher::regName[src_first]);
 #endif
@@ -1781,8 +1774,7 @@ uint MachSpillCopyNode::implementation( CodeBuffer *cbuf, PhaseRegAlloc *ra_, bo
           __ fmov_d( as_FloatRegister(Matcher::_regEncode[dst_first]), as_FloatRegister(Matcher::_regEncode[src_first]));
 #ifndef PRODUCT
         } else {
-          st->print("\n\t");
-          st->print("fmov_d  %s <-- %s\t# spill 18",
+          st->print("\tfmov_d  %s <-- %s\t# spill 18",
                     Matcher::regName[dst_first],
                     Matcher::regName[src_first]);
 #endif
@@ -1796,8 +1788,7 @@ uint MachSpillCopyNode::implementation( CodeBuffer *cbuf, PhaseRegAlloc *ra_, bo
           __ fmov_s( as_FloatRegister(Matcher::_regEncode[dst_first]), as_FloatRegister(Matcher::_regEncode[src_first]));
 #ifndef PRODUCT
         } else {
-          st->print("\n\t");
-          st->print("fmov_s  %s <-- %s\t# spill 19",
+          st->print("\tfmov_s  %s <-- %s\t# spill 19",
                     Matcher::regName[dst_first],
                     Matcher::regName[src_first]);
 #endif

@@ -21,12 +21,6 @@
  * questions.
  */
 
-/*
- * This file has been modified by Loongson Technology in 2021, These
- * modifications are Copyright (c) 2021, Loongson Technology, and are made
- * available on the same license terms set forth above.
- */
-
 package compiler.c2.irTests;
 
 import java.lang.invoke.MethodHandle;

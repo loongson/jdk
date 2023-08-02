@@ -20,14 +20,6 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-
-/*
- * This file has been modified by Loongson Technology in 2023. These
- * modifications are Copyright (c) 2023, Loongson Technology, and are made
- * available on the same license terms set forth above.
- *
- */
-
 import java.nio.ByteOrder;
 import java.util.List;
 import java.util.Locale;

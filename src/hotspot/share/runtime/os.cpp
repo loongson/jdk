@@ -45,7 +45,7 @@
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "memory/universe.hpp"
-#include "oops/compressedOops.inline.hpp"
+#include "oops/compressedKlass.inline.hpp"
 #include "oops/oop.inline.hpp"
 #include "prims/jvmtiAgent.hpp"
 #include "prims/jvm_misc.hpp"

@@ -285,4 +285,3 @@ CollectedHeap* G1Arguments::create_heap() {
 size_t G1Arguments::heap_reserved_size_bytes() {
   return MaxHeapSize;
 }
-

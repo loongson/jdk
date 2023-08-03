@@ -14767,6 +14767,108 @@ instruct insert8I(vReg dst, mRegI val, immIU3 idx) %{
   ins_pipe( pipe_slow );
 %}
 
+// ---------------------------------- Extract --------------------------------
+
+instruct extractVUB(mRegI dst, vReg src, mRegI idx, vReg tmp) %{
+  match(Set dst (ExtractUB src idx));
+  effect(TEMP tmp);
+  format %{ "(x)vextract $dst, $src, $idx\t# @extractVUB" %}
+  ins_encode %{
+    // Input "src" is a vector of boolean represented as
+    // bytes with 0x00/0x01 as element values.
+    // "idx" is expected to be in range.
+
+    if (Matcher::vector_length_in_bytes(this, $src) > 16) {
+      __ xvreplgr2vr_b(fscratch, $idx$$Register);
+      __ xvpermi_q($tmp$$FloatRegister, $src$$FloatRegister, 0x01);
+      __ xvshuf_b(fscratch, $tmp$$FloatRegister, $src$$FloatRegister, fscratch);
+    } else {
+      __ vreplgr2vr_b(fscratch, $idx$$Register);
+      __ vshuf_b(fscratch, $src$$FloatRegister, $src$$FloatRegister, fscratch);
+    }
+    __ vpickve2gr_b($dst$$Register, fscratch, 0);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct extractV(mRegI dst, vReg src, immIU5 idx) %{
+  match(Set dst (ExtractUB src idx));
+  match(Set dst (ExtractB src idx));
+  match(Set dst (ExtractS src idx));
+  match(Set dst (ExtractI src idx));
+  format %{ "(x)vextract $dst, $src, $idx\t# @extractV" %}
+  ins_encode %{
+    int idx = $idx$$constant;
+    FloatRegister src = $src$$FloatRegister;
+
+    if (type2aelembytes(Matcher::vector_element_basic_type(this, $src)) == 1 && idx >= 16) {
+      idx = idx - 16;
+      src = fscratch;
+      __ xvpermi_q(fscratch, $src$$FloatRegister, 0x01);
+    } else if (type2aelembytes(Matcher::vector_element_basic_type(this, $src)) == 2 && idx >= 8) {
+      idx = idx - 8;
+      src = fscratch;
+      __ xvpermi_q(fscratch, $src$$FloatRegister, 0x01);
+    }
+
+    switch (Matcher::vector_element_basic_type(this, $src)) {
+      case T_BOOLEAN:
+      case T_BYTE   : __  vpickve2gr_b($dst$$Register, src, idx); break;
+      case T_SHORT  : __  vpickve2gr_h($dst$$Register, src, idx); break;
+      case T_INT    : Matcher::vector_length_in_bytes(this, $src) > 16 ?
+                      __ xvpickve2gr_w($dst$$Register, src, idx) :
+                      __  vpickve2gr_w($dst$$Register, src, idx); break;
+      default:
+        ShouldNotReachHere();
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct extractVL(mRegL dst, vReg src, immIU2 idx) %{
+  match(Set dst (ExtractL src idx));
+  format %{ "(x)vpickve2gr.d    $dst, $src, $idx\t# @extractVL" %}
+  ins_encode %{
+    switch (Matcher::vector_length(this, $src)) {
+      case 2: __  vpickve2gr_d($dst$$Register, $src$$FloatRegister, $idx$$constant); break;
+      case 4: __ xvpickve2gr_d($dst$$Register, $src$$FloatRegister, $idx$$constant); break;
+      default:
+        ShouldNotReachHere();
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct extractVF(regF dst, vReg src, immIU3 idx) %{
+  match(Set dst (ExtractF src idx));
+  format %{ "(x)vextract    $dst, $src, $idx\t# @extractVF" %}
+  ins_encode %{
+    switch (Matcher::vector_length(this, $src)) {
+      case 2:
+      case 4:  __ vshuf4i_w($dst$$FloatRegister, $src$$FloatRegister, $idx$$constant); break;
+      case 8: __ xvpickve_w($dst$$FloatRegister, $src$$FloatRegister, $idx$$constant); break;
+      default:
+        ShouldNotReachHere();
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct extractVD(regD dst, vReg src, immIU2 idx) %{
+  match(Set dst (ExtractD src idx));
+  format %{ "(x)vextract    $dst, $src, $idx\t# @extractVD" %}
+  ins_encode %{
+    int idx = $idx$$constant;
+    switch (Matcher::vector_length(this, $src)) {
+      case 2:  __ vshuf4i_d($dst$$FloatRegister, $src$$FloatRegister, idx+2); break;
+      case 4: __ xvpickve_d($dst$$FloatRegister, $src$$FloatRegister, idx);   break;
+      default:
+        ShouldNotReachHere();
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 // -------------------------------- Vector Blend ------------------------------
 
 instruct blendV(vReg dst, vReg src1, vReg src2, vReg mask)

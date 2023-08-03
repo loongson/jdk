@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2022, 2023, Arm Limited. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,7 +33,7 @@
 * @summary Test vectorization of numberOfTrailingZeros/numberOfLeadingZeros for Long
 * @requires vm.compiler2.enabled
 * @requires (os.simpleArch == "x64" & vm.cpu.features ~= ".*avx2.*") |
-*           (os.simpleArch == "aarch64" & vm.cpu.features ~= ".*sve.*" & (vm.opt.UseSVE == "null" | vm.opt.UseSVE > 0)) |
+*           (os.simpleArch == "aarch64" & vm.cpu.features ~= ".*sve.*") |
 *           (os.simpleArch == "loongarch64")
 * @library /test/lib /
 * @run driver compiler.vectorization.TestNumberOfContinuousZeros

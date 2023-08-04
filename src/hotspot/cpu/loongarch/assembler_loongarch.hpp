@@ -155,7 +155,7 @@ class Address {
     assert_different_registers(_base, AT);
   }
 
-  Address(Register base, Register index, ScaleFactor scale, int disp = 0)
+  Address(Register base, Register index, ScaleFactor scale = no_scale, int disp = 0)
     : _base (base),
       _index(index),
       _scale(scale),

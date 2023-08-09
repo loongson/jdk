@@ -1040,6 +1040,9 @@ bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType bt) {
       if (vlen < 4 || !UseLASX)
         return false;
       break;
+    case Op_VectorUCastB2X:
+    case Op_VectorUCastS2X:
+    case Op_VectorUCastI2X:
     case Op_VectorCastB2X:
     case Op_VectorCastS2X:
     case Op_VectorCastI2X:
@@ -14525,6 +14528,54 @@ instruct roundVD(vReg dst, vReg src, immI rmode) %{
       }
     } else {
       ShouldNotReachHere();
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+// ---------------------------- Vector UCast B2X -------------------------------
+
+instruct cvtVUB(vReg dst, vReg src) %{
+  match(Set dst (VectorUCastB2X src));
+  format %{ "(x)vconvert    $dst, $src\t# @cvtVUB" %}
+  ins_encode %{
+    switch (Matcher::vector_element_basic_type(this)) {
+      case T_SHORT : __ vext2xv_hu_bu($dst$$FloatRegister, $src$$FloatRegister); break;
+      case T_INT   : __ vext2xv_wu_bu($dst$$FloatRegister, $src$$FloatRegister); break;
+      case T_LONG  : __ vext2xv_du_bu($dst$$FloatRegister, $src$$FloatRegister); break;
+      default:
+        ShouldNotReachHere();
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+// ---------------------------- Vector UCast S2X -------------------------------
+
+instruct cvtVUS(vReg dst, vReg src) %{
+  match(Set dst (VectorUCastS2X src));
+  format %{ "(x)vconvert    $dst, $src\t# @cvtVUS" %}
+  ins_encode %{
+    switch (Matcher::vector_element_basic_type(this)) {
+      case T_INT   : __ vext2xv_wu_hu($dst$$FloatRegister, $src$$FloatRegister); break;
+      case T_LONG  : __ vext2xv_du_hu($dst$$FloatRegister, $src$$FloatRegister); break;
+      default:
+        ShouldNotReachHere();
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+// ---------------------------- Vector UCast I2X -------------------------------
+
+instruct cvtVUI(vReg dst, vReg src) %{
+  match(Set dst (VectorUCastI2X src));
+  format %{ "(x)vconvert    $dst, $src\t# @cvtVUI" %}
+  ins_encode %{
+    switch (Matcher::vector_element_basic_type(this)) {
+      case T_LONG  : __ vext2xv_du_wu($dst$$FloatRegister, $src$$FloatRegister); break;
+      default:
+        ShouldNotReachHere();
     }
   %}
   ins_pipe( pipe_slow );

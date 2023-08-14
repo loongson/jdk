@@ -8316,6 +8316,27 @@ instruct cmovF_cmpL_reg_reg(regF dst, regF src, mRegL tmp1, mRegL tmp2, cmpOp co
   ins_pipe( pipe_slow );
 %}
 
+instruct cmovD_cmpN_reg_reg(regD dst, regD src, mRegN tmp1, mRegN tmp2, cmpOp cop) %{
+  match(Set dst (CMoveD (Binary cop (CmpN tmp1 tmp2)) (Binary dst src)));
+  ins_cost(200);
+  format %{
+             "CMP$cop  $tmp1, $tmp2\t  @cmovD_cmpN_reg_reg\n"
+             "\tCMOV  $dst, $src \t @cmovD_cmpN_reg_reg"
+         %}
+
+  ins_encode %{
+    Register op1 = $tmp1$$Register;
+    Register op2 = $tmp2$$Register;
+    FloatRegister dst = as_FloatRegister($dst$$reg);
+    FloatRegister src = as_FloatRegister($src$$reg);
+    int     flag = $cop$$cmpcode;
+
+    __ cmp_cmov(op1, op2, dst, src, (MacroAssembler::CMCompare) flag, false /* is_signed */);
+  %}
+
+  ins_pipe( pipe_slow );
+%}
+
 instruct cmovD_cmpI_reg_reg(regD dst, regD src, mRegI tmp1, mRegI tmp2, cmpOp cop) %{
   match(Set dst (CMoveD (Binary cop (CmpI tmp1 tmp2)) (Binary dst src)));
   ins_cost(200);

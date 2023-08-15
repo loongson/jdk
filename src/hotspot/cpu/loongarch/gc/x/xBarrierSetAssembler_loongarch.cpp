@@ -453,11 +453,9 @@ void XBarrierSetAssembler::generate_c2_load_barrier_stub(MacroAssembler* masm, X
   // Stub exit
   __ b(*stub->continuation());
 }
-
-#undef __
-
 #endif // COMPILER2
 
+#undef __
 #define __ masm->
 
 void XBarrierSetAssembler::check_oop(MacroAssembler* masm, Register obj, Register tmp1, Register tmp2, Label& error) {

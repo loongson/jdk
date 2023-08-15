@@ -463,7 +463,7 @@ void ShenandoahBarrierSetAssembler::try_resolve_jobject_in_native(MacroAssembler
 //
 // Clobbers SCR1, SCR2
 void ShenandoahBarrierSetAssembler::cmpxchg_oop(MacroAssembler* masm,
-                                                Register mem,
+                                                Address addr,
                                                 Register expected,
                                                 Register new_val,
                                                 bool acquire, bool is_cae,
@@ -472,10 +472,9 @@ void ShenandoahBarrierSetAssembler::cmpxchg_oop(MacroAssembler* masm,
   Register tmp2 = SCR1;
   bool is_narrow = UseCompressedOops;
 
-  assert_different_registers(mem, expected, tmp1, tmp2);
-  assert_different_registers(mem, new_val,  tmp1, tmp2);
+  assert_different_registers(addr.base(), expected, tmp1, tmp2);
+  assert_different_registers(addr.base(), new_val,  tmp1, tmp2);
 
-  Address  addr(mem);
   Label step4, done_succ, done_fail, done;
 
   // There are two ways to reach this label.  Initial entry into the
@@ -513,9 +512,9 @@ void ShenandoahBarrierSetAssembler::cmpxchg_oop(MacroAssembler* masm,
 
   if (is_narrow) {
     __ cmpxchg32(addr, expected, new_val, tmp2, false /* sign */, false /* retold */,
-                 acquire /* barrier */, false /* weak */, true /* exchange */);
+                 acquire /* acquire */, false /* weak */, true /* exchange */);
   } else {
-    __ cmpxchg(addr, expected, new_val, tmp2, false /* retold */, acquire /* barrier */,
+    __ cmpxchg(addr, expected, new_val, tmp2, false /* retold */, acquire /* acquire */,
                false /* weak */, true /* exchange */);
   }
   // tmp2 holds value fetched.
@@ -579,9 +578,9 @@ void ShenandoahBarrierSetAssembler::cmpxchg_oop(MacroAssembler* masm,
   // compares result with expected.
   if (is_narrow) {
     __ cmpxchg32(addr, tmp2, new_val, tmp1, false /* sign */, false /* retold */,
-                 acquire /* barrier */, false /* weak */, false /* exchange */);
+                 acquire /* acquire */, false /* weak */, false /* exchange */);
   } else {
-    __ cmpxchg(addr, tmp2, new_val, tmp1, false /* retold */, acquire /* barrier */,
+    __ cmpxchg(addr, tmp2, new_val, tmp1, false /* retold */, acquire /* acquire */,
                false /* weak */, false /* exchange */);
   }
   // tmp1 set iff success, tmp2 holds value fetched.

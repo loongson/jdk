@@ -9971,6 +9971,34 @@ instruct copySignD_reg(regD dst, regD src1, regD src2, immD_0 zero) %{
   ins_pipe( fpu_arith );
 %}
 
+instruct signumF_reg(regF dst, regF src, regF zero, regF one, regF tmp) %{
+  match(Set dst (SignumF src (Binary zero one)));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "signumF    $dst, $src, $zero, $one\t# TEMP($tmp) @signumF_reg" %}
+  ins_encode %{
+    __ fcmp_clt_s(FCC0, $zero$$FloatRegister, $src$$FloatRegister);
+    __ fsel($dst$$FloatRegister, $src$$FloatRegister, $one$$FloatRegister, FCC0);
+    __ fcmp_clt_s(FCC0, $src$$FloatRegister, $zero$$FloatRegister);
+    __ fneg_s($tmp$$FloatRegister, $one$$FloatRegister);
+    __ fsel($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister, FCC0);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct signumD_reg(regD dst, regD src, regD zero, regD one, regD tmp) %{
+  match(Set dst (SignumD src (Binary zero one)));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "signumF    $dst, $src, $zero, $one\t# TEMP($tmp) @signumD_reg" %}
+  ins_encode %{
+    __ fcmp_clt_d(FCC0, $zero$$FloatRegister, $src$$FloatRegister);
+    __ fsel($dst$$FloatRegister, $src$$FloatRegister, $one$$FloatRegister, FCC0);
+    __ fcmp_clt_d(FCC0, $src$$FloatRegister, $zero$$FloatRegister);
+    __ fneg_d($tmp$$FloatRegister, $one$$FloatRegister);
+    __ fsel($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister, FCC0);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 //----------------------------------Logical Instructions----------------------
 //__________________________________Integer Logical Instructions-------------
 
@@ -15657,6 +15685,51 @@ instruct clzV(vReg dst, vReg src) %{
     }
   %}
   ins_pipe( pipe_slow );
+%}
+
+// ------------------------------ Vector signum --------------------------------
+
+instruct signumV(vReg dst, vReg src, vReg zero, vReg one, vReg tmp) %{
+  match(Set dst (SignumVF src (Binary zero one)));
+  match(Set dst (SignumVD src (Binary zero one)));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "(x)vsignum    $dst, $src, $zero, $one\t# TEMP($tmp) @signumV" %}
+  ins_encode %{
+    if (Matcher::vector_length_in_bytes(this) > 16) {
+      switch (Matcher::vector_element_basic_type(this, $src)) {
+        case T_FLOAT:  __ xvfcmp_clt_s($dst$$FloatRegister, $zero$$FloatRegister, $src$$FloatRegister);
+                       __ xvfcmp_clt_s($tmp$$FloatRegister, $src$$FloatRegister, $zero$$FloatRegister);
+                       __ xvor_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister);
+                       __ xvsrli_w($dst$$FloatRegister, $dst$$FloatRegister, 1);
+                       break;
+        case T_DOUBLE: __ xvfcmp_clt_d($dst$$FloatRegister, $zero$$FloatRegister, $src$$FloatRegister);
+                       __ xvfcmp_clt_d($tmp$$FloatRegister, $src$$FloatRegister, $zero$$FloatRegister);
+                       __ xvor_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister);
+                       __ xvsrli_d($dst$$FloatRegister, $dst$$FloatRegister, 1);
+                       break;
+        default:
+          ShouldNotReachHere();
+      }
+      __ xvbitsel_v($dst$$FloatRegister, $src$$FloatRegister, $one$$FloatRegister, $dst$$FloatRegister);
+    } else {
+      switch (Matcher::vector_element_basic_type(this, $src)) {
+        case T_FLOAT:  __ vfcmp_clt_s($dst$$FloatRegister, $zero$$FloatRegister, $src$$FloatRegister);
+                       __ vfcmp_clt_s($tmp$$FloatRegister, $src$$FloatRegister, $zero$$FloatRegister);
+                       __ vor_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister);
+                       __ vsrli_w($dst$$FloatRegister, $dst$$FloatRegister, 1);
+                       break;
+        case T_DOUBLE: __ vfcmp_clt_d($dst$$FloatRegister, $zero$$FloatRegister, $src$$FloatRegister);
+                       __ vfcmp_clt_d($tmp$$FloatRegister, $src$$FloatRegister, $zero$$FloatRegister);
+                       __ vor_v($dst$$FloatRegister, $dst$$FloatRegister, $tmp$$FloatRegister);
+                       __ vsrli_d($dst$$FloatRegister, $dst$$FloatRegister, 1);
+                       break;
+        default:
+          ShouldNotReachHere();
+      }
+      __ vbitsel_v($dst$$FloatRegister, $src$$FloatRegister, $one$$FloatRegister, $dst$$FloatRegister);
+    }
+  %}
+  ins_pipe(pipe_slow);
 %}
 
 

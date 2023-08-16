@@ -15562,6 +15562,49 @@ instruct loadconV(vReg dst, immI_0 src) %{
   ins_pipe( pipe_slow );
 %}
 
+// ------------------------------ Populate Index to a Vector ------------------
+
+instruct populateIndexV(vReg dst, mRegI src1, immI_1 src2) %{
+  match(Set dst (PopulateIndex src1 src2));
+  format %{ "(x)vpopulate_index    $dst, $src1, $src2\t# @populateIndexV" %}
+  ins_encode %{
+    assert($src2$$constant == 1, "required");
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    int offset = exact_log2(type2aelembytes(bt)) << 5;
+    __ li(AT, (long)(StubRoutines::la::vector_iota_indices() + offset));
+    if (Matcher::vector_length_in_bytes(this) > 16) {
+      __ xvld(fscratch, AT, (int)0);
+      switch (bt) {
+        case T_BYTE  : __ xvreplgr2vr_b($dst$$FloatRegister, $src1$$Register);
+                       __ xvadd_b($dst$$FloatRegister, $dst$$FloatRegister, fscratch); break;
+        case T_SHORT : __ xvreplgr2vr_h($dst$$FloatRegister, $src1$$Register);
+                       __ xvadd_h($dst$$FloatRegister, $dst$$FloatRegister, fscratch); break;
+        case T_INT   : __ xvreplgr2vr_w($dst$$FloatRegister, $src1$$Register);
+                       __ xvadd_w($dst$$FloatRegister, $dst$$FloatRegister, fscratch); break;
+        case T_LONG  : __ xvreplgr2vr_d($dst$$FloatRegister, $src1$$Register);
+                       __ xvadd_d($dst$$FloatRegister, $dst$$FloatRegister, fscratch); break;
+        default:
+          ShouldNotReachHere();
+      }
+    } else {
+      __ vld(fscratch, AT, (int)0);
+      switch (bt) {
+        case T_BYTE  : __ vreplgr2vr_b($dst$$FloatRegister, $src1$$Register);
+                       __ vadd_b($dst$$FloatRegister, $dst$$FloatRegister, fscratch); break;
+        case T_SHORT : __ vreplgr2vr_h($dst$$FloatRegister, $src1$$Register);
+                       __ vadd_h($dst$$FloatRegister, $dst$$FloatRegister, fscratch); break;
+        case T_INT   : __ vreplgr2vr_w($dst$$FloatRegister, $src1$$Register);
+                       __ vadd_w($dst$$FloatRegister, $dst$$FloatRegister, fscratch); break;
+        case T_LONG  : __ vreplgr2vr_d($dst$$FloatRegister, $src1$$Register);
+                       __ vadd_d($dst$$FloatRegister, $dst$$FloatRegister, fscratch); break;
+        default:
+          ShouldNotReachHere();
+      }
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 // ---------------------------- LOAD_SHUFFLE ----------------------------------
 
 instruct loadShuffleVB(vReg dst) %{

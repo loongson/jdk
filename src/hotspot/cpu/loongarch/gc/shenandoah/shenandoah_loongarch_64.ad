@@ -44,7 +44,7 @@ encode %{
   %}
 %}
 
-instruct compareAndSwapP_shenandoah(mRegI res, memory_exclusive mem, mRegP oldval, mRegP newval) %{
+instruct compareAndSwapP_shenandoah(mRegI res, indirect mem, mRegP oldval, mRegP newval) %{
   match(Set res (ShenandoahCompareAndSwapP mem (Binary oldval newval)));
 
   format %{
@@ -56,7 +56,7 @@ instruct compareAndSwapP_shenandoah(mRegI res, memory_exclusive mem, mRegP oldva
   ins_pipe(pipe_slow);
 %}
 
-instruct compareAndSwapN_shenandoah(mRegI res, memory_exclusive mem, mRegN oldval, mRegN newval) %{
+instruct compareAndSwapN_shenandoah(mRegI res, indirect mem, mRegN oldval, mRegN newval) %{
   match(Set res (ShenandoahCompareAndSwapN mem (Binary oldval newval)));
 
   format %{
@@ -72,7 +72,7 @@ instruct compareAndSwapN_shenandoah(mRegI res, memory_exclusive mem, mRegN oldva
   ins_pipe(pipe_slow);
 %}
 
-instruct compareAndSwapPAcq_shenandoah(mRegI res, memory_exclusive mem, mRegP oldval, mRegP newval) %{
+instruct compareAndSwapPAcq_shenandoah(mRegI res, indirect mem, mRegP oldval, mRegP newval) %{
   match(Set res (ShenandoahCompareAndSwapP mem (Binary oldval newval)));
 
   format %{
@@ -84,7 +84,7 @@ instruct compareAndSwapPAcq_shenandoah(mRegI res, memory_exclusive mem, mRegP ol
   ins_pipe(pipe_slow);
 %}
 
-instruct compareAndSwapNAcq_shenandoah(mRegI res, memory_exclusive mem, mRegN oldval, mRegN newval) %{
+instruct compareAndSwapNAcq_shenandoah(mRegI res, indirect mem, mRegN oldval, mRegN newval) %{
   match(Set res (ShenandoahCompareAndSwapN mem (Binary oldval newval)));
 
  format %{
@@ -100,7 +100,7 @@ instruct compareAndSwapNAcq_shenandoah(mRegI res, memory_exclusive mem, mRegN ol
   ins_pipe(pipe_slow);
 %}
 
-instruct compareAndExchangeN_shenandoah(mRegN res, memory_exclusive mem, mRegN oldval, mRegN newval) %{
+instruct compareAndExchangeN_shenandoah(mRegN res, indirect mem, mRegN oldval, mRegN newval) %{
   match(Set res (ShenandoahCompareAndExchangeN mem (Binary oldval newval)));
 
   format %{
@@ -116,7 +116,7 @@ instruct compareAndExchangeN_shenandoah(mRegN res, memory_exclusive mem, mRegN o
   ins_pipe(pipe_slow);
 %}
 
-instruct compareAndExchangeP_shenandoah(mRegP res, memory_exclusive mem, mRegP oldval, mRegP newval) %{
+instruct compareAndExchangeP_shenandoah(mRegP res, indirect mem, mRegP oldval, mRegP newval) %{
   match(Set res (ShenandoahCompareAndExchangeP mem (Binary oldval newval)));
 
   format %{
@@ -132,7 +132,7 @@ instruct compareAndExchangeP_shenandoah(mRegP res, memory_exclusive mem, mRegP o
   ins_pipe(pipe_slow);
 %}
 
-instruct compareAndExchangeNAcq_shenandoah(mRegN res, memory_exclusive mem, mRegN oldval, mRegN newval) %{
+instruct compareAndExchangeNAcq_shenandoah(mRegN res, indirect mem, mRegN oldval, mRegN newval) %{
   match(Set res (ShenandoahCompareAndExchangeN mem (Binary oldval newval)));
 
   format %{
@@ -148,7 +148,7 @@ instruct compareAndExchangeNAcq_shenandoah(mRegN res, memory_exclusive mem, mReg
   ins_pipe(pipe_slow);
 %}
 
-instruct compareAndExchangePAcq_shenandoah(mRegP res, memory_exclusive mem, mRegP oldval, mRegP newval) %{
+instruct compareAndExchangePAcq_shenandoah(mRegP res, indirect mem, mRegP oldval, mRegP newval) %{
   match(Set res (ShenandoahCompareAndExchangeP mem (Binary oldval newval)));
 
   format %{
@@ -164,7 +164,7 @@ instruct compareAndExchangePAcq_shenandoah(mRegP res, memory_exclusive mem, mReg
   ins_pipe(pipe_slow);
 %}
 
-instruct weakCompareAndSwapN_shenandoah(mRegI res, memory_exclusive mem, mRegN oldval, mRegN newval) %{
+instruct weakCompareAndSwapN_shenandoah(mRegI res, indirect mem, mRegN oldval, mRegN newval) %{
   match(Set res (ShenandoahWeakCompareAndSwapN mem (Binary oldval newval)));
 
   format %{
@@ -180,7 +180,7 @@ instruct weakCompareAndSwapN_shenandoah(mRegI res, memory_exclusive mem, mRegN o
   ins_pipe(pipe_slow);
 %}
 
-instruct weakCompareAndSwapP_shenandoah(mRegI res, memory_exclusive mem, mRegP oldval, mRegP newval) %{
+instruct weakCompareAndSwapP_shenandoah(mRegI res, indirect mem, mRegP oldval, mRegP newval) %{
   match(Set res (ShenandoahWeakCompareAndSwapP mem (Binary oldval newval)));
 
   format %{
@@ -197,7 +197,7 @@ instruct weakCompareAndSwapP_shenandoah(mRegI res, memory_exclusive mem, mRegP o
   ins_pipe(pipe_slow);
 %}
 
-instruct weakCompareAndSwapNAcq_shenandoah(mRegI res, memory_exclusive mem, mRegN oldval, mRegN newval) %{
+instruct weakCompareAndSwapNAcq_shenandoah(mRegI res, indirect mem, mRegN oldval, mRegN newval) %{
   match(Set res (ShenandoahWeakCompareAndSwapN mem (Binary oldval newval)));
 
   format %{
@@ -214,7 +214,7 @@ instruct weakCompareAndSwapNAcq_shenandoah(mRegI res, memory_exclusive mem, mReg
   ins_pipe(pipe_slow);
 %}
 
-instruct weakCompareAndSwapPAcq_shenandoah(mRegI res, memory_exclusive mem, mRegP oldval, mRegP newval) %{
+instruct weakCompareAndSwapPAcq_shenandoah(mRegI res, indirect mem, mRegP oldval, mRegP newval) %{
   match(Set res (ShenandoahWeakCompareAndSwapP mem (Binary oldval newval)));
 
   format %{

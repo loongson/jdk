@@ -568,7 +568,8 @@ address TemplateInterpreterGenerator::generate_return_entry_for(TosState state, 
   address entry = __ pc();
 
   // Restore stack bottom in case i2c adjusted stack
-  __ ld_d(SP, Address(FP, frame::interpreter_frame_last_sp_offset * wordSize));
+  __ ld_d(AT, Address(FP, frame::interpreter_frame_last_sp_offset * wordSize));
+  __ alsl_d(SP, AT, FP, LogBytesPerWord-1);
   // and null it as marker that sp is now tos until next java call
   __ st_d(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);
 
@@ -1883,7 +1884,8 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
   // fixup routine to move the mutated arguments onto the top of our
   // expression stack if necessary.
   __ move(T8, SP);
-  __ ld_d(A2, FP, frame::interpreter_frame_last_sp_offset * wordSize);
+  __ ld_d(AT, FP, frame::interpreter_frame_last_sp_offset * wordSize);
+  __ alsl_d(A2, AT, FP, LogBytesPerWord-1);
   // PC must point into interpreter here
   Label L;
   __ bind(L);
@@ -1891,7 +1893,8 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
   __ super_call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::popframe_move_outgoing_args), TREG, T8, A2);
   __ reset_last_Java_frame(TREG, true);
   // Restore the last_sp and null it out
-  __ ld_d(SP, FP, frame::interpreter_frame_last_sp_offset * wordSize);
+  __ ld_d(AT, FP, frame::interpreter_frame_last_sp_offset * wordSize);
+  __ alsl_d(SP, AT, FP, LogBytesPerWord-1);
   __ st_d(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);
 
 

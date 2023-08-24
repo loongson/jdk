@@ -248,12 +248,7 @@ instruct xGetAndSetP(mRegP mem, mRegP newv, mRegP prev, mRegP tmp) %{
     Register newv = $newv$$Register;
     Register addr = $mem$$Register;
     __ block_comment("xGetAndSetP");
-    if (prev == newv || prev == addr) {
-      __ amswap_db_d(AT, newv, addr);
-      __ move(prev, AT);
-    } else {
-      __ amswap_db_d(prev, newv, addr);
-    }
+    __ amswap_db_d(prev, newv, addr);
     x_load_barrier(_masm, this, Address(noreg, 0), prev, $tmp$$Register, barrier_data());
   %}
 

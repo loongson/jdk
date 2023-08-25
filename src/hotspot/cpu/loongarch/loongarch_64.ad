@@ -9479,6 +9479,13 @@ instruct divI_Reg_Reg(mRegI dst, mRegI src1, mRegI src2) %{
   ins_pipe( ialu_div );
 %}
 
+// =================== DivMod nodes ==========================
+//
+// Since we already have the `div` result here,
+// combining the `mul` and the `sub` to calculate
+// the remainder is more efficient than
+// applying the `mod` instruction directly.
+//
 instruct divmodI_Reg_Reg(mT1RegI div, mT2RegI mod, mRegI src1, mRegI src2) %{
   match(DivModI src1 src2);
   effect(TEMP_DEF div, TEMP_DEF mod);
@@ -9492,9 +9499,10 @@ instruct divmodI_Reg_Reg(mT1RegI div, mT2RegI mod, mRegI src1, mRegI src2) %{
      Register mod  = $mod$$Register;
 
     __ div_w(div, src1, src2);
-    __ mod_w(mod, src1, src2);
-
+    __ mul_w(mod, div, src2);
+    __ sub_w(mod, src1, mod);
   %}
+
   ins_pipe( ialu_div );
 %}
 
@@ -9511,9 +9519,10 @@ instruct udivmodI_Reg_Reg(mT1RegI div, mT2RegI mod, mRegI src1, mRegI src2) %{
      Register mod  = $mod$$Register;
 
     __ div_wu(div, src1, src2);
-    __ mod_wu(mod, src1, src2);
-
+    __ mul_w(mod, div, src2);
+    __ sub_w(mod, src1, mod);
   %}
+
   ins_pipe( ialu_div );
 %}
 
@@ -9530,9 +9539,10 @@ instruct divmodL_Reg_Reg(t1RegL div, t2RegL mod, mRegL src1, mRegL src2) %{
      Register mod  = $mod$$Register;
 
     __ div_d(div, src1, src2);
-    __ mod_d(mod, src1, src2);
-
+    __ mul_d(mod, div, src2);
+    __ sub_d(mod, src1, mod);
   %}
+
   ins_pipe( ialu_div );
 %}
 
@@ -9549,11 +9559,14 @@ instruct udivmodL_Reg_Reg(t1RegL div, t2RegL mod, mRegL src1, mRegL src2) %{
      Register mod  = $mod$$Register;
 
     __ div_du(div, src1, src2);
-    __ mod_du(mod, src1, src2);
-
+    __ mul_d(mod, div, src2);
+    __ sub_d(mod, src1, mod);
   %}
+
   ins_pipe( ialu_div );
 %}
+
+// =================== End of DivMod nodes ==========================
 
 instruct udivI_Reg_Reg(mRegI dst, mRegI src1, mRegI src2) %{
   match(Set dst (UDivI src1 src2));

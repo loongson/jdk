@@ -121,6 +121,7 @@ class InterpreterMacroAssembler: public MacroAssembler {
   void get_method_counters(Register method, Register mcs, Label& skip);
 
   void load_resolved_indy_entry(Register cache, Register index);
+  void load_field_entry(Register cache, Register index, int bcp_offset = 1);
 
   // load cpool->resolved_references(index);
   void load_resolved_reference_at_index(Register result, Register index, Register tmp);

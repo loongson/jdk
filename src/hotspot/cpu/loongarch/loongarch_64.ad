@@ -14590,26 +14590,36 @@ instruct cvtVD(vReg dst, vReg src) %{
 
 // ---------------------------- Vector Cast HF2F -------------------------------
 
-instruct cvt8HFto8F(vReg dst, vReg src) %{
-  predicate(Matcher::vector_length(n) == 8);
+instruct cvtHFtoF(vReg dst, vReg src) %{
   match(Set dst (VectorCastHF2F src));
-  format %{ "(x)vconvert    $dst, $src\t# @cvt8HFto8F" %}
+  format %{ "(x)vconvert    $dst, $src\t# @cvtHFtoF" %}
   ins_encode %{
-    __ xvpermi_d($dst$$FloatRegister, $src$$FloatRegister, 0b01010000);
-    __ xvfcvtl_s_h($dst$$FloatRegister, $dst$$FloatRegister);
+    switch(Matcher::vector_length(this)) {
+      case 2:
+      case 4: __  vfcvtl_s_h($dst$$FloatRegister, $src$$FloatRegister); break;
+      case 8: __ xvpermi_d($dst$$FloatRegister, $src$$FloatRegister, 0b01010000);
+              __ xvfcvtl_s_h($dst$$FloatRegister, $dst$$FloatRegister); break;
+      default:
+        ShouldNotReachHere();
+    }
   %}
   ins_pipe( pipe_slow );
 %}
 
 // ---------------------------- Vector Cast F2HF -------------------------------
 
-instruct cvt8Fto8HF(vReg dst, vReg src) %{
-  predicate(Matcher::vector_length(n) == 8);
+instruct cvtFtoHF(vReg dst, vReg src) %{
   match(Set dst (VectorCastF2HF src));
-  format %{ "(x)vconvert    $dst, $src\t# @cvt8Fto8HF" %}
+  format %{ "(x)vconvert    $dst, $src\t# @cvtFtoHF" %}
   ins_encode %{
-    __ xvfcvt_h_s($dst$$FloatRegister, $src$$FloatRegister, $src$$FloatRegister);
-    __ xvpermi_d($dst$$FloatRegister, $dst$$FloatRegister, 0b11011000);
+    switch(Matcher::vector_length(this)) {
+      case 2:
+      case 4: __  vfcvt_h_s($dst$$FloatRegister, $src$$FloatRegister, $src$$FloatRegister); break;
+      case 8: __ xvfcvt_h_s($dst$$FloatRegister, $src$$FloatRegister, $src$$FloatRegister);
+              __ xvpermi_d($dst$$FloatRegister, $dst$$FloatRegister, 0b11011000); break;
+      default:
+        ShouldNotReachHere();
+    }
   %}
   ins_pipe( pipe_slow );
 %}

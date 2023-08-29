@@ -2983,22 +2983,31 @@ void MacroAssembler::cmp_cmov(Register      op1,
                               Register      op2,
                               FloatRegister dst,
                               FloatRegister src,
-                              CMCompare     cmp) {
+                              CMCompare     cmp,
+                              bool          is_signed) {
   switch (cmp) {
     case EQ:
     case NE:
       sub_d(AT, op1, op2);
-      slt(AT, R0, AT);
+      sltu(AT, R0, AT);
       break;
 
     case GT:
     case LE:
-      slt(AT, op2, op1);
+      if (is_signed) {
+        slt(AT, op2, op1);
+      } else {
+        sltu(AT, op2, op1);
+      }
       break;
 
     case GE:
     case LT:
-      slt(AT, op1, op2);
+      if (is_signed) {
+        slt(AT, op1, op2);
+      } else {
+        sltu(AT, op1, op2);
+      }
       break;
 
     default:

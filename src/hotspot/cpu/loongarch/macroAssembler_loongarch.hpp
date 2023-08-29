@@ -635,7 +635,8 @@ class MacroAssembler: public Assembler {
                 Register        op2,
                 FloatRegister   dst,
                 FloatRegister   src,
-                CMCompare       cmp = EQ);
+                CMCompare       cmp = EQ,
+                bool      is_signed = true);
 
   void membar(Membar_mask_bits hint);
 

@@ -5577,7 +5577,7 @@ instruct branchConP_0_long(cmpOpEqNe cmp, mRegP op1, immP_0 zero, label labl) %{
 
 instruct branchConN2P_0_long(cmpOpEqNe cmp, mRegN op1, immP_0 zero, label labl) %{
   match(If cmp (CmpP (DecodeN op1) zero));
-  predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0);
+  predicate(CompressedOops::base() == nullptr);
   effect(USE labl);
 
   ins_cost(180);
@@ -6048,7 +6048,7 @@ instruct branchConP_0_short(cmpOpEqNe cmp, mRegP op1, immP_0 zero, label labl) %
 
 instruct branchConN2P_0_short(cmpOpEqNe cmp, mRegN op1, immP_0 zero, label labl) %{
   match(If cmp (CmpP (DecodeN op1) zero));
-  predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0);
+  predicate(CompressedOops::base() == nullptr);
   effect(USE labl);
 
   ins_cost(180);

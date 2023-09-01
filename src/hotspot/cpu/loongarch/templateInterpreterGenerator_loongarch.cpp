@@ -776,7 +776,7 @@ void TemplateInterpreterGenerator::generate_stack_overflow_check(void) {
   // generate_method_entry) so the guard should work for them too.
   //
 
-  const int entry_size    = frame::interpreter_frame_monitor_size() * wordSize;
+  const int entry_size = frame::interpreter_frame_monitor_size_in_bytes();
 
   // total overhead size: entry_size + (saved fp thru expr stack bottom).
   // be sure to change this if you add/subtract anything to/from the overhead area
@@ -843,7 +843,7 @@ void TemplateInterpreterGenerator::generate_stack_overflow_check(void) {
 // Rmethod - Method*
 void TemplateInterpreterGenerator::lock_method(void) {
   // synchronize method
-  const int entry_size = frame::interpreter_frame_monitor_size() * wordSize;
+  const int entry_size = frame::interpreter_frame_monitor_size_in_bytes();
 
 #ifdef ASSERT
   { Label L;

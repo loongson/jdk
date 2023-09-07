@@ -686,6 +686,14 @@ class MacroAssembler: public Assembler {
 
   void movoop(Register dst, jobject obj);
 
+  // Inner part of the generate_fill() stub
+  inline void array_fill(BasicType t, Register to,
+                         Register value, Register count, bool aligned);
+  inline void array_fill_lsx(BasicType t, Register to,
+                             Register value, Register count);
+  inline void array_fill_lasx(BasicType t, Register to,
+                              Register value, Register count);
+
 #undef VIRTUAL
 
   void cast_primitive_type(BasicType type, Register reg) {

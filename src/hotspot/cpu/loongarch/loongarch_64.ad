@@ -1161,7 +1161,11 @@ bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack,
 
 // Max vector size in bytes. 0 if not supported.
 int Matcher::vector_width_in_bytes(BasicType bt) {
-  return (int)MaxVectorSize;
+  int size = (int)MaxVectorSize;
+  if (size < 2*type2aelembytes(bt)) size = 0;
+  // But never < 4
+  if (size < 4) size = 0;
+  return size;
 }
 
 // Limits on vector size (number of elements) loaded into vector.

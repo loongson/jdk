@@ -3337,51 +3337,67 @@ void MacroAssembler::char_array_compress(Register src, Register dst,
 // Inflate byte[] to char[]. len must be positive int.
 // jtreg:test/jdk/sun/nio/cs/FindDecoderBugs.java
 void MacroAssembler::byte_array_inflate(Register src, Register dst, Register len,
-                                        Register tmp1, Register tmp2) {
-  Label Loop, Once, Done;
+                                        FloatRegister vtemp1, FloatRegister vtemp2) {
+  Label L_loop, L_small, L_last, L_done;
 
-  bge(R0, len, Done);
+  bge(R0, len, L_done);
 
-  srli_w(AT, len, 2);
-  andi(len, len, 3);
+  // the register AT stores the number of the loop
+  srli_w(AT, len, 4);
+  // the register len stores the remainder,less than 16
+  andi(len, len, 15);
 
-  bind(Loop);
-    beqz(AT, Once);
-    ld_wu(tmp1, src, 0);
+  vxor_v(fscratch, fscratch, fscratch);
 
-    // 0x00000000a1b2c3d4 -> 0x00a100b200c300d4
-    bstrpick_d(tmp2, tmp1, 7, 0);
-    srli_d(tmp1, tmp1, 8);
-    bstrins_d(tmp2, tmp1, 23, 16);
-    srli_d(tmp1, tmp1, 8);
-    bstrins_d(tmp2, tmp1, 39, 32);
-    srli_d(tmp1, tmp1, 8);
-    bstrins_d(tmp2, tmp1, 55, 48);
+  // inflating 16 chars in one loop
+  bind(L_loop);
+    // Short strings:less than 16 bytes
+    beqz(AT, L_small);
 
-    st_d(tmp2, dst, 0);
+    vld(vtemp1, src, 0);
     addi_w(AT, AT, -1);
-    addi_d(dst, dst, 8);
-    addi_d(src, src, 4);
-    b(Loop);
+    addi_d(src, src, 16);
 
-  bind(Once);
-    beqz(len, Done);
-    ld_wu(tmp1, src, 0);
+    // 0x0000000000000000a1b2c3d4e5f6g7h8 -> 0x00a100b200c300d4.....
+    vilvl_b(vtemp2, fscratch, vtemp1);
+    vst(vtemp2, dst, 0);
 
-    bstrpick_d(tmp2, tmp1, 7, 0);
-    st_h(tmp2, dst, 0);
-    addi_w(len, len, -1);
+    // 0xa1b2c3d4e5f6g7h80000000000000000 -> 0x00a100b200c300d4.....
+    vilvh_b(vtemp1, fscratch, vtemp1);
+    vst(vtemp1, dst, 16);
 
-    beqz(len, Done);
-    bstrpick_d(tmp2, tmp1, 15, 8);
-    st_h(tmp2, dst, 2);
-    addi_w(len, len, -1);
+    addi_d(dst, dst, 32);
+    b(L_loop);
 
-    beqz(len, Done);
-    bstrpick_d(tmp2, tmp1, 23, 16);
-    st_h(tmp2, dst, 4);
+  bind(L_small);
 
-  bind(Done);
+    beqz(len, L_done);
+
+    li(AT, 8);
+    blt(len, AT, L_last);
+
+    vld(vtemp1, src, 0);
+    addi_w(len, len, -8);
+    addi_d(src, src , 8);
+
+    vilvl_b(vtemp1, fscratch, vtemp1);
+    vst(vtemp1, dst, 0);
+
+    addi_d(dst, dst, 16);
+
+    bind(L_last);
+
+      beqz(len, L_done);
+
+      ld_bu(AT, src, 0);
+      st_h(AT, dst, 0);
+      addi_w(len, len, -1);
+      addi_d(src, src, 1);
+      addi_d(dst, dst, 2);
+
+      b(L_last);
+
+  bind(L_done);
 }
 
 // Intrinsic for

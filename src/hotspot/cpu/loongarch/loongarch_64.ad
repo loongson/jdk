@@ -980,6 +980,7 @@ bool Matcher::match_rule_supported(int opcode) {
     case Op_RoundDoubleMode:
     case Op_ConvF2HF:
     case Op_ConvHF2F:
+    case Op_StrInflatedCopy:
       if (!UseLSX)
         return false;
     case Op_PopCountI:
@@ -9053,16 +9054,19 @@ instruct string_compress(a4_RegP src, a5_RegP dst, mA6RegI len, mRegI result,
 
 // byte[] to char[] inflation
 instruct string_inflate(Universe dummy, a4_RegP src, a5_RegP dst, mA6RegI len,
-                        mRegL tmp1, mRegL tmp2)
+                        regF vtemp1, regF vtemp2)
 %{
+  predicate(UseLSX);
   match(Set dummy (StrInflatedCopy src (Binary dst len)));
-  effect(USE_KILL src, USE_KILL dst, USE_KILL len, TEMP tmp1, TEMP tmp2);
+  effect(USE_KILL src, USE_KILL dst, USE_KILL len, TEMP vtemp1, TEMP vtemp2);
 
   format %{ "String Inflate $src,$dst @ string_inflate " %}
+
   ins_encode %{
     __ byte_array_inflate($src$$Register, $dst$$Register, $len$$Register,
-                          $tmp1$$Register, $tmp2$$Register);
+                          $vtemp1$$FloatRegister, $vtemp2$$FloatRegister);
   %}
+
   ins_pipe( pipe_slow );
 %}
 

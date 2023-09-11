@@ -913,6 +913,14 @@ class Assembler : public AbstractAssembler  {
     vbitrev_h_op       = 0b01110001000100001,
     vbitrev_w_op       = 0b01110001000100010,
     vbitrev_d_op       = 0b01110001000100011,
+    vilvl_b_op         = 0b01110001000110100,
+    vilvl_h_op         = 0b01110001000110101,
+    vilvl_w_op         = 0b01110001000110110,
+    vilvl_d_op         = 0b01110001000110111,
+    vilvh_b_op         = 0b01110001000111000,
+    vilvh_h_op         = 0b01110001000111001,
+    vilvh_w_op         = 0b01110001000111010,
+    vilvh_d_op         = 0b01110001000111011,
     vand_v_op          = 0b01110001001001100,
     vor_v_op           = 0b01110001001001101,
     vxor_v_op          = 0b01110001001001110,
@@ -1080,6 +1088,14 @@ class Assembler : public AbstractAssembler  {
     xvbitrev_h_op      = 0b01110101000100001,
     xvbitrev_w_op      = 0b01110101000100010,
     xvbitrev_d_op      = 0b01110101000100011,
+    xvilvl_b_op        = 0b01110101000110100,
+    xvilvl_h_op        = 0b01110101000110101,
+    xvilvl_w_op        = 0b01110101000110110,
+    xvilvl_d_op        = 0b01110101000110111,
+    xvilvh_b_op        = 0b01110101000111000,
+    xvilvh_h_op        = 0b01110101000111001,
+    xvilvh_w_op        = 0b01110101000111010,
+    xvilvh_d_op        = 0b01110101000111011,
     xvand_v_op         = 0b01110101001001100,
     xvor_v_op          = 0b01110101001001101,
     xvxor_v_op         = 0b01110101001001110,
@@ -3027,6 +3043,24 @@ public:
 
   void xvpickve_w(FloatRegister xd, FloatRegister xj, int ui3) { ASSERT_LASX emit_int32(insn_I3RR(xvpickve_w_op, ui3, (int)xj->encoding(), (int)xd->encoding())); }
   void xvpickve_d(FloatRegister xd, FloatRegister xj, int ui2) { ASSERT_LASX emit_int32(insn_I2RR(xvpickve_d_op, ui2, (int)xj->encoding(), (int)xd->encoding())); }
+
+  void  vilvl_b(FloatRegister vd, FloatRegister vj, FloatRegister vk){ ASSERT_LSX  emit_int32(insn_RRR( vilvl_b_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vilvl_h(FloatRegister vd, FloatRegister vj, FloatRegister vk){ ASSERT_LSX  emit_int32(insn_RRR( vilvl_h_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vilvl_w(FloatRegister vd, FloatRegister vj, FloatRegister vk){ ASSERT_LSX  emit_int32(insn_RRR( vilvl_w_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vilvl_d(FloatRegister vd, FloatRegister vj, FloatRegister vk){ ASSERT_LSX  emit_int32(insn_RRR( vilvl_d_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void xvilvl_b(FloatRegister xd, FloatRegister xj, FloatRegister xk){ ASSERT_LASX emit_int32(insn_RRR(xvilvl_b_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvilvl_h(FloatRegister xd, FloatRegister xj, FloatRegister xk){ ASSERT_LASX emit_int32(insn_RRR(xvilvl_h_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvilvl_w(FloatRegister xd, FloatRegister xj, FloatRegister xk){ ASSERT_LASX emit_int32(insn_RRR(xvilvl_w_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvilvl_d(FloatRegister xd, FloatRegister xj, FloatRegister xk){ ASSERT_LASX emit_int32(insn_RRR(xvilvl_d_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+
+  void  vilvh_b(FloatRegister vd, FloatRegister vj, FloatRegister vk){ ASSERT_LSX  emit_int32(insn_RRR( vilvh_b_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vilvh_h(FloatRegister vd, FloatRegister vj, FloatRegister vk){ ASSERT_LSX  emit_int32(insn_RRR( vilvh_h_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vilvh_w(FloatRegister vd, FloatRegister vj, FloatRegister vk){ ASSERT_LSX  emit_int32(insn_RRR( vilvh_w_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vilvh_d(FloatRegister vd, FloatRegister vj, FloatRegister vk){ ASSERT_LSX  emit_int32(insn_RRR( vilvh_d_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void xvilvh_b(FloatRegister xd, FloatRegister xj, FloatRegister xk){ ASSERT_LASX emit_int32(insn_RRR(xvilvh_b_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvilvh_h(FloatRegister xd, FloatRegister xj, FloatRegister xk){ ASSERT_LASX emit_int32(insn_RRR(xvilvh_h_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvilvh_w(FloatRegister xd, FloatRegister xj, FloatRegister xk){ ASSERT_LASX emit_int32(insn_RRR(xvilvh_w_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvilvh_d(FloatRegister xd, FloatRegister xj, FloatRegister xk){ ASSERT_LASX emit_int32(insn_RRR(xvilvh_d_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
 
   void  vshuf_b(FloatRegister vd, FloatRegister vj, FloatRegister vk, FloatRegister va) { ASSERT_LSX  emit_int32(insn_RRRR( vshuf_b_op, (int)va->encoding(), (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
   void xvshuf_b(FloatRegister xd, FloatRegister xj, FloatRegister xk, FloatRegister xa) { ASSERT_LASX emit_int32(insn_RRRR(xvshuf_b_op, (int)xa->encoding(), (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }

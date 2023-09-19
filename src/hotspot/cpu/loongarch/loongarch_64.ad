@@ -985,6 +985,12 @@ bool Matcher::match_rule_supported(int opcode) {
     case Op_PopCountI:
     case Op_PopCountL:
       return UsePopCountInstruction;
+    case Op_FmaF:
+    case Op_FmaD:
+    case Op_FmaVF:
+    case Op_FmaVD:
+      if (!UseFMA)
+        return false;
     default:
       break;
   }
@@ -9819,125 +9825,101 @@ instruct sqrtF_reg(regF dst, regF src) %{
 
 // src1 * src2 + src3
 instruct maddF_reg_reg(regF dst, regF src1, regF src2, regF src3) %{
-  predicate(UseFMA);
   match(Set dst (FmaF src3 (Binary src1 src2)));
-
   format %{ "fmadd_s  $dst, $src1, $src2, $src3" %}
-
   ins_encode %{
+    assert(UseFMA, "Needs FMA instructions support.");
     __ fmadd_s(as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg),
                as_FloatRegister($src2$$reg), as_FloatRegister($src3$$reg));
   %}
-
   ins_pipe( fpu_arith3 );
 %}
 
 // src1 * src2 + src3
 instruct maddD_reg_reg(regD dst, regD src1, regD src2, regD src3) %{
-  predicate(UseFMA);
   match(Set dst (FmaD src3 (Binary src1 src2)));
-
   format %{ "fmadd_d  $dst, $src1, $src2, $src3" %}
-
   ins_encode %{
+    assert(UseFMA, "Needs FMA instructions support.");
     __ fmadd_d(as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg),
                as_FloatRegister($src2$$reg), as_FloatRegister($src3$$reg));
   %}
-
   ins_pipe( fpu_arith3 );
 %}
 
 // src1 * src2 - src3
 instruct msubF_reg_reg(regF dst, regF src1, regF src2, regF src3, immF_0 zero) %{
-  predicate(UseFMA);
   match(Set dst (FmaF (NegF src3) (Binary src1 src2)));
-
   format %{ "fmsub_s $dst, $src1, $src2, $src3" %}
-
   ins_encode %{
+    assert(UseFMA, "Needs FMA instructions support.");
     __ fmsub_s(as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg),
                as_FloatRegister($src2$$reg), as_FloatRegister($src3$$reg));
   %}
-
   ins_pipe( fpu_arith3 );
 %}
 
 // src1 * src2 - src3
 instruct msubD_reg_reg(regD dst, regD src1, regD src2, regD src3, immD_0 zero) %{
-  predicate(UseFMA);
   match(Set dst (FmaD (NegD src3) (Binary src1 src2)));
-
   format %{ "fmsub_d  $dst, $src1, $src2, $src3" %}
-
   ins_encode %{
+    assert(UseFMA, "Needs FMA instructions support.");
     __ fmsub_d(as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg),
                as_FloatRegister($src2$$reg), as_FloatRegister($src3$$reg));
   %}
-
   ins_pipe( fpu_arith3 );
 %}
 
-// -src1 * src2 - src3
+// src1 * (-src2) - src3
+// "(-src1) * src2 - src3" has been idealized to "src2 * (-src1) - src3"
 instruct mnaddF_reg_reg(regF dst, regF src1, regF src2, regF src3, immF_0 zero) %{
-  predicate(UseFMA);
-  match(Set dst (FmaF (NegF src3) (Binary (NegF src1) src2)));
   match(Set dst (FmaF (NegF src3) (Binary src1 (NegF src2))));
-
   format %{ "fnmadds  $dst, $src1, $src2, $src3" %}
-
   ins_encode %{
+    assert(UseFMA, "Needs FMA instructions support.");
     __ fnmadd_s(as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg),
                 as_FloatRegister($src2$$reg), as_FloatRegister($src3$$reg));
   %}
-
   ins_pipe( fpu_arith3 );
 %}
 
-// -src1 * src2 - src3
+// src1 * (-src2) - src3
+// "(-src1) * src2 - src3" has been idealized to "src2 * (-src1) - src3"
 instruct mnaddD_reg_reg(regD dst, regD src1, regD src2, regD src3, immD_0 zero) %{
-  predicate(UseFMA);
-  match(Set dst (FmaD (NegD src3) (Binary (NegD src1) src2)));
   match(Set dst (FmaD (NegD src3) (Binary src1 (NegD src2))));
-
   format %{ "fnmaddd   $dst, $src1, $src2, $src3" %}
-
   ins_encode %{
+    assert(UseFMA, "Needs FMA instructions support.");
     __ fnmadd_d(as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg),
                 as_FloatRegister($src2$$reg), as_FloatRegister($src3$$reg));
   %}
-
   ins_pipe( fpu_arith3 );
 %}
 
-// -src1 * src2 + src3
+// src1 * (-src2) + src3
+// "(-src1) * src2 + src3" has been idealized to "src2 * (-src1) + src3"
 instruct mnsubF_reg_reg(regF dst, regF src1, regF src2, regF src3) %{
-  predicate(UseFMA);
-  match(Set dst (FmaF src3 (Binary (NegF src1) src2)));
   match(Set dst (FmaF src3 (Binary src1 (NegF src2))));
-
   format %{ "fnmsubs  $dst, $src1, $src2, $src3" %}
-
   ins_encode %{
+    assert(UseFMA, "Needs FMA instructions support.");
     __ fnmsub_s(as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg),
                 as_FloatRegister($src2$$reg), as_FloatRegister($src3$$reg));
   %}
-
   ins_pipe( fpu_arith3 );
 %}
 
-// -src1 * src2 + src3
+// src1 * (-src2) + src3
+// "(-src1) * src2 + src3" has been idealized to "src2 * (-src1) + src3"
 instruct mnsubD_reg_reg(regD dst, regD src1, regD src2, regD src3) %{
-  predicate(UseFMA);
-  match(Set dst (FmaD src3 (Binary (NegD src1) src2)));
   match(Set dst (FmaD src3 (Binary src1 (NegD src2))));
-
   format %{ "fnmsubd   $dst, $src1, $src2, $src3" %}
-
   ins_encode %{
+    assert(UseFMA, "Needs FMA instructions support.");
     __ fnmsub_d(as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg),
                 as_FloatRegister($src2$$reg), as_FloatRegister($src3$$reg));
   %}
-
   ins_pipe( fpu_arith3 );
 %}
 
@@ -13586,6 +13568,7 @@ instruct fmaddV(vReg dst, vReg src1, vReg src2, vReg src3) %{
   match(Set dst (FmaVD src3 (Binary src1 src2)));
   format %{ "(x)vfmadd    $dst, $src1, $src2, $src3\t# @fmaddV" %}
   ins_encode %{
+    assert(UseFMA, "Needs FMA instructions support.");
     if (Matcher::vector_length_in_bytes(this) > 16) {
       switch(Matcher::vector_element_basic_type(this)) {
         case T_FLOAT : __ xvfmadd_s($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, $src3$$FloatRegister); break;
@@ -13642,6 +13625,7 @@ instruct fmsubV(vReg dst, vReg src1, vReg src2, vReg src3) %{
   match(Set dst (FmaVF (NegVF src3) (Binary src1 src2)));
   format %{ "(x)vfmsub    $dst, $src1, $src2, $src3\t# @fmsubV" %}
   ins_encode %{
+    assert(UseFMA, "Needs FMA instructions support.");
     if (Matcher::vector_length_in_bytes(this) > 16) {
       switch(Matcher::vector_element_basic_type(this)) {
         case T_FLOAT : __ xvfmsub_s($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, $src3$$FloatRegister); break;
@@ -13663,14 +13647,14 @@ instruct fmsubV(vReg dst, vReg src1, vReg src2, vReg src3) %{
 
 // --------------------------------- FNMADD -----------------------------------
 
-// -src1 * src2 - src3
+// src1 * (-src2) - src3
+// "(-src1) * src2 - src3" has been idealized to "src2 * (-src1) - src3"
 instruct fnmaddV(vReg dst, vReg src1, vReg src2, vReg src3) %{
-  match(Set dst (FmaVF (NegVF src3) (Binary (NegVF src1) src2)));
   match(Set dst (FmaVF (NegVF src3) (Binary src1 (NegVF src2))));
-  match(Set dst (FmaVD (NegVD src3) (Binary (NegVD src1) src2)));
   match(Set dst (FmaVD (NegVD src3) (Binary src1 (NegVD src2))));
   format %{ "(x)vfnmadd    $dst, $src1, $src2, $src3\t# @fnmaddV" %}
   ins_encode %{
+    assert(UseFMA, "Needs FMA instructions support.");
     if (Matcher::vector_length_in_bytes(this) > 16) {
       switch(Matcher::vector_element_basic_type(this)) {
         case T_FLOAT : __ xvfnmadd_s($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, $src3$$FloatRegister); break;
@@ -13692,14 +13676,14 @@ instruct fnmaddV(vReg dst, vReg src1, vReg src2, vReg src3) %{
 
 // --------------------------------- FNMSUB -----------------------------------
 
-// -src1 * src2 + src3
+// src1 * (-src2) + src3
+// "(-src1) * src2 + src3" has been idealized to "src2 * (-src1) + src3"
 instruct fnmsubV(vReg dst, vReg src1, vReg src2, vReg src3) %{
-  match(Set dst (FmaVF src3 (Binary (NegVF src1) src2)));
   match(Set dst (FmaVF src3 (Binary src1 (NegVF src2))));
-  match(Set dst (FmaVD src3 (Binary (NegVD src1) src2)));
   match(Set dst (FmaVD src3 (Binary src1 (NegVD src2))));
   format %{ "(x)vfnmsub    $dst, $src1, $src2, $src3\t# @fnmsubV" %}
   ins_encode %{
+    assert(UseFMA, "Needs FMA instructions support.");
     if (Matcher::vector_length_in_bytes(this) > 16) {
       switch(Matcher::vector_element_basic_type(this)) {
         case T_FLOAT : __ xvfnmsub_s($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister, $src3$$FloatRegister); break;

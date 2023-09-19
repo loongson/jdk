@@ -37,6 +37,8 @@ address StubRoutines::la::_vector_iota_indices       = nullptr;
 address StubRoutines::la::_string_indexof_linear_ll  = nullptr;
 address StubRoutines::la::_string_indexof_linear_uu  = nullptr;
 address StubRoutines::la::_string_indexof_linear_ul  = nullptr;
+address StubRoutines::la::_jlong_fill                = nullptr;
+address StubRoutines::la::_arrayof_jlong_fill        = nullptr;
 
 /**
  *  crc_table[] from jdk/src/share/native/java/util/zip/zlib-1.2.5/crc32.h

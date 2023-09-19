@@ -686,6 +686,9 @@ class MacroAssembler: public Assembler {
 
   void movoop(Register dst, jobject obj);
 
+  // Helpers for the array_fill() macro
+  inline void tiny_fill_0_24(Register to, Register value);
+
   // Inner part of the generate_fill() stub
   inline void array_fill(BasicType t, Register to,
                          Register value, Register count, bool aligned);

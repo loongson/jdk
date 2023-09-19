@@ -31,108 +31,7 @@
 #include "asm/codeBuffer.hpp"
 #include "code/codeCache.hpp"
 
-inline void MacroAssembler::array_fill(BasicType t, Register to,
-                                       Register value, Register count,
-                                       bool aligned) {
-    assert_different_registers(to, value, count, SCR1, SCR2);
-
-    const Register end = SCR2;
-
-    Label L_small;
-
-    int shift = -1;
-    switch (t) {
-      case T_BYTE:
-        shift = 0;
-        slti(SCR1, count, 25);
-        bstrins_d(value, value, 15, 8);  //  8 bit -> 16 bit
-        bstrins_d(value, value, 31, 16); // 16 bit -> 32 bit
-        bstrins_d(value, value, 63, 32); // 32 bit -> 64 bit
-        bnez(SCR1, L_small);
-        add_d(end, to, count);
-        break;
-      case T_SHORT:
-        shift = 1;
-        slti(SCR1, count, 13);
-        bstrins_d(value, value, 31, 16); // 16 bit -> 32 bit
-        bstrins_d(value, value, 63, 32); // 32 bit -> 64 bit
-        bnez(SCR1, L_small);
-        alsl_d(end, count, to, shift - 1);
-        break;
-      case T_INT:
-        shift = 2;
-        slti(SCR1, count, 7);
-        bstrins_d(value, value, 63, 32); // 32 bit -> 64 bit
-        bnez(SCR1, L_small);
-        alsl_d(end, count, to, shift - 1);
-        break;
-      case T_LONG:
-        shift = 3;
-        slti(SCR1, count, 4);
-        bnez(SCR1, L_small);
-        alsl_d(end, count, to, shift - 1);
-        break;
-      default: ShouldNotReachHere();
-    }
-
-    // nature aligned for store
-    if (!aligned) {
-      st_d(value, to,  0);
-      bstrins_d(to, R0, 2, 0);
-      addi_d(to, to, 8);
-    }
-
-    // fill large chunks
-    Label L_loop64, L_lt64, L_lt32, L_lt16, L_lt8;
-
-    addi_d(SCR1, end, -64);
-    blt(SCR1, to, L_lt64);
-
-    bind(L_loop64);
-    st_d(value, to, 0);
-    st_d(value, to, 8);
-    st_d(value, to, 16);
-    st_d(value, to, 24);
-    st_d(value, to, 32);
-    st_d(value, to, 40);
-    st_d(value, to, 48);
-    st_d(value, to, 56);
-    addi_d(to, to, 64);
-    bge(SCR1, to, L_loop64);
-
-    bind(L_lt64);
-    addi_d(SCR1, end, -32);
-    blt(SCR1, to, L_lt32);
-    st_d(value, to, 0);
-    st_d(value, to, 8);
-    st_d(value, to, 16);
-    st_d(value, to, 24);
-    addi_d(to, to, 32);
-
-    bind(L_lt32);
-    addi_d(SCR1, end, -16);
-    blt(SCR1, to, L_lt16);
-    st_d(value, to, 0);
-    st_d(value, to, 8);
-    addi_d(to, to, 16);
-
-    bind(L_lt16);
-    addi_d(SCR1, end, -8);
-    blt(SCR1, to, L_lt8);
-    st_d(value, to, 0);
-
-    bind(L_lt8);
-    st_d(value, end, -8);
-
-    jr(RA);
-
-    // Short arrays (<= 24 bytes)
-    bind(L_small);
-    pcaddi(SCR1, 4);
-    slli_d(SCR2, count, 4 + shift);
-    add_d(SCR1, SCR1, SCR2);
-    jr(SCR1);
-
+inline void MacroAssembler::tiny_fill_0_24(Register to, Register value) {
     // 0:
     jr(RA);
     nop();
@@ -284,12 +183,117 @@ inline void MacroAssembler::array_fill(BasicType t, Register to,
     jr(RA);
 }
 
+inline void MacroAssembler::array_fill(BasicType t, Register to,
+                                       Register value, Register count,
+                                       bool aligned) {
+    assert_different_registers(to, value, count, SCR1);
+
+    Label L_small;
+
+    int shift = -1;
+    switch (t) {
+      case T_BYTE:
+        shift = 0;
+        slti(SCR1, count, 25);
+        bstrins_d(value, value, 15, 8);  //  8 bit -> 16 bit
+        bstrins_d(value, value, 31, 16); // 16 bit -> 32 bit
+        bstrins_d(value, value, 63, 32); // 32 bit -> 64 bit
+        bnez(SCR1, L_small);
+        // count denotes the end, in bytes
+        add_d(count, to, count);
+        break;
+      case T_SHORT:
+        shift = 1;
+        slti(SCR1, count, 13);
+        bstrins_d(value, value, 31, 16); // 16 bit -> 32 bit
+        bstrins_d(value, value, 63, 32); // 32 bit -> 64 bit
+        bnez(SCR1, L_small);
+        // count denotes the end, in bytes
+        alsl_d(count, count, to, shift - 1);
+        break;
+      case T_INT:
+        shift = 2;
+        slti(SCR1, count, 7);
+        bstrins_d(value, value, 63, 32); // 32 bit -> 64 bit
+        bnez(SCR1, L_small);
+        // count denotes the end, in bytes
+        alsl_d(count, count, to, shift - 1);
+        break;
+      case T_LONG:
+        shift = 3;
+        slti(SCR1, count, 4);
+        bnez(SCR1, L_small);
+        // count denotes the end, in bytes
+        alsl_d(count, count, to, shift - 1);
+        break;
+      default: ShouldNotReachHere();
+    }
+
+    // nature aligned for store
+    if (!aligned) {
+      st_d(value, to,  0);
+      bstrins_d(to, R0, 2, 0);
+      addi_d(to, to, 8);
+    }
+
+    // fill large chunks
+    Label L_loop64, L_lt64, L_lt32, L_lt16, L_lt8;
+
+    addi_d(SCR1, count, -64);
+    blt(SCR1, to, L_lt64);
+
+    bind(L_loop64);
+    st_d(value, to, 0);
+    st_d(value, to, 8);
+    st_d(value, to, 16);
+    st_d(value, to, 24);
+    st_d(value, to, 32);
+    st_d(value, to, 40);
+    st_d(value, to, 48);
+    st_d(value, to, 56);
+    addi_d(to, to, 64);
+    bge(SCR1, to, L_loop64);
+
+    bind(L_lt64);
+    addi_d(SCR1, count, -32);
+    blt(SCR1, to, L_lt32);
+    st_d(value, to, 0);
+    st_d(value, to, 8);
+    st_d(value, to, 16);
+    st_d(value, to, 24);
+    addi_d(to, to, 32);
+
+    bind(L_lt32);
+    addi_d(SCR1, count, -16);
+    blt(SCR1, to, L_lt16);
+    st_d(value, to, 0);
+    st_d(value, to, 8);
+    addi_d(to, to, 16);
+
+    bind(L_lt16);
+    addi_d(SCR1, count, -8);
+    blt(SCR1, to, L_lt8);
+    st_d(value, to, 0);
+
+    bind(L_lt8);
+    st_d(value, count, -8);
+
+    jr(RA);
+
+    // Short arrays (<= 24 bytes)
+    bind(L_small);
+    pcaddi(SCR1, 4);
+    slli_d(count, count, 4 + shift);
+    add_d(SCR1, SCR1, count);
+    jr(SCR1);
+
+    tiny_fill_0_24(to, value);
+}
+
 inline void MacroAssembler::array_fill_lsx(BasicType t, Register to,
                                            Register value, Register count) {
     assert(UseLSX, "should be");
-    assert_different_registers(to, value, count, SCR1, SCR2);
-
-    const Register end = SCR2;
+    assert_different_registers(to, value, count, SCR1);
 
     Label L_small;
 
@@ -301,7 +305,8 @@ inline void MacroAssembler::array_fill_lsx(BasicType t, Register to,
         vreplgr2vr_b(fscratch, value); // 8 bit -> 128 bit
         movfr2gr_d(value, fscratch);
         bnez(SCR1, L_small);
-        add_d(end, to, count);
+        // count denotes the end, in bytes
+        add_d(count, to, count);
         break;
       case T_SHORT:
         shift = 1;
@@ -309,7 +314,8 @@ inline void MacroAssembler::array_fill_lsx(BasicType t, Register to,
         vreplgr2vr_h(fscratch, value); // 16 bit -> 128 bit
         movfr2gr_d(value, fscratch);
         bnez(SCR1, L_small);
-        alsl_d(end, count, to, shift - 1);
+        // count denotes the end, in bytes
+        alsl_d(count, count, to, shift - 1);
         break;
       case T_INT:
         shift = 2;
@@ -317,14 +323,16 @@ inline void MacroAssembler::array_fill_lsx(BasicType t, Register to,
         vreplgr2vr_w(fscratch, value); // 32 bit -> 128 bit
         movfr2gr_d(value, fscratch);
         bnez(SCR1, L_small);
-        alsl_d(end, count, to, shift - 1);
+        // count denotes the end, in bytes
+        alsl_d(count, count, to, shift - 1);
         break;
       case T_LONG:
         shift = 3;
         slti(SCR1, count, 7);
         vreplgr2vr_d(fscratch, value); // 64 bit -> 128 bit
         bnez(SCR1, L_small);
-        alsl_d(end, count, to, shift - 1);
+        // count denotes the end, in bytes
+        alsl_d(count, count, to, shift - 1);
         break;
       default: ShouldNotReachHere();
     }
@@ -337,7 +345,7 @@ inline void MacroAssembler::array_fill_lsx(BasicType t, Register to,
     // fill large chunks
     Label L_loop128, L_lt128, L_lt64, L_lt32, L_lt16;
 
-    addi_d(SCR1, end, -128);
+    addi_d(SCR1, count, -128);
     blt(SCR1, to, L_lt128);
 
     bind(L_loop128);
@@ -353,7 +361,7 @@ inline void MacroAssembler::array_fill_lsx(BasicType t, Register to,
     bge(SCR1, to, L_loop128);
 
     bind(L_lt128);
-    addi_d(SCR1, end, -64);
+    addi_d(SCR1, count, -64);
     blt(SCR1, to, L_lt64);
     vst(fscratch, to, 0);
     vst(fscratch, to, 16);
@@ -362,178 +370,30 @@ inline void MacroAssembler::array_fill_lsx(BasicType t, Register to,
     addi_d(to, to, 64);
 
     bind(L_lt64);
-    addi_d(SCR1, end, -32);
+    addi_d(SCR1, count, -32);
     blt(SCR1, to, L_lt32);
     vst(fscratch, to, 0);
     vst(fscratch, to, 16);
     addi_d(to, to, 32);
 
     bind(L_lt32);
-    addi_d(SCR1, end, -16);
+    addi_d(SCR1, count, -16);
     blt(SCR1, to, L_lt16);
     vst(fscratch, to, 0);
 
     bind(L_lt16);
-    vst(fscratch, end, -16);
+    vst(fscratch, count, -16);
 
     jr(RA);
 
     // Short arrays (<= 48 bytes)
     bind(L_small);
     pcaddi(SCR1, 4);
-    slli_d(SCR2, count, 4 + shift);
-    add_d(SCR1, SCR1, SCR2);
+    slli_d(count, count, 4 + shift);
+    add_d(SCR1, SCR1, count);
     jr(SCR1);
 
-    // 0:
-    jr(RA);
-    nop();
-    nop();
-    nop();
-
-    // 1:
-    st_b(value, to, 0);
-    jr(RA);
-    nop();
-    nop();
-
-    // 2:
-    st_h(value, to, 0);
-    jr(RA);
-    nop();
-    nop();
-
-    // 3:
-    st_h(value, to, 0);
-    st_b(value, to, 2);
-    jr(RA);
-    nop();
-
-    // 4:
-    st_w(value, to, 0);
-    jr(RA);
-    nop();
-    nop();
-
-    // 5:
-    st_w(value, to, 0);
-    st_b(value, to, 4);
-    jr(RA);
-    nop();
-
-    // 6:
-    st_w(value, to, 0);
-    st_h(value, to, 4);
-    jr(RA);
-    nop();
-
-    // 7:
-    st_w(value, to, 0);
-    st_w(value, to, 3);
-    jr(RA);
-    nop();
-
-    // 8:
-    st_d(value, to, 0);
-    jr(RA);
-    nop();
-    nop();
-
-    // 9:
-    st_d(value, to, 0);
-    st_b(value, to, 8);
-    jr(RA);
-    nop();
-
-    // 10:
-    st_d(value, to, 0);
-    st_h(value, to, 8);
-    jr(RA);
-    nop();
-
-    // 11:
-    st_d(value, to, 0);
-    st_w(value, to, 7);
-    jr(RA);
-    nop();
-
-    // 12:
-    st_d(value, to, 0);
-    st_w(value, to, 8);
-    jr(RA);
-    nop();
-
-    // 13:
-    st_d(value, to, 0);
-    st_d(value, to, 5);
-    jr(RA);
-    nop();
-
-    // 14:
-    st_d(value, to, 0);
-    st_d(value, to, 6);
-    jr(RA);
-    nop();
-
-    // 15:
-    st_d(value, to, 0);
-    st_d(value, to, 7);
-    jr(RA);
-    nop();
-
-    // 16:
-    vst(fscratch, to, 0);
-    jr(RA);
-    nop();
-    nop();
-
-    // 17:
-    vst(fscratch, to, 0);
-    st_b(value, to, 16);
-    jr(RA);
-    nop();
-
-    // 18:
-    vst(fscratch, to, 0);
-    st_h(value, to, 16);
-    jr(RA);
-    nop();
-
-    // 19:
-    vst(fscratch, to, 0);
-    st_w(value, to, 15);
-    jr(RA);
-    nop();
-
-    // 20:
-    vst(fscratch, to, 0);
-    st_w(value, to, 16);
-    jr(RA);
-    nop();
-
-    // 21:
-    vst(fscratch, to, 0);
-    st_d(value, to, 13);
-    jr(RA);
-    nop();
-
-    // 22:
-    vst(fscratch, to, 0);
-    st_d(value, to, 14);
-    jr(RA);
-    nop();
-
-    // 23:
-    vst(fscratch, to, 0);
-    st_d(value, to, 15);
-    jr(RA);
-    nop();
-
-    // 24:
-    vst(fscratch, to, 0);
-    st_d(value, to, 16);
-    jr(RA);
-    nop();
+    tiny_fill_0_24(to, value);
 
     // 25:
     vst(fscratch, to, 0);
@@ -683,9 +543,7 @@ inline void MacroAssembler::array_fill_lsx(BasicType t, Register to,
 inline void MacroAssembler::array_fill_lasx(BasicType t, Register to,
                                             Register value, Register count) {
     assert(UseLASX, "should be");
-    assert_different_registers(to, value, count, SCR1, SCR2);
-
-    const Register end = SCR2;
+    assert_different_registers(to, value, count, SCR1);
 
     Label L_small;
 
@@ -697,7 +555,8 @@ inline void MacroAssembler::array_fill_lasx(BasicType t, Register to,
         xvreplgr2vr_b(fscratch, value); // 8 bit -> 256 bit
         movfr2gr_d(value, fscratch);
         bnez(SCR1, L_small);
-        add_d(end, to, count);
+        // count denotes the end, in bytes
+        add_d(count, to, count);
         break;
       case T_SHORT:
         shift = 1;
@@ -705,7 +564,8 @@ inline void MacroAssembler::array_fill_lasx(BasicType t, Register to,
         xvreplgr2vr_h(fscratch, value); // 16 bit -> 256 bit
         movfr2gr_d(value, fscratch);
         bnez(SCR1, L_small);
-        alsl_d(end, count, to, shift - 1);
+        // count denotes the end, in bytes
+        alsl_d(count, count, to, shift - 1);
         break;
       case T_INT:
         shift = 2;
@@ -713,14 +573,16 @@ inline void MacroAssembler::array_fill_lasx(BasicType t, Register to,
         xvreplgr2vr_w(fscratch, value); // 32 bit -> 256 bit
         movfr2gr_d(value, fscratch);
         bnez(SCR1, L_small);
-        alsl_d(end, count, to, shift - 1);
+        // count denotes the end, in bytes
+        alsl_d(count, count, to, shift - 1);
         break;
       case T_LONG:
         shift = 3;
         slti(SCR1, count, 10);
         xvreplgr2vr_d(fscratch, value); // 64 bit -> 256 bit
         bnez(SCR1, L_small);
-        alsl_d(end, count, to, shift - 1);
+        // count denotes the end, in bytes
+        alsl_d(count, count, to, shift - 1);
         break;
       default: ShouldNotReachHere();
     }
@@ -733,7 +595,7 @@ inline void MacroAssembler::array_fill_lasx(BasicType t, Register to,
     // fill large chunks
     Label L_loop256, L_lt256, L_lt128, L_lt64, L_lt32;
 
-    addi_d(SCR1, end, -256);
+    addi_d(SCR1, count, -256);
     blt(SCR1, to, L_lt256);
 
     bind(L_loop256);
@@ -749,7 +611,7 @@ inline void MacroAssembler::array_fill_lasx(BasicType t, Register to,
     bge(SCR1, to, L_loop256);
 
     bind(L_lt256);
-    addi_d(SCR1, end, -128);
+    addi_d(SCR1, count, -128);
     blt(SCR1, to, L_lt128);
     xvst(fscratch, to, 0);
     xvst(fscratch, to, 32);
@@ -758,178 +620,30 @@ inline void MacroAssembler::array_fill_lasx(BasicType t, Register to,
     addi_d(to, to, 128);
 
     bind(L_lt128);
-    addi_d(SCR1, end, -64);
+    addi_d(SCR1, count, -64);
     blt(SCR1, to, L_lt64);
     xvst(fscratch, to, 0);
     xvst(fscratch, to, 32);
     addi_d(to, to, 64);
 
     bind(L_lt64);
-    addi_d(SCR1, end, -32);
+    addi_d(SCR1, count, -32);
     blt(SCR1, to, L_lt32);
     xvst(fscratch, to, 0);
 
     bind(L_lt32);
-    xvst(fscratch, end, -32);
+    xvst(fscratch, count, -32);
 
     jr(RA);
 
-    // Short arrays (<= 48 bytes)
+    // Short arrays (<= 72 bytes)
     bind(L_small);
     pcaddi(SCR1, 4);
-    slli_d(SCR2, count, 4 + shift);
-    add_d(SCR1, SCR1, SCR2);
+    slli_d(count, count, 4 + shift);
+    add_d(SCR1, SCR1, count);
     jr(SCR1);
 
-    // 0:
-    jr(RA);
-    nop();
-    nop();
-    nop();
-
-    // 1:
-    st_b(value, to, 0);
-    jr(RA);
-    nop();
-    nop();
-
-    // 2:
-    st_h(value, to, 0);
-    jr(RA);
-    nop();
-    nop();
-
-    // 3:
-    st_h(value, to, 0);
-    st_b(value, to, 2);
-    jr(RA);
-    nop();
-
-    // 4:
-    st_w(value, to, 0);
-    jr(RA);
-    nop();
-    nop();
-
-    // 5:
-    st_w(value, to, 0);
-    st_b(value, to, 4);
-    jr(RA);
-    nop();
-
-    // 6:
-    st_w(value, to, 0);
-    st_h(value, to, 4);
-    jr(RA);
-    nop();
-
-    // 7:
-    st_w(value, to, 0);
-    st_w(value, to, 3);
-    jr(RA);
-    nop();
-
-    // 8:
-    st_d(value, to, 0);
-    jr(RA);
-    nop();
-    nop();
-
-    // 9:
-    st_d(value, to, 0);
-    st_b(value, to, 8);
-    jr(RA);
-    nop();
-
-    // 10:
-    st_d(value, to, 0);
-    st_h(value, to, 8);
-    jr(RA);
-    nop();
-
-    // 11:
-    st_d(value, to, 0);
-    st_w(value, to, 7);
-    jr(RA);
-    nop();
-
-    // 12:
-    st_d(value, to, 0);
-    st_w(value, to, 8);
-    jr(RA);
-    nop();
-
-    // 13:
-    st_d(value, to, 0);
-    st_d(value, to, 5);
-    jr(RA);
-    nop();
-
-    // 14:
-    st_d(value, to, 0);
-    st_d(value, to, 6);
-    jr(RA);
-    nop();
-
-    // 15:
-    st_d(value, to, 0);
-    st_d(value, to, 7);
-    jr(RA);
-    nop();
-
-    // 16:
-    vst(fscratch, to, 0);
-    jr(RA);
-    nop();
-    nop();
-
-    // 17:
-    vst(fscratch, to, 0);
-    st_b(value, to, 16);
-    jr(RA);
-    nop();
-
-    // 18:
-    vst(fscratch, to, 0);
-    st_h(value, to, 16);
-    jr(RA);
-    nop();
-
-    // 19:
-    vst(fscratch, to, 0);
-    st_w(value, to, 15);
-    jr(RA);
-    nop();
-
-    // 20:
-    vst(fscratch, to, 0);
-    st_w(value, to, 16);
-    jr(RA);
-    nop();
-
-    // 21:
-    vst(fscratch, to, 0);
-    st_d(value, to, 13);
-    jr(RA);
-    nop();
-
-    // 22:
-    vst(fscratch, to, 0);
-    st_d(value, to, 14);
-    jr(RA);
-    nop();
-
-    // 23:
-    vst(fscratch, to, 0);
-    st_d(value, to, 15);
-    jr(RA);
-    nop();
-
-    // 24:
-    vst(fscratch, to, 0);
-    st_d(value, to, 16);
-    jr(RA);
-    nop();
+    tiny_fill_0_24(to, value);
 
     // 25:
     vst(fscratch, to, 0);

@@ -24,8 +24,8 @@
 #
 
 #
-# This file has been modified by Loongson Technology in 2022. These
-# modifications are Copyright (c) 2018, 2022, Loongson Technology, and are made
+# This file has been modified by Loongson Technology in 2023. These
+# modifications are Copyright (c) 2018, 2023, Loongson Technology, and are made
 # available on the same license terms set forth above.
 #
 
@@ -598,8 +598,6 @@ AC_DEFUN([PLATFORM_SETUP_LEGACY_VARS_HELPER],
     HOTSPOT_$1_CPU_DEFINE=S390
   elif test "x$OPENJDK_$1_CPU" = xs390x; then
     HOTSPOT_$1_CPU_DEFINE=S390
-  elif test "x$OPENJDK_$1_CPU" = xloongarch64; then
-    HOTSPOT_$1_CPU_DEFINE=LOONGARCH64
   elif test "x$OPENJDK_$1_CPU" != x; then
     HOTSPOT_$1_CPU_DEFINE=$(echo $OPENJDK_$1_CPU | tr a-z A-Z)
   fi

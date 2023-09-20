@@ -671,7 +671,7 @@ class MacroAssembler: public Assembler {
 
   // Code for java.lang.StringLatin1::inflate intrinsic.
   void byte_array_inflate(Register src, Register dst, Register len,
-                          Register tmp1, Register tmp2);
+                          FloatRegister vtemp1, FloatRegister vtemp2);
 
   // Encode UTF16 to ISO_8859_1 or ASCII.
   // Return len on success or position of first mismatch.
@@ -685,6 +685,14 @@ class MacroAssembler: public Assembler {
                Register len, Register k);
 
   void movoop(Register dst, jobject obj);
+
+  // Inner part of the generate_fill() stub
+  inline void array_fill(BasicType t, Register to,
+                         Register value, Register count, bool aligned);
+  inline void array_fill_lsx(BasicType t, Register to,
+                             Register value, Register count);
+  inline void array_fill_lasx(BasicType t, Register to,
+                              Register value, Register count);
 
 #undef VIRTUAL
 

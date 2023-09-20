@@ -63,7 +63,7 @@ public class LOONGARCH64Frame extends Frame {
   private static final int INTERPRETER_FRAME_MONITOR_BLOCK_BOTTOM_OFFSET = INTERPRETER_FRAME_INITIAL_SP_OFFSET;
 
   // Entry frames
-  private static final int ENTRY_FRAME_CALL_WRAPPER_OFFSET = -11;
+  private static final int ENTRY_FRAME_CALL_WRAPPER_OFFSET = -3;
 
   private static VMReg fp = new VMReg(22 << 1);
 

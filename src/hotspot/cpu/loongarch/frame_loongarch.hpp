@@ -97,8 +97,8 @@
     // Entry frames
     // n.b. these values are determined by the layout defined in
     // stubGenerator for the Java call stub
-    entry_frame_after_call_words                     =  25,
-    entry_frame_call_wrapper_offset                  = -11,
+    entry_frame_after_call_words                     = 23,
+    entry_frame_call_wrapper_offset                  = -3,
 
     // we don't need a save area
     arg_reg_save_area_bytes                          =  0,

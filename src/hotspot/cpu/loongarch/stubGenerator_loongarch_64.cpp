@@ -66,103 +66,89 @@
 
 #define __ _masm->
 
-#define TIMES_OOP (UseCompressedOops ? Address::times_4 : Address::times_8)
+#ifdef PRODUCT
+#define BLOCK_COMMENT(str) /* nothing */
+#else
+#define BLOCK_COMMENT(str) __ block_comment(str)
+#endif
 
-//#ifdef PRODUCT
-//#define BLOCK_COMMENT(str) /* nothing */
-//#else
-//#define BLOCK_COMMENT(str) __ block_comment(str)
-//#endif
-
-//#define BIND(label) bind(label); BLOCK_COMMENT(#label ":")
-const int MXCSR_MASK = 0xFFC0;  // Mask out any pending exceptions
+#define BIND(label) bind(label); BLOCK_COMMENT(#label ":")
 
 // Stub Code definitions
 
 class StubGenerator: public StubCodeGenerator {
  private:
 
-  // This fig is not LA ABI. It is call Java from C ABI.
   // Call stubs are used to call Java from C
   //
-  //    [ return_from_Java     ]
-  //    [ argument word n-1    ] <--- sp
+  // Arguments:
+  //    c_rarg0:   call wrapper address                   address
+  //    c_rarg1:   result                                 address
+  //    c_rarg2:   result type                            BasicType
+  //    c_rarg3:   method                                 Method*
+  //    c_rarg4:   (interpreter) entry point              address
+  //    c_rarg5:   parameters                             intptr_t*
+  //    c_rarg6:   parameter size (in words)              int
+  //    c_rarg7:   thread                                 Thread*
+  //
+  // we don't need to save all arguments, since both C and Java treat
+  // them as volatile registers.
+  //
+  // we only need to keep call wrapper address (c_rarg0) for Java frame,
+  // and restore the stub result via c_rarg1 and c_rarg2.
+  //
+  // we save RA as the return PC at the base of the frame and link FP
+  // below it as the frame pointer.
+  //
+  // we save S0-S8 and F24-F31 which are expected to be callee-saved.
+  //
+  // so the stub frame looks like this when we enter Java code
+  //
+  //     [ return_from_Java     ] <--- sp
+  //     [ argument word n      ]
   //      ...
-  //    [ argument word 0      ]
+  // -23 [ argument word 1      ]
+  // -22 [ F31                  ] <--- sp_after_call
   //      ...
-  // -10 [ S6                   ]
-  //  -9 [ S5                   ]
-  //  -8 [ S4                   ]
-  //  -7 [ S3                   ]
-  //  -6 [ S1                   ]
-  //  -5 [ TSR(S2)              ]
-  //  -4 [ LVP(S7)              ]
-  //  -3 [ BCP(S0)              ]
-  //  -2 [ saved fp             ]
-  //  -1 [ return address       ]
-  //   0 [ ptr. to call wrapper ] <--- a0 (old sp -->) fp
-  //   1 [ result               ] <--- a1
-  //   2 [ result_type          ] <--- a2
-  //   3 [ method               ] <--- a3
-  //   4 [ entry_point          ] <--- a4
-  //   5 [ parameters           ] <--- a5
-  //   6 [ parameter_size       ] <--- a6
-  //   7 [ thread               ] <--- a7
+  // -15 [ F24                  ]
+  // -14 [ S8                   ]
+  //      ...
+  //  -6 [ S0                   ]
+  //  -5 [ result_type          ] <--- c_rarg2
+  //  -4 [ result               ] <--- c_rarg1
+  //  -3 [ call wrapper         ] <--- c_rarg0
+  //  -2 [ saved FP             ]
+  //  -1 [ saved RA             ]
+  //   0 [                      ] <--- fp
 
-  //
-  // LA ABI does not save paras in sp.
-  //
-  //    [ return_from_Java     ]
-  //    [ argument word n-1    ] <--- sp
-  //      ...
-  //    [ argument word 0      ]
-  //-24 [                      ] <--- sp_after_call
-  //-23 [ F31                  ]
-  //      ...
-  //-16 [ F24                  ]
-  //-15 [ S8                   ]
-  //-14 [ thread               ]
-  //-13 [ result_type          ] <--- a2
-  //-12 [ result               ] <--- a1
-  //-11 [ ptr. to call wrapper ] <--- a0
-  //-10 [ S6                   ]
-  // -9 [ S5                   ]
-  // -8 [ S4                   ]
-  // -7 [ S3                   ]
-  // -6 [ S1                   ]
-  // -5 [ TSR(S2)              ]
-  // -4 [ LVP(S7)              ]
-  // -3 [ BCP(S0)              ]
-  // -2 [ saved fp             ]
-  // -1 [ return address       ]
-  //  0 [                      ] <--- old sp = fp_after_call
-  //
+  // Call stub stack layout word offsets from fp
   enum call_stub_layout {
-    RA_off             = -1,
+    sp_after_call_off  = -22,
+
+    F31_off            = -22,
+    F30_off            = -21,
+    F29_off            = -20,
+    F28_off            = -19,
+    F27_off            = -18,
+    F26_off            = -17,
+    F25_off            = -16,
+    F24_off            = -15,
+
+    S8_off             = -14,
+    S7_off             = -13,
+    S6_off             = -12,
+    S5_off             = -11,
+    S4_off             = -10,
+    S3_off             = -9,
+    S2_off             = -8,
+    S1_off             = -7,
+    S0_off             = -6,
+
+    result_type_off    = -5,
+    result_off         = -4,
+    call_wrapper_off   = -3,
     FP_off             = -2,
-    BCP_off            = -3,
-    LVP_off            = -4,
-    TSR_off            = -5,
-    S1_off             = -6,
-    S3_off             = -7,
-    S4_off             = -8,
-    S5_off             = -9,
-    S6_off             = -10,
-    call_wrapper_off   = -11,
-    result_off         = -12,
-    result_type_off    = -13,
-    thread_off         = -14,
-    S8_off             = -15,
-    F24_off            = -16,
-    F25_off            = -17,
-    F26_off            = -18,
-    F27_off            = -19,
-    F28_off            = -20,
-    F29_off            = -21,
-    F30_off            = -22,
-    F31_off            = -23,
-    // padding for SP 16-byte alignment
-    sp_after_call_off  = -24,
+    RA_off             = -1,
   };
 
   address generate_call_stub(address& return_address) {
@@ -180,18 +166,19 @@ class StubGenerator: public StubCodeGenerator {
     __ enter();
     __ addi_d(SP, FP, sp_after_call_off * wordSize);
 
-    __ st_d(BCP, FP, BCP_off * wordSize);
-    __ st_d(LVP, FP, LVP_off * wordSize);
-    __ st_d(TSR, FP, TSR_off * wordSize);
+    // save register parameters and Java temporary/global registers
+    __ st_d(A0, FP, call_wrapper_off * wordSize);
+    __ st_d(A1, FP, result_off * wordSize);
+    __ st_d(A2, FP, result_type_off * wordSize);
+
+    __ st_d(S0, FP, S0_off * wordSize);
     __ st_d(S1, FP, S1_off * wordSize);
+    __ st_d(S2, FP, S2_off * wordSize);
     __ st_d(S3, FP, S3_off * wordSize);
     __ st_d(S4, FP, S4_off * wordSize);
     __ st_d(S5, FP, S5_off * wordSize);
     __ st_d(S6, FP, S6_off * wordSize);
-    __ st_d(A0, FP, call_wrapper_off * wordSize);
-    __ st_d(A1, FP, result_off * wordSize);
-    __ st_d(A2, FP, result_type_off * wordSize);
-    __ st_d(A7, FP, thread_off * wordSize);
+    __ st_d(S7, FP, S7_off * wordSize);
     __ st_d(S8, FP, S8_off * wordSize);
 
     __ fst_d(F24, FP, F24_off * wordSize);
@@ -207,7 +194,10 @@ class StubGenerator: public StubCodeGenerator {
     // whatever value it held
     __ move(TREG, A7);
 
-    //add for compressedoops
+    // init Method*
+    __ move(Rmethod, A3);
+
+    // set up the heapbase register
     __ reinit_heapbase();
 
 #ifdef ASSERT
@@ -222,80 +212,71 @@ class StubGenerator: public StubCodeGenerator {
 #endif
 
     // pass parameters if any
-    // A5: parameter
-    // A6: parameter_size
-    // T0: parameter_size_tmp(--)
-    // T2: offset(++)
-    // T3: tmp
+    // c_rarg5: parameter_pointer
+    // c_rarg6: parameter_size
     Label parameters_done;
-    // judge if the parameter_size equals 0
-    __ beq(A6, R0, parameters_done);
-    __ slli_d(AT, A6, Interpreter::logStackElementSize);
-    __ sub_d(SP, SP, AT);
+    __ beqz(c_rarg6, parameters_done);
+
+    __ slli_d(c_rarg6, c_rarg6, LogBytesPerWord);
+    __ sub_d(SP, SP, c_rarg6);
     assert(StackAlignmentInBytes == 16, "must be");
     __ bstrins_d(SP, R0, 3, 0);
-    // Copy Java parameters in reverse order (receiver last)
-    // Note that the argument order is inverted in the process
-    Label loop;
-    __ move(T0, A6);
-    __ move(T2, R0);
-    __ bind(loop);
 
-    // get parameter
-    __ alsl_d(T3, T0, A5, LogBytesPerWord - 1);
-    __ ld_d(AT, T3,  -wordSize);
-    __ alsl_d(T3, T2, SP, LogBytesPerWord - 1);
-    __ st_d(AT, T3, Interpreter::expr_offset_in_bytes(0));
-    __ addi_d(T2, T2, 1);
-    __ addi_d(T0, T0, -1);
-    __ bne(T0, R0, loop);
-    // advance to next parameter
+    address loop = __ pc();
+    __ ld_d(AT, c_rarg5, 0);
+    __ addi_d(c_rarg5, c_rarg5, wordSize);
+    __ addi_d(c_rarg6, c_rarg6, -wordSize);
+    __ stx_d(AT, SP, c_rarg6);
+    __ blt(R0, c_rarg6, loop);
 
-    // call Java function
     __ bind(parameters_done);
 
-    // receiver in V0, Method* in Rmethod
+    // call Java entry -- passing methdoOop, and current sp
+    //      Rmethod: Method*
+    //      Rsender: sender sp
+    BLOCK_COMMENT("call Java function");
+    __ move(Rsender, SP);
+    __ jalr(c_rarg4);
 
-    __ move(Rmethod, A3);
-    __ move(Rsender, SP);             //set sender sp
-    __ jalr(A4);
+    // save current address for use by exception handling code
+
     return_address = __ pc();
 
     // store result depending on type (everything that is not
     // T_OBJECT, T_LONG, T_FLOAT or T_DOUBLE is treated as T_INT)
-    // n.b. this assumes Java returns an integral result in V0
+    // n.b. this assumes Java returns an integral result in A0
     // and a floating result in FA0
-    __ ld_d(T0, FP, result_off * wordSize);
-    __ ld_d(T2, FP, result_type_off * wordSize);
+    __ ld_d(c_rarg1, FP, result_off * wordSize);
+    __ ld_d(c_rarg2, FP, result_type_off * wordSize);
 
     Label is_long, is_float, is_double, exit;
 
-    __ addi_d(AT, T2, (-1) * T_OBJECT);
+    __ addi_d(AT, c_rarg2, (-1) * T_OBJECT);
     __ beqz(AT, is_long);
-    __ addi_d(AT, T2, (-1) * T_LONG);
+    __ addi_d(AT, c_rarg2, (-1) * T_LONG);
     __ beqz(AT, is_long);
-    __ addi_d(AT, T2, (-1) * T_FLOAT);
+    __ addi_d(AT, c_rarg2, (-1) * T_FLOAT);
     __ beqz(AT, is_float);
-    __ addi_d(AT, T2, (-1) * T_DOUBLE);
+    __ addi_d(AT, c_rarg2, (-1) * T_DOUBLE);
     __ beqz(AT, is_double);
 
     // handle T_INT case
-    __ st_w(V0, T0, 0);
+    __ st_w(A0, c_rarg1, 0);
 
     __ bind(exit);
 
     __ pop_cont_fastpath(TREG);
 
     // restore callee-save registers
-    __ ld_d(BCP, FP, BCP_off * wordSize);
-    __ ld_d(LVP, FP, LVP_off * wordSize);
-    __ ld_d(TSR, FP, TSR_off * wordSize);
 
+    __ ld_d(S0, FP, S0_off * wordSize);
     __ ld_d(S1, FP, S1_off * wordSize);
+    __ ld_d(S2, FP, S2_off * wordSize);
     __ ld_d(S3, FP, S3_off * wordSize);
     __ ld_d(S4, FP, S4_off * wordSize);
     __ ld_d(S5, FP, S5_off * wordSize);
     __ ld_d(S6, FP, S6_off * wordSize);
+    __ ld_d(S7, FP, S7_off * wordSize);
     __ ld_d(S8, FP, S8_off * wordSize);
 
     __ fld_d(F24, FP, F24_off * wordSize);
@@ -313,15 +294,15 @@ class StubGenerator: public StubCodeGenerator {
 
     // handle return types different from T_INT
     __ bind(is_long);
-    __ st_d(V0, T0, 0);
+    __ st_d(A0, c_rarg1, 0);
     __ b(exit);
 
     __ bind(is_float);
-    __ fst_s(FA0, T0, 0);
+    __ fst_s(FA0, c_rarg1, 0);
     __ b(exit);
 
     __ bind(is_double);
-    __ fst_d(FA0, T0, 0);
+    __ fst_d(FA0, c_rarg1, 0);
     __ b(exit);
 
     return start;
@@ -541,231 +522,14 @@ class StubGenerator: public StubCodeGenerator {
     const Register value     = A1;  // value
     const Register count     = A2;  // elements count
 
-    const Register end       = T5;  // source array address end
-    const Register tmp       = T8;  // temp register
-
-    Label L_fill_elements;
-
-    int shift = -1;
-    switch (t) {
-      case T_BYTE:
-        shift = 0;
-        __ slti(AT, count, 9);              // Short arrays (<= 8 bytes) fill by element
-        __ bstrins_d(value, value, 15, 8);  //  8 bit -> 16 bit
-        __ bstrins_d(value, value, 31, 16); // 16 bit -> 32 bit
-        __ bstrins_d(value, value, 63, 32); // 32 bit -> 64 bit
-        __ bnez(AT, L_fill_elements);
-        break;
-      case T_SHORT:
-        shift = 1;
-        __ slti(AT, count, 5);              // Short arrays (<= 8 bytes) fill by element
-        __ bstrins_d(value, value, 31, 16); // 16 bit -> 32 bit
-        __ bstrins_d(value, value, 63, 32); // 32 bit -> 64 bit
-        __ bnez(AT, L_fill_elements);
-        break;
-      case T_INT:
-        shift = 2;
-        __ slti(AT, count, 3);              // Short arrays (<= 8 bytes) fill by element
-        __ bstrins_d(value, value, 63, 32); // 32 bit -> 64 bit
-        __ bnez(AT, L_fill_elements);
-        break;
-      case T_LONG:
-        shift = 3;
-        __ slti(AT, count, 2);              // Short arrays (<= 8 bytes) fill by element
-        __ bnez(AT, L_fill_elements);
-        break;
-      default: ShouldNotReachHere();
+    if (UseLASX) {
+      __ array_fill_lasx(t, to, value, count);
+    } else if (UseLSX) {
+      __ array_fill_lsx(t, to, value, count);
+    } else {
+      __ array_fill(t, to, value, count, aligned);
     }
 
-    switch (t) {
-      case T_BYTE:
-        __ add_d(end, to, count);
-        break;
-      case T_SHORT:
-      case T_INT:
-      case T_LONG:
-        __ alsl_d(end, count, to, shift-1);
-        break;
-      default: ShouldNotReachHere();
-    }
-    if (!aligned) {
-      __ st_d(value, to,  0);
-      __ bstrins_d(to, R0, 2, 0);
-      __ addi_d(to, to, 8);
-    }
-    __ st_d(value, end, -8);
-    __ bstrins_d(end, R0, 2, 0);
-
-    //
-    //  Fill large chunks
-    //
-    Label L_loop_begin, L_not_64bytes_fill, L_loop_end, L_jtab1, L_jtab2;
-    __ addi_d(AT, to, 64);
-    __ blt(end, AT, L_not_64bytes_fill);
-    __ addi_d(to, to, 64);
-    __ bind(L_loop_begin);
-    __ st_d(value, to,  -8);
-    __ st_d(value, to, -16);
-    __ st_d(value, to, -24);
-    __ st_d(value, to, -32);
-    __ st_d(value, to, -40);
-    __ st_d(value, to, -48);
-    __ st_d(value, to, -56);
-    __ st_d(value, to, -64);
-    __ addi_d(to, to, 64);
-    __ bge(end, to, L_loop_begin);
-    __ addi_d(to, to, -64);
-    __ beq(to, end, L_loop_end);
-
-    __ bind(L_not_64bytes_fill);
-    // There are 0 - 7 words
-    __ lipc(AT, L_jtab1);
-    __ sub_d(tmp, end, to);
-    __ alsl_d(AT, tmp, AT, 1);
-    __ jr(AT);
-
-    __ bind(L_jtab1);
-    // 0:
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-
-    // 1:
-    __ st_d(value, to, 0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-
-    // 2:
-    __ st_d(value, to, 0);
-    __ st_d(value, to, 8);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-
-    // 3:
-    __ st_d(value, to,  0);
-    __ st_d(value, to,  8);
-    __ st_d(value, to, 16);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-
-    // 4:
-    __ st_d(value, to,  0);
-    __ st_d(value, to,  8);
-    __ st_d(value, to, 16);
-    __ st_d(value, to, 24);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-
-    // 5:
-    __ st_d(value, to,  0);
-    __ st_d(value, to,  8);
-    __ st_d(value, to, 16);
-    __ st_d(value, to, 24);
-    __ st_d(value, to, 32);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-
-    // 6:
-    __ st_d(value, to,  0);
-    __ st_d(value, to,  8);
-    __ st_d(value, to, 16);
-    __ st_d(value, to, 24);
-    __ st_d(value, to, 32);
-    __ st_d(value, to, 40);
-    __ jr(RA);
-    __ nop();
-
-    // 7:
-    __ st_d(value, to,  0);
-    __ st_d(value, to,  8);
-    __ st_d(value, to, 16);
-    __ st_d(value, to, 24);
-    __ st_d(value, to, 32);
-    __ st_d(value, to, 40);
-    __ st_d(value, to, 48);
-
-    __ bind(L_loop_end);
-    __ jr(RA);
-
-    // Short arrays (<= 8 bytes)
-    __ bind(L_fill_elements);
-    __ lipc(AT, L_jtab2);
-    __ slli_d(tmp, count, 4 + shift);
-    __ add_d(AT, AT, tmp);
-    __ jr(AT);
-
-    __ bind(L_jtab2);
-    // 0:
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-
-    // 1:
-    __ st_b(value, to, 0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-
-    // 2:
-    __ st_h(value, to, 0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-
-    // 3:
-    __ st_h(value, to, 0);
-    __ st_b(value, to, 2);
-    __ jr(RA);
-    __ nop();
-
-    // 4:
-    __ st_w(value, to, 0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-
-    // 5:
-    __ st_w(value, to, 0);
-    __ st_b(value, to, 4);
-    __ jr(RA);
-    __ nop();
-
-    // 6:
-    __ st_w(value, to, 0);
-    __ st_h(value, to, 4);
-    __ jr(RA);
-    __ nop();
-
-    // 7:
-    __ st_w(value, to, 0);
-    __ st_w(value, to, 3);
-    __ jr(RA);
-    __ nop();
-
-    // 8:
-    __ st_d(value, to, 0);
-    __ jr(RA);
     return start;
   }
 

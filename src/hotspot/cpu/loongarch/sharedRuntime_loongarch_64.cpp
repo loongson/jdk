@@ -40,6 +40,7 @@
 #include "prims/methodHandles.hpp"
 #include "runtime/continuation.hpp"
 #include "runtime/continuationEntry.inline.hpp"
+#include "runtime/globals.hpp"
 #include "runtime/jniHandles.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/signature.hpp"
@@ -1813,14 +1814,14 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   //     Thread A is resumed to finish this native method, but doesn't block here since it
   //     didn't see any synchronization is progress, and escapes.
   __ addi_d(AT, R0, _thread_in_native_trans);
-  if (os::is_MP()) {
+
+  // Force this write out before the read below
+  if (os::is_MP() && UseSystemMemoryBarrier) {
     __ addi_d(T4, TREG, in_bytes(JavaThread::thread_state_offset()));
-    __ amswap_db_w(R0, AT, T4);
+    __ amswap_db_w(R0, AT, T4); // AnyAny
   } else {
     __ st_w(AT, TREG, in_bytes(JavaThread::thread_state_offset()));
   }
-
-  if(os::is_MP())  __ membar(__ AnyAny);
 
   // check for safepoint operation in progress and/or pending suspend requests
   {

@@ -4798,6 +4798,91 @@ class StubGenerator: public StubCodeGenerator {
     return entry;
   }
 
+  address generate_bigIntegerRightShift() {
+    __ align(CodeEntryAlignment);
+    StubCodeMark mark(this, "StubRoutines", "bigIntegerRightShiftWorker");
+    address entry = __ pc();
+
+    Label loop_eight, loop_four, once, exit;
+
+    Register newArr        = c_rarg0;
+    Register oldArr        = c_rarg1;
+    Register newIdx        = c_rarg2;
+    Register shiftCount    = c_rarg3;
+    Register numIter       = c_rarg4;
+    Register nidx          = numIter;
+
+    Register shiftRevCount = c_rarg5;
+
+    FloatRegister vShiftCount    = c_farg0;
+    FloatRegister vShiftRevCount = c_farg1;
+
+    __ beqz(nidx, exit);
+
+    __ alsl_d(newArr, newIdx, newArr, 1);
+    __ alsl_d(newArr, nidx, newArr, 1);
+    __ alsl_d(oldArr, numIter, oldArr, 1);
+
+    __ li(shiftRevCount, 32);
+    __ sub_w(shiftRevCount, shiftRevCount, shiftCount);
+
+    __ li(SCR2, 4);
+    __ blt(nidx, SCR2, once);
+
+    __ xvreplgr2vr_w(vShiftCount, shiftCount);
+    __ xvreplgr2vr_w(vShiftRevCount, shiftRevCount);
+
+    __ li(SCR1, 8);
+    __ blt(nidx, SCR1, loop_four);
+
+    __ bind(loop_eight);
+
+    __ addi_d(nidx, nidx, -8);
+    __ addi_d(oldArr, oldArr, -32);
+    __ addi_d(newArr, newArr, -32);
+
+    __ xvld(FT0, oldArr, 4);
+    __ xvld(FT1, oldArr, 0);
+    __ xvsrl_w(FT0, FT0, vShiftCount);
+    __ xvsll_w(FT1, FT1, vShiftRevCount);
+    __ xvor_v(FT0, FT0, FT1);
+    __ xvst(FT0, newArr, 0);
+    __ bge(nidx, SCR1, loop_eight);
+
+    __ bind(loop_four);
+    __ blt(nidx, SCR2, once);
+    __ addi_d(nidx, nidx, -4);
+    __ addi_d(oldArr, oldArr, -16);
+    __ addi_d(newArr, newArr, -16);
+    __ xvld(FT0, oldArr, 4);
+    __ xvld(FT1, oldArr, 0);
+    __ xvsrl_w(FT0, FT0, vShiftCount);
+    __ xvsll_w(FT1, FT1, vShiftRevCount);
+    __ vor_v(FT0, FT0, FT1);
+    __ vst(FT0, newArr, 0);
+
+    __ b(loop_four);
+
+    __ bind(once);
+    __ beqz(nidx, exit);
+    __ addi_d(nidx, nidx, -1);
+    __ addi_d(oldArr, oldArr, -4);
+    __ addi_d(newArr, newArr, -4);
+    __ ld_w(SCR1, oldArr, 4);
+    __ ld_w(SCR2, oldArr, 0);
+    __ srl_w(SCR1, SCR1, shiftCount);
+    __ sll_w(SCR2, SCR2, shiftRevCount);
+    __ orr(SCR1, SCR1, SCR2);
+    __ st_w(SCR1, newArr, 0);
+
+    __ b(once);
+
+    __ bind(exit);
+    __ jr(RA);
+
+    return entry;
+  }
+
   address generate_dsin_dcos(bool isCos) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", isCos ? "libmDcos" : "libmDsin");
@@ -5808,6 +5893,7 @@ class StubGenerator: public StubCodeGenerator {
 
     if (UseBigIntegerShiftIntrinsic) {
       StubRoutines::_bigIntegerLeftShiftWorker = generate_bigIntegerLeftShift();
+      StubRoutines::_bigIntegerRightShiftWorker = generate_bigIntegerRightShift();
     }
 #endif
 

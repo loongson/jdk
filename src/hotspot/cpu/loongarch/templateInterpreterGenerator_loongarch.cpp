@@ -43,6 +43,7 @@
 #include "runtime/arguments.hpp"
 #include "runtime/deoptimization.hpp"
 #include "runtime/frame.inline.hpp"
+#include "runtime/globals.hpp"
 #include "runtime/jniHandles.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
@@ -1362,12 +1363,15 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   __ li(t, _thread_in_native_trans);
   if (os::is_MP()) {
     __ addi_d(AT, TREG, in_bytes(JavaThread::thread_state_offset()));
-    __ amswap_db_w(R0, t, AT);
+    __ amswap_db_w(R0, t, AT); // Release-Store
+
+    // Force this write out before the read below
+    if (!UseSystemMemoryBarrier) {
+      __ membar(__ AnyAny);
+    }
   } else {
     __ st_w(t, TREG, in_bytes(JavaThread::thread_state_offset()));
   }
-
-  if( os::is_MP() )  __ membar(__ AnyAny);
 
   // check for safepoint operation in progress and/or pending suspend requests
   { Label Continue;

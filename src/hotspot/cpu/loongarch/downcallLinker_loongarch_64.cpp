@@ -31,6 +31,7 @@
 #include "logging/logStream.hpp"
 #include "memory/resourceArea.hpp"
 #include "prims/downcallLinker.hpp"
+#include "runtime/globals.hpp"
 #include "runtime/stubCodeGenerator.hpp"
 
 #define __ _masm->
@@ -274,15 +275,14 @@ void DowncallStubGenerator::generate() {
   Label L_after_reguard;
   if (_needs_transition) {
     __ li(tmp1, _thread_in_native_trans);
-    if (os::is_MP()) {
+
+    // Force this write out before the read below
+    if (os::is_MP() && !UseSystemMemoryBarrier) {
       __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
-      __ amswap_db_w(R0, tmp1, tmp2);
+      __ amswap_db_w(R0, tmp1, tmp2); // AnyAny
     } else {
       __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
     }
-
-    // Force this write out before the read below
-    //if (os::is_MP())  __ membar(__ AnyAny);
 
     __ safepoint_poll(L_safepoint_poll_slow_path, TREG, true /* at_return */, true /* acquire */, false /* in_nmethod */);
 

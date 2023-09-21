@@ -42,7 +42,7 @@
  *                   compiler.vectorization.runner.BasicFloatOpTest
  *
  * @requires (os.simpleArch == "x64") | (os.simpleArch == "aarch64") | (os.simpleArch == "loongarch64")
- * @requires vm.compiler2.enabled & vm.flagless
+ * @requires vm.compiler2.enabled
  */
 
 package compiler.vectorization.runner;

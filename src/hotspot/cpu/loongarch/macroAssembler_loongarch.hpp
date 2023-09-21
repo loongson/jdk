@@ -711,8 +711,8 @@ class MacroAssembler: public Assembler {
     }
   }
 
-  void fast_lock(Register obj, Register hdr, Register flag, Register tmp, Label& slow);
-  void fast_unlock(Register obj, Register hdr, Register flag, Register tmp, Label& slow);
+  void lightweight_lock(Register obj, Register hdr, Register flag, Register tmp, Label& slow);
+  void lightweight_unlock(Register obj, Register hdr, Register flag, Register tmp, Label& slow);
 
 #if INCLUDE_ZGC
   void patchable_li16(Register rd, uint16_t value);

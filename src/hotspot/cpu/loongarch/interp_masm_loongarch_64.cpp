@@ -845,7 +845,7 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
 
     if (LockingMode == LM_LIGHTWEIGHT) {
       ld_d(tmp_reg, Address(scr_reg, oopDesc::mark_offset_in_bytes()));
-      fast_lock(scr_reg, tmp_reg, SCR1, SCR2, slow_case);
+      lightweight_lock(scr_reg, tmp_reg, SCR1, SCR2, slow_case);
       b(count);
     } else if (LockingMode == LM_LEGACY) {
       // Load (object->mark() | 1) into tmp_reg
@@ -946,7 +946,7 @@ void InterpreterMacroAssembler::unlock_object(Register lock_reg) {
       ld_d(hdr_reg, Address(scr_reg, oopDesc::mark_offset_in_bytes()));
       andi(AT, hdr_reg, markWord::monitor_value);
       bnez(AT, slow_case);
-      fast_unlock(scr_reg, hdr_reg, tmp_reg, SCR1, slow_case);
+      lightweight_unlock(scr_reg, hdr_reg, tmp_reg, SCR1, slow_case);
       b(count);
       bind(slow_case);
     } else if (LockingMode == LM_LEGACY) {

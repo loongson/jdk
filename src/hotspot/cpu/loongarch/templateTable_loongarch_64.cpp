@@ -3933,7 +3933,7 @@ void TemplateTable::monitorenter() {
 
   const Address monitor_block_top(FP, frame::interpreter_frame_monitor_block_top_offset
       * wordSize);
-  const int entry_size = (frame::interpreter_frame_monitor_size()* wordSize);
+  const int entry_size = frame::interpreter_frame_monitor_size_in_bytes();
   Label allocated;
 
   const Register monitor_reg = T0;
@@ -4008,7 +4008,7 @@ void TemplateTable::monitorexit() {
 
   __ null_check(FSR);
 
-  const int entry_size =(frame::interpreter_frame_monitor_size()* wordSize);
+  const int entry_size = frame::interpreter_frame_monitor_size_in_bytes();
 
   const Register monitor_top = T0;
   const Register monitor_bot = T2;

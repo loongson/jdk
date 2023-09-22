@@ -37,6 +37,7 @@ import jdk.internal.foreign.abi.aarch64.macos.MacOsAArch64Linker;
 import jdk.internal.foreign.abi.aarch64.windows.WindowsAArch64Linker;
 import jdk.internal.foreign.abi.fallback.FallbackLinker;
 import jdk.internal.foreign.abi.loongarch64.linux.LinuxLoongArch64Linker;
+import jdk.internal.foreign.abi.ppc64.linux.LinuxPPC64Linker;
 import jdk.internal.foreign.abi.ppc64.linux.LinuxPPC64leLinker;
 import jdk.internal.foreign.abi.riscv64.linux.LinuxRISCV64Linker;
 import jdk.internal.foreign.abi.s390.linux.LinuxS390Linker;
@@ -67,7 +68,8 @@ import java.util.Set;
 
 public abstract sealed class AbstractLinker implements Linker permits LinuxAArch64Linker, MacOsAArch64Linker,
                                                                       SysVx64Linker, WindowsAArch64Linker,
-                                                                      Windowsx64Linker, LinuxPPC64leLinker,
+                                                                      Windowsx64Linker,
+                                                                      LinuxPPC64Linker, LinuxPPC64leLinker,
                                                                       LinuxRISCV64Linker, LinuxS390Linker,
                                                                       LinuxLoongArch64Linker,
                                                                       FallbackLinker {

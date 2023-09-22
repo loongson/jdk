@@ -93,7 +93,7 @@ void C2_MacroAssembler::fast_lock_c2(Register oop, Register box, Register flag,
     b(cont);
   } else {
     assert(LockingMode == LM_LIGHTWEIGHT, "must be");
-    fast_lock(oop, disp_hdr, flag, SCR1, no_count);
+    lightweight_lock(oop, disp_hdr, flag, SCR1, no_count);
     b(count);
   }
 
@@ -170,7 +170,7 @@ void C2_MacroAssembler::fast_unlock_c2(Register oop, Register box, Register flag
     b(cont);
   } else {
     assert(LockingMode == LM_LIGHTWEIGHT, "must be");
-    fast_unlock(oop, tmp, flag, box, no_count);
+    lightweight_unlock(oop, tmp, flag, box, no_count);
     b(count);
   }
 

@@ -981,6 +981,8 @@ bool Matcher::match_rule_supported(int opcode) {
     case Op_ConvF2HF:
     case Op_ConvHF2F:
     case Op_StrInflatedCopy:
+    case Op_StrCompressedCopy:
+    case Op_EncodeISOArray:
       if (!UseLSX)
         return false;
     case Op_PopCountI:
@@ -8837,19 +8839,25 @@ instruct count_positives_v(a4_RegP src, mA5RegI len, mRegI result, mRegL tmp1) %
 %}
 
 // fast char[] to byte[] compression
-instruct string_compress(a4_RegP src, a5_RegP dst, mA6RegI len, mRegI result,
-                         mRegL tmp1, mRegL tmp2, mRegL tmp3)
+instruct string_compress(a2_RegP src, mRegP dst, mRegI len, mRegI result,
+                         mRegL tmp1, mRegL tmp2, mRegL tmp3,
+                         regF vtemp1, regF vtemp2, regF vtemp3, regF vtemp4)
 %{
+  predicate(UseLSX);
   match(Set result (StrCompressedCopy src (Binary dst len)));
-  effect(USE_KILL src, USE_KILL dst, USE_KILL len, TEMP_DEF result,
-         TEMP tmp1, TEMP tmp2, TEMP tmp3);
+  effect(TEMP_DEF result, TEMP tmp1, TEMP tmp2, TEMP tmp3,
+         TEMP vtemp1, TEMP vtemp2, TEMP vtemp3, TEMP vtemp4, USE_KILL src);
 
   format %{ "String Compress $src,$dst -> $result @ string_compress " %}
+
   ins_encode %{
     __ char_array_compress($src$$Register, $dst$$Register, $len$$Register,
                            $result$$Register, $tmp1$$Register,
-                           $tmp2$$Register, $tmp3$$Register);
+                           $tmp2$$Register, $tmp3$$Register,
+                           $vtemp1$$FloatRegister, $vtemp2$$FloatRegister,
+                           $vtemp3$$FloatRegister, $vtemp4$$FloatRegister);
   %}
+
   ins_pipe( pipe_slow );
 %}
 
@@ -8917,38 +8925,46 @@ instruct array_equalsC(a4_RegP ary1, a5_RegP ary2, mRegI result, mRegL tmp0, mRe
 %}
 
 // encode char[] to byte[] in ISO_8859_1
-instruct encode_iso_array(a4_RegP src, a5_RegP dst, mA6RegI len, mRegI result,
-                          mRegL tmp1, mRegL tmp2, mRegL tmp3)
+instruct encode_iso_array(a2_RegP src, mRegP dst, mRegI len, mRegI result,
+                          mRegL tmp1, mRegL tmp2, mRegL tmp3,
+                          regF vtemp1, regF vtemp2, regF vtemp3, regF vtemp4)
 %{
-  predicate(!((EncodeISOArrayNode*)n)->is_ascii());
+  predicate(UseLSX && !((EncodeISOArrayNode*)n)->is_ascii());
   match(Set result (EncodeISOArray src (Binary dst len)));
-  effect(USE_KILL src, USE_KILL dst, USE_KILL len, TEMP_DEF result,
-         TEMP tmp1, TEMP tmp2, TEMP tmp3);
+  effect(TEMP_DEF result, TEMP tmp1, TEMP tmp2, TEMP tmp3,
+         TEMP vtemp1, TEMP vtemp2, TEMP vtemp3, TEMP vtemp4, USE_KILL src);
 
   format %{ "Encode ISO array $src,$dst,$len -> $result @ encode_iso_array" %}
+
   ins_encode %{
     __ encode_iso_array($src$$Register, $dst$$Register, $len$$Register,
                         $result$$Register, $tmp1$$Register,
-                        $tmp2$$Register, $tmp3$$Register, false);
+                        $tmp2$$Register, $tmp3$$Register, false,
+                        $vtemp1$$FloatRegister, $vtemp2$$FloatRegister,
+                        $vtemp3$$FloatRegister, $vtemp4$$FloatRegister);
   %}
 
   ins_pipe( pipe_slow );
 %}
 
 // encode char[] to byte[] in ASCII
-instruct encode_ascii_array(a4_RegP src, a5_RegP dst, mA6RegI len, mRegI result,
-                            mRegL tmp1, mRegL tmp2, mRegL tmp3)
+instruct encode_ascii_array(a2_RegP src, mRegP dst, mRegI len, mRegI result,
+                            mRegL tmp1, mRegL tmp2, mRegL tmp3,
+                            regF vtemp1, regF vtemp2, regF vtemp3, regF vtemp4)
 %{
-  predicate(((EncodeISOArrayNode*)n)->is_ascii());
+  predicate(UseLSX && ((EncodeISOArrayNode*)n)->is_ascii());
   match(Set result (EncodeISOArray src (Binary dst len)));
-  effect(USE_KILL src, USE_KILL dst, USE_KILL len, TEMP_DEF result,
-         TEMP tmp1, TEMP tmp2, TEMP tmp3);
+  effect(TEMP_DEF result, TEMP tmp1, TEMP tmp2, TEMP tmp3,
+         TEMP vtemp1, TEMP vtemp2, TEMP vtemp3, TEMP vtemp4, USE_KILL src);
 
   format %{ "Encode ASCII array $src,$dst,$len -> $result @ encode_ascii_array" %}
+
   ins_encode %{
     __ encode_iso_array($src$$Register, $dst$$Register, $len$$Register,
                         $result$$Register, $tmp1$$Register,
-                        $tmp2$$Register, $tmp3$$Register, true);
+                        $tmp2$$Register, $tmp3$$Register, true,
+                        $vtemp1$$FloatRegister, $vtemp2$$FloatRegister,
+                        $vtemp3$$FloatRegister, $vtemp4$$FloatRegister);
   %}
 
   ins_pipe( pipe_slow );

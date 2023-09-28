@@ -730,6 +730,7 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
     bind(restart);
     // points to current entry, starting with top-most entry
     ld_d(monitor_reg, monitor_block_top);
+    alsl_d(monitor_reg, monitor_reg, FP, LogBytesPerWord-1);
     // points to word before bottom of monitor block, should be callee-saved
     addi_d(TSR, FP, frame::interpreter_frame_initial_sp_offset * wordSize);
     b(entry);

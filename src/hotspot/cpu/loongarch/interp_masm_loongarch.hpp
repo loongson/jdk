@@ -156,7 +156,8 @@ class InterpreterMacroAssembler: public MacroAssembler {
   void push(TosState state); // transition state -> vtos
 
   void empty_expression_stack() {
-    ld_d(SP, FP, frame::interpreter_frame_monitor_block_top_offset * wordSize);
+    ld_d(AT, FP, frame::interpreter_frame_monitor_block_top_offset * wordSize);
+    alsl_d(SP, AT, FP, LogBytesPerWord-1);
     // null last_sp until next java call
     st_d(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);
   }

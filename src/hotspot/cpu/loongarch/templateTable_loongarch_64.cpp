@@ -3946,6 +3946,7 @@ void TemplateTable::monitorenter() {
   {
     Label entry, loop, exit, next;
     __ ld_d(T2, monitor_block_top);
+    __ alsl_d(T2, T2, FP, LogBytesPerWord-1);
     __ addi_d(T3, FP, frame::interpreter_frame_initial_sp_offset * wordSize);
     __ b(entry);
 
@@ -3971,9 +3972,12 @@ void TemplateTable::monitorenter() {
     Label entry, loop;
     // 1. compute new pointers                   // SP: old expression stack top
     __ ld_d(monitor_reg, monitor_block_top);
+    __ alsl_d(monitor_reg, monitor_reg, FP, LogBytesPerWord-1);
     __ addi_d(SP, SP, -entry_size);
     __ addi_d(monitor_reg, monitor_reg, -entry_size);
-    __ st_d(monitor_reg, monitor_block_top);
+    __ sub_d(AT, monitor_reg, FP);
+    __ srai_d(AT, AT, Interpreter::logStackElementSize);
+    __ st_d(AT, monitor_block_top);
     __ move(T3, SP);
     __ b(entry);
 
@@ -4020,6 +4024,7 @@ void TemplateTable::monitorexit() {
   {
     Label entry, loop;
     __ ld_d(monitor_top, FP, frame::interpreter_frame_monitor_block_top_offset * wordSize);
+    __ alsl_d(monitor_top, monitor_top, FP, LogBytesPerWord-1);
     __ addi_d(monitor_bot, FP, frame::interpreter_frame_initial_sp_offset * wordSize);
     __ b(entry);
 

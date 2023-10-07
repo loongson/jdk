@@ -475,7 +475,7 @@ void ShenandoahBarrierSetAssembler::cmpxchg_oop(MacroAssembler* masm,
   assert_different_registers(addr.base(), expected, tmp1, tmp2);
   assert_different_registers(addr.base(), new_val,  tmp1, tmp2);
 
-  Label step4, done_succ, done_fail, done;
+  Label step4, done_succ, done_fail, done, is_null;
 
   // There are two ways to reach this label.  Initial entry into the
   // cmpxchg_oop code expansion starts at step1 (which is equivalent
@@ -544,13 +544,15 @@ void ShenandoahBarrierSetAssembler::cmpxchg_oop(MacroAssembler* masm,
   __ move(tmp1, tmp2);
 
   if (is_narrow) {
+    __ beqz(tmp1, is_null);
     // Decode tmp1 in order to resolve its forward pointer
-    __ decode_heap_oop(tmp1);
-  }
-  resolve_forward_pointer(masm, tmp1);
-  if (is_narrow) {
+    __ decode_heap_oop_not_null(tmp1);
+    resolve_forward_pointer_not_null(masm, tmp1);
     // Encode tmp1 to compare against expected.
-    __ encode_heap_oop(tmp1);
+    __ encode_heap_oop_not_null(tmp1);
+    __ bind(is_null);
+  } else {
+    resolve_forward_pointer(masm, tmp1);
   }
 
   // Does forwarded value of fetched from-space pointer match original

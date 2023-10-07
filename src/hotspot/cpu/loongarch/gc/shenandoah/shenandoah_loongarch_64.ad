@@ -29,16 +29,16 @@ source_hpp %{
 %}
 
 encode %{
-  enc_class loongarch_enc_cmpxchg_oop_shenandoah(memory mem, mRegP oldval, mRegP newval, mRegI res) %{
+  enc_class loongarch_enc_cmpxchg_oop_shenandoah(indirect mem, mRegP oldval, mRegP newval, mRegI res) %{
     MacroAssembler _masm(&cbuf);
-    Address  addr(as_Register($mem$$base), $mem$$disp);
+    Address  addr(as_Register($mem$$base), 0);
     ShenandoahBarrierSet::assembler()->cmpxchg_oop(&_masm, addr, $oldval$$Register, $newval$$Register,
                                                    /*acquire*/ false, /*is_cae*/ false, $res$$Register);
   %}
 
-  enc_class loongarch_enc_cmpxchg_acq_oop_shenandoah(memory mem, mRegP oldval, mRegP newval, mRegI res) %{
+  enc_class loongarch_enc_cmpxchg_acq_oop_shenandoah(indirect mem, mRegP oldval, mRegP newval, mRegI res) %{
     MacroAssembler _masm(&cbuf);
-    Address  addr(as_Register($mem$$base), $mem$$disp);
+    Address  addr(as_Register($mem$$base), 0);
     ShenandoahBarrierSet::assembler()->cmpxchg_oop(&_masm, addr, $oldval$$Register, $newval$$Register,
                                                    /*acquire*/ true, /*is_cae*/ false, $res$$Register);
   %}
@@ -64,7 +64,7 @@ instruct compareAndSwapN_shenandoah(mRegI res, indirect mem, mRegN oldval, mRegN
   %}
 
   ins_encode %{
-    Address  addr(as_Register($mem$$base), $mem$$disp);
+    Address  addr(as_Register($mem$$base), 0);
     ShenandoahBarrierSet::assembler()->cmpxchg_oop(&_masm, addr, $oldval$$Register, $newval$$Register,
                                                    /*acquire*/ false, /*is_cae*/ false, $res$$Register);
   %}
@@ -92,7 +92,7 @@ instruct compareAndSwapNAcq_shenandoah(mRegI res, indirect mem, mRegN oldval, mR
  %}
 
   ins_encode %{
-    Address  addr(as_Register($mem$$base), $mem$$disp);
+    Address  addr(as_Register($mem$$base), 0);
     ShenandoahBarrierSet::assembler()->cmpxchg_oop(&_masm, addr, $oldval$$Register, $newval$$Register,
                                                    /*acquire*/ true, /*is_cae*/ false, $res$$Register);
   %}
@@ -108,7 +108,7 @@ instruct compareAndExchangeN_shenandoah(mRegN res, indirect mem, mRegN oldval, m
   %}
 
   ins_encode %{
-    Address  addr(as_Register($mem$$base), $mem$$disp);
+    Address  addr(as_Register($mem$$base), 0);
     ShenandoahBarrierSet::assembler()->cmpxchg_oop(&_masm, addr, $oldval$$Register, $newval$$Register,
                                                    /*acquire*/ false, /*is_cae*/ true, $res$$Register);
   %}
@@ -124,7 +124,7 @@ instruct compareAndExchangeP_shenandoah(mRegP res, indirect mem, mRegP oldval, m
   %}
 
   ins_encode %{
-    Address  addr(as_Register($mem$$base), $mem$$disp);
+    Address  addr(as_Register($mem$$base), 0);
     ShenandoahBarrierSet::assembler()->cmpxchg_oop(&_masm, addr, $oldval$$Register, $newval$$Register,
                                                    /*acquire*/ false, /*is_cae*/ true, $res$$Register);
   %}
@@ -140,7 +140,7 @@ instruct compareAndExchangeNAcq_shenandoah(mRegN res, indirect mem, mRegN oldval
   %}
 
   ins_encode %{
-    Address  addr(as_Register($mem$$base), $mem$$disp);
+    Address  addr(as_Register($mem$$base), 0);
     ShenandoahBarrierSet::assembler()->cmpxchg_oop(&_masm, addr, $oldval$$Register, $newval$$Register,
                                                    /*acquire*/ true, /*is_cae*/ true, $res$$Register);
   %}
@@ -156,7 +156,7 @@ instruct compareAndExchangePAcq_shenandoah(mRegP res, indirect mem, mRegP oldval
   %}
 
   ins_encode %{
-    Address  addr(as_Register($mem$$base), $mem$$disp);
+    Address  addr(as_Register($mem$$base), 0);
     ShenandoahBarrierSet::assembler()->cmpxchg_oop(&_masm, addr, $oldval$$Register, $newval$$Register,
                                                    /*acquire*/ true, /*is_cae*/ true, $res$$Register);
   %}
@@ -172,7 +172,7 @@ instruct weakCompareAndSwapN_shenandoah(mRegI res, indirect mem, mRegN oldval, m
   %}
   ins_encode %{
     // Weak is not currently supported by ShenandoahBarrierSet::cmpxchg_oop
-    Address  addr(as_Register($mem$$base), $mem$$disp);
+    Address  addr(as_Register($mem$$base), 0);
     ShenandoahBarrierSet::assembler()->cmpxchg_oop(&_masm, addr, $oldval$$Register, $newval$$Register,
                                                    /*acquire*/ false, /*is_cae*/ false, $res$$Register);
   %}
@@ -189,7 +189,7 @@ instruct weakCompareAndSwapP_shenandoah(mRegI res, indirect mem, mRegP oldval, m
 
   ins_encode %{
     // Weak is not currently supported by ShenandoahBarrierSet::cmpxchg_oop
-    Address  addr(as_Register($mem$$base), $mem$$disp);
+    Address  addr(as_Register($mem$$base), 0);
     ShenandoahBarrierSet::assembler()->cmpxchg_oop(&_masm, addr, $oldval$$Register, $newval$$Register,
                                                    /*acquire*/ false, /*is_cae*/ false, $res$$Register);
   %}
@@ -206,7 +206,7 @@ instruct weakCompareAndSwapNAcq_shenandoah(mRegI res, indirect mem, mRegN oldval
 
   ins_encode %{
     // Weak is not currently supported by ShenandoahBarrierSet::cmpxchg_oop
-    Address  addr(as_Register($mem$$base), $mem$$disp);
+    Address  addr(as_Register($mem$$base), 0);
     ShenandoahBarrierSet::assembler()->cmpxchg_oop(&_masm, addr, $oldval$$Register, $newval$$Register,
                                                    /*acquire*/ true, /*is_cae*/ false, $res$$Register);
   %}
@@ -223,7 +223,7 @@ instruct weakCompareAndSwapPAcq_shenandoah(mRegI res, indirect mem, mRegP oldval
 
   ins_encode %{
     // Weak is not currently supported by ShenandoahBarrierSet::cmpxchg_oop
-    Address  addr(as_Register($mem$$base), $mem$$disp);
+    Address  addr(as_Register($mem$$base), 0);
     ShenandoahBarrierSet::assembler()->cmpxchg_oop(&_masm, addr, $oldval$$Register, $newval$$Register,
                                                    /*acquire*/ true, /*is_cae*/ false, $res$$Register);
   %}

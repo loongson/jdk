@@ -186,3 +186,13 @@ ATTRIBUTE_ALIGNED(64) jdouble StubRoutines::la::_pio2[] = {
   2.73370053816464559624e-44, // 0x36E3822280000000
   2.16741683877804819444e-51, // 0x3569F31D00000000
 };
+
+ATTRIBUTE_ALIGNED(64) jfloat StubRoutines::la::_round_float_imm[] = {
+  0.49999997f, // round positive
+  0.5f,        // round negative
+};
+
+ATTRIBUTE_ALIGNED(64) jdouble StubRoutines::la::_round_double_imm[] = {
+  0.49999999999999994d, // round positive
+  0.5d,                 // round negative
+};

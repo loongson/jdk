@@ -63,6 +63,9 @@ class la {
 
   static julong _string_compress_index[];
 
+  static jfloat _round_float_imm[];
+  static jdouble _round_double_imm[];
+
   // begin trigonometric tables block. See comments in .cpp file
   static juint    _npio2_hw[];
   static jdouble   _two_over_pi[];
@@ -101,6 +104,14 @@ public:
 
   static address string_compress_index() {
     return (address) _string_compress_index;
+  }
+
+  static address round_float_imm() {
+    return (address) _round_float_imm;
+  }
+
+  static address round_double_imm() {
+    return (address) _round_double_imm;
   }
 };
 

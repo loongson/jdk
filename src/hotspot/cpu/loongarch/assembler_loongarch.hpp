@@ -954,6 +954,10 @@ class Assembler : public AbstractAssembler  {
     vshuf_h_op         = 0b01110001011110101,
     vshuf_w_op         = 0b01110001011110110,
     vshuf_d_op         = 0b01110001011110111,
+    vslti_b_op         = 0b01110010100001100,
+    vslti_h_op         = 0b01110010100001101,
+    vslti_w_op         = 0b01110010100001110,
+    vslti_d_op         = 0b01110010100001111,
     vslti_bu_op        = 0b01110010100010000,
     vslti_hu_op        = 0b01110010100010001,
     vslti_wu_op        = 0b01110010100010010,
@@ -1130,6 +1134,10 @@ class Assembler : public AbstractAssembler  {
     xvshuf_w_op        = 0b01110101011110110,
     xvshuf_d_op        = 0b01110101011110111,
     xvperm_w_op        = 0b01110101011111010,
+    xvslti_b_op        = 0b01110110100001100,
+    xvslti_h_op        = 0b01110110100001101,
+    xvslti_w_op        = 0b01110110100001110,
+    xvslti_d_op        = 0b01110110100001111,
     xvslti_bu_op       = 0b01110110100010000,
     xvslti_hu_op       = 0b01110110100010001,
     xvslti_wu_op       = 0b01110110100010010,
@@ -1221,6 +1229,14 @@ class Assembler : public AbstractAssembler  {
     unknow_ops14       = 0b11111111111111
   };
 
+  // 13-bit opcode, highest 13 bits: bits[31...19]
+  enum ops13 {
+    vldrepl_d_op       = 0b0011000000010,
+    xvldrepl_d_op      = 0b0011001000010,
+
+    unknow_ops13       = 0b1111111111111
+  };
+
   // 12-bit opcode, highest 12 bits: bits[31...20]
   enum ops12 {
     fmadd_s_op         = 0b000010000001,
@@ -1258,8 +1274,18 @@ class Assembler : public AbstractAssembler  {
     xvbitsel_v_op      = 0b000011010010,
     vshuf_b_op         = 0b000011010101,
     xvshuf_b_op        = 0b000011010110,
+    vldrepl_w_op       = 0b001100000010,
+    xvldrepl_w_op      = 0b001100100010,
 
     unknow_ops12       = 0b111111111111
+  };
+
+  // 11-bit opcode, highest 11 bits: bits[31...21]
+  enum ops11 {
+    vldrepl_h_op       = 0b00110000010,
+    xvldrepl_h_op      = 0b00110010010,
+
+    unknow_ops11       = 0b11111111111
   };
 
   // 10-bit opcode, highest 10 bits: bits[31...22]
@@ -1297,6 +1323,8 @@ class Assembler : public AbstractAssembler  {
     xvst_op            = 0b0010110011,
     ldl_w_op           = 0b0010111000,
     ldr_w_op           = 0b0010111001,
+    vldrepl_b_op       = 0b0011000010,
+    xvldrepl_b_op      = 0b0011001010,
 
     unknow_ops10       = 0b1111111111
   };
@@ -1475,10 +1503,25 @@ class Assembler : public AbstractAssembler  {
   // |   opcode           |    I8   |    rj  |  rd   |
   static inline int insn_I8RR (int op, int imm8, int rj, int rd)  { /*assert(is_simm(imm8, 8), "not a signed 8-bit int");*/ return (op<<18) | (low(imm8, 8)<<10) | (rj<<5) | rd; }
 
+  // 2RI9-type
+  //  31              19 18       10 9      5 4     0
+  // |   opcode         |     I9    |    rj  |  vd   |
+  static inline int insn_I9RR(int op, int imm9, int rj, int vd)  { return (op<<19) | (low(imm9, 9)<<10) | (rj<<5) | vd; }
+
+  // 2RI10-type
+  //  31             20 19        10 9      5 4     0
+  // |   opcode        |    I10     |    rj  |  vd   |
+  static inline int insn_I10RR(int op, int imm10, int rj, int vd) { return (op<<20) | (low(imm10, 10)<<10) | (rj<<5) | vd; }
+
+  // 2RI11-type
+  //  31            21 20         10 9      5 4     0
+  // |   opcode       |     I11     |    rj  |  vd   |
+  static inline int insn_I11RR(int op, int imm11, int rj, int vd) { return (op<<21) | (low(imm11, 11)<<10) | (rj<<5) | vd; }
+
   // 2RI12-type
   //  31           22 21          10 9      5 4     0
   // |   opcode      |     I12      |    rj  |  rd   |
-  static inline int insn_I12RR(int op, int imm12, int rj, int rd) { /* assert(is_simm(imm12, 12), "not a signed 12-bit int");*/  return (op<<22) | (low(imm12, 12)<<10) | (rj<<5) | rd; }
+  static inline int insn_I12RR(int op, int imm12, int rj, int rd) { return (op<<22) | (low(imm12, 12)<<10) | (rj<<5) | rd; }
 
   // 2RI14-type
   //  31         24 23            10 9      5 4     0
@@ -2866,6 +2909,15 @@ public:
   void xvslt_wu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvslt_wu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
   void xvslt_du(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvslt_du_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
 
+  void  vslti_b(FloatRegister vd, FloatRegister vj, int si5) { ASSERT_LSX  assert(is_simm(si5, 5), "not a signed 5-bit int"); emit_int32(insn_I5RR( vslti_b_op, si5, (int)vj->encoding(), (int)vd->encoding())); }
+  void  vslti_h(FloatRegister vd, FloatRegister vj, int si5) { ASSERT_LSX  assert(is_simm(si5, 5), "not a signed 5-bit int"); emit_int32(insn_I5RR( vslti_h_op, si5, (int)vj->encoding(), (int)vd->encoding())); }
+  void  vslti_w(FloatRegister vd, FloatRegister vj, int si5) { ASSERT_LSX  assert(is_simm(si5, 5), "not a signed 5-bit int"); emit_int32(insn_I5RR( vslti_w_op, si5, (int)vj->encoding(), (int)vd->encoding())); }
+  void  vslti_d(FloatRegister vd, FloatRegister vj, int si5) { ASSERT_LSX  assert(is_simm(si5, 5), "not a signed 5-bit int"); emit_int32(insn_I5RR( vslti_d_op, si5, (int)vj->encoding(), (int)vd->encoding())); }
+  void xvslti_b(FloatRegister xd, FloatRegister xj, int si5) { ASSERT_LASX assert(is_simm(si5, 5), "not a signed 5-bit int"); emit_int32(insn_I5RR(xvslti_b_op, si5, (int)xj->encoding(), (int)xd->encoding())); }
+  void xvslti_h(FloatRegister xd, FloatRegister xj, int si5) { ASSERT_LASX assert(is_simm(si5, 5), "not a signed 5-bit int"); emit_int32(insn_I5RR(xvslti_h_op, si5, (int)xj->encoding(), (int)xd->encoding())); }
+  void xvslti_w(FloatRegister xd, FloatRegister xj, int si5) { ASSERT_LASX assert(is_simm(si5, 5), "not a signed 5-bit int"); emit_int32(insn_I5RR(xvslti_w_op, si5, (int)xj->encoding(), (int)xd->encoding())); }
+  void xvslti_d(FloatRegister xd, FloatRegister xj, int si5) { ASSERT_LASX assert(is_simm(si5, 5), "not a signed 5-bit int"); emit_int32(insn_I5RR(xvslti_d_op, si5, (int)xj->encoding(), (int)xd->encoding())); }
+
   void  vslti_bu(FloatRegister vd, FloatRegister vj, int ui5) { ASSERT_LSX  emit_int32(insn_I5RR( vslti_bu_op, ui5, (int)vj->encoding(), (int)vd->encoding())); }
   void  vslti_hu(FloatRegister vd, FloatRegister vj, int ui5) { ASSERT_LSX  emit_int32(insn_I5RR( vslti_hu_op, ui5, (int)vj->encoding(), (int)vd->encoding())); }
   void  vslti_wu(FloatRegister vd, FloatRegister vj, int ui5) { ASSERT_LSX  emit_int32(insn_I5RR( vslti_wu_op, ui5, (int)vj->encoding(), (int)vd->encoding())); }
@@ -3103,6 +3155,15 @@ public:
 
   void  vstx(FloatRegister vd, Register rj, Register rk) { ASSERT_LSX  emit_int32(insn_RRR( vstx_op, (int)rk->encoding(), (int)rj->encoding(), (int)vd->encoding())); }
   void xvstx(FloatRegister xd, Register rj, Register rk) { ASSERT_LASX emit_int32(insn_RRR(xvstx_op, (int)rk->encoding(), (int)rj->encoding(), (int)xd->encoding())); }
+
+  void  vldrepl_d(FloatRegister vd, Register rj, int si9) { ASSERT_LSX  assert(is_simm(si9, 9), "not a signed 9-bit int"); emit_int32(insn_I9RR( vldrepl_d_op, si9, (int)rj->encoding(), (int)vd->encoding()));}
+  void  vldrepl_w(FloatRegister vd, Register rj, int si10) { ASSERT_LSX  assert(is_simm(si10, 10), "not a signed 10-bit int"); emit_int32(insn_I10RR( vldrepl_w_op, si10, (int)rj->encoding(), (int)vd->encoding()));}
+  void  vldrepl_h(FloatRegister vd, Register rj, int si11) { ASSERT_LSX  assert(is_simm(si11, 11), "not a signed 11-bit int"); emit_int32(insn_I11RR( vldrepl_h_op, si11, (int)rj->encoding(), (int)vd->encoding()));}
+  void  vldrepl_b(FloatRegister vd, Register rj, int si12) { ASSERT_LSX  assert(is_simm(si12, 12), "not a signed 12-bit int"); emit_int32(insn_I12RR( vldrepl_b_op, si12, (int)rj->encoding(), (int)vd->encoding()));}
+  void xvldrepl_d(FloatRegister xd, Register rj, int si9) { ASSERT_LASX assert(is_simm(si9, 9), "not a signed 9-bit int"); emit_int32(insn_I9RR(xvldrepl_d_op, si9, (int)rj->encoding(), (int)xd->encoding()));}
+  void xvldrepl_w(FloatRegister xd, Register rj, int si10) { ASSERT_LASX assert(is_simm(si10, 10), "not a signed 10-bit int"); emit_int32(insn_I10RR(xvldrepl_w_op, si10, (int)rj->encoding(), (int)xd->encoding()));}
+  void xvldrepl_h(FloatRegister xd, Register rj, int si11) { ASSERT_LASX assert(is_simm(si11, 11), "not a signed 11-bit int"); emit_int32(insn_I11RR(xvldrepl_h_op, si11, (int)rj->encoding(), (int)xd->encoding()));}
+  void xvldrepl_b(FloatRegister xd, Register rj, int si12) { ASSERT_LASX assert(is_simm(si12, 12), "not a signed 12-bit int"); emit_int32(insn_I12RR(xvldrepl_b_op, si12, (int)rj->encoding(), (int)xd->encoding()));}
 
 #undef ASSERT_LSX
 #undef ASSERT_LASX

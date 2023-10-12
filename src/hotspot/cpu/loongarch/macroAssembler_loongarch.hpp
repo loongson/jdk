@@ -315,6 +315,18 @@ class MacroAssembler: public Assembler {
   void sign_extend_short(Register reg) { ext_w_h(reg, reg); }
   void sign_extend_byte(Register reg)  { ext_w_b(reg, reg); }
 
+  // java.lang.Math::round intrinsics
+  void java_round_float(Register dst, FloatRegister src, Register tmp);
+  void java_round_float_lsx(FloatRegister dst, FloatRegister src,
+                            FloatRegister vtemp1, FloatRegister vtemp2);
+  void java_round_float_lasx(FloatRegister dst, FloatRegister src,
+                             FloatRegister vtemp1, FloatRegister vtemp2);
+  void java_round_double(Register dst, FloatRegister src, Register tmp);
+  void java_round_double_lsx(FloatRegister dst, FloatRegister src,
+                             FloatRegister vtemp1, FloatRegister vtemp2);
+  void java_round_double_lasx(FloatRegister dst, FloatRegister src,
+                              FloatRegister vtemp1, FloatRegister vtemp2);
+
   // allocation
   void tlab_allocate(
     Register obj,                      // result: pointer to object after successful allocation

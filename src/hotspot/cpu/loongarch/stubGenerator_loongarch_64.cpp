@@ -2890,6 +2890,9 @@ class StubGenerator: public StubCodeGenerator {
     StubRoutines::_arrayof_jshort_fill = generate_fill(T_SHORT, true, "arrayof_jshort_fill");
     StubRoutines::_arrayof_jint_fill = generate_fill(T_INT, true, "arrayof_jint_fill");
 
+    StubRoutines::la::_jlong_fill = generate_fill(T_LONG, false, "jlong_fill");
+    StubRoutines::la::_arrayof_jlong_fill = generate_fill(T_LONG, true, "arrayof_jlong_fill");
+
 #if INCLUDE_ZGC
     if (!(UseZGC && ZGenerational)) {
 #endif
@@ -2909,9 +2912,9 @@ class StubGenerator: public StubCodeGenerator {
       Copy::_arrayof_conjoint_jints = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jint_arraycopy());
       Copy::_arrayof_conjoint_jlongs = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jlong_arraycopy());
       Copy::_arrayof_conjoint_oops = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::arrayof_jlong_arraycopy());
-      Copy::_fill_to_words = reinterpret_cast<Copy::FillHeapWord>(generate_fill(T_LONG, false, "jlong_fill"));
-      Copy::_fill_to_aligned_words = reinterpret_cast<Copy::FillHeapWord>(generate_fill(T_LONG, true, "arrayof_jlong_fill"));;
-      Copy::_fill_to_bytes = reinterpret_cast<Copy::FillByte>(StubRoutines::_jbyte_fill);
+      Copy::_fill_to_bytes = reinterpret_cast<Copy::FillByte>(StubRoutines::jbyte_fill());
+      Copy::_fill_to_words = reinterpret_cast<Copy::FillHeapWord>(StubRoutines::la::jlong_fill());
+      Copy::_fill_to_aligned_words = reinterpret_cast<Copy::FillHeapWord>(StubRoutines::la::arrayof_jlong_fill());;
 #if INCLUDE_ZGC
     }
 #endif

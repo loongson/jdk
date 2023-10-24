@@ -37,6 +37,8 @@ address StubRoutines::la::_vector_iota_indices       = nullptr;
 address StubRoutines::la::_string_indexof_linear_ll  = nullptr;
 address StubRoutines::la::_string_indexof_linear_uu  = nullptr;
 address StubRoutines::la::_string_indexof_linear_ul  = nullptr;
+address StubRoutines::la::_jlong_fill                = nullptr;
+address StubRoutines::la::_arrayof_jlong_fill        = nullptr;
 
 /**
  *  crc_table[] from jdk/src/share/native/java/util/zip/zlib-1.2.5/crc32.h
@@ -147,6 +149,10 @@ ATTRIBUTE_ALIGNED(64) jdouble StubRoutines::la::_dcos_coef[] = {
     -2.75573143513906633035e-07, // 0xBE927E4F809C52AD
      2.08757232129817482790e-09, // 0x3E21EE9EBDB4B1C4
     -1.13596475577881948265e-11  // 0xBDA8FAE9BE8838D4
+};
+
+ATTRIBUTE_ALIGNED(128) julong StubRoutines::la::_string_compress_index[] = {
+    0x0e0c0a0806040200UL, 0x1e1c1a1816141210UL // 128-bit shuffle index
 };
 
 // Table of constants for 2/pi, 396 Hex digits (476 decimal) of 2/pi.

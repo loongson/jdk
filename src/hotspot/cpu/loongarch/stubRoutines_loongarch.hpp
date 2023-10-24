@@ -58,6 +58,11 @@ class la {
   static address _string_indexof_linear_uu;
   static address _string_indexof_linear_ul;
 
+  static address _jlong_fill;
+  static address _arrayof_jlong_fill;
+
+  static julong _string_compress_index[];
+
   // begin trigonometric tables block. See comments in .cpp file
   static juint    _npio2_hw[];
   static jdouble   _two_over_pi[];
@@ -84,6 +89,18 @@ public:
 
   static address string_indexof_linear_uu() {
     return _string_indexof_linear_uu;
+  }
+
+  static address jlong_fill() {
+    return _jlong_fill;
+  }
+
+  static address arrayof_jlong_fill() {
+    return _arrayof_jlong_fill;
+  }
+
+  static address string_compress_index() {
+    return (address) _string_compress_index;
   }
 };
 

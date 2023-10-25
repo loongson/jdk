@@ -503,9 +503,11 @@ address TemplateInterpreterGenerator::generate_StackOverflowError_handler() {
 #ifdef ASSERT
   {
     Label L;
-    __ addi_d(T1, FP, frame::interpreter_frame_monitor_block_top_offset * wordSize);
-    __ sub_d(T1, T1, SP); // T1 = maximal sp for current fp
-    __ bge(T1, R0, L);     // check if frame is complete
+    __ ld_d(T1, FP, frame::interpreter_frame_monitor_block_top_offset * wordSize);
+    __ alsl_d(T1, T1, FP, LogBytesPerWord-1);
+    // maximal sp for current fp (stack grows negative)
+    // check if frame is complete
+    __ bge(T1, SP, L);
     __ stop("interpreter frame not set up");
     __ bind(L);
   }
@@ -867,7 +869,9 @@ void TemplateInterpreterGenerator::lock_method(void) {
   }
   // add space for monitor & lock
   __ addi_d(SP, SP, (-1) * entry_size);           // add space for a monitor entry
-  __ st_d(SP, FP, frame::interpreter_frame_monitor_block_top_offset * wordSize);
+  __ sub_d(AT, SP, FP);
+  __ srai_d(AT, AT, Interpreter::logStackElementSize);
+  __ st_d(AT, FP, frame::interpreter_frame_monitor_block_top_offset * wordSize);
   // set new monitor block top
   __ st_d(T0, Address(SP, BasicObjectLock::obj_offset()));   // store object
 
@@ -929,7 +933,8 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
   } else {
     __ st_d(BCP, FP, (-++i) * wordSize);          // set bcp
   }
-  __ st_d(SP, FP, (-++i) * wordSize);               // reserve word for pointer to expression stack bottom
+  __ li(AT, frame::interpreter_frame_initial_sp_offset);
+  __ st_d(AT, FP, (-++i) * wordSize);               // reserve word for pointer to expression stack bottom
   assert(i == frame_size, "i should be equal to frame_size");
 }
 
@@ -1150,6 +1155,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   {
     Label L;
     __ ld_d(AT, FP, frame::interpreter_frame_monitor_block_top_offset * wordSize);
+    __ alsl_d(AT, AT, FP, LogBytesPerWord-1);
     __ beq(AT, SP, L);
     __ stop("broken stack frame setup in interpreter in asm");
     __ bind(L);
@@ -1744,6 +1750,7 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
   {
     Label L;
     __ ld_d(AT, FP, frame::interpreter_frame_monitor_block_top_offset * wordSize);
+    __ alsl_d(AT, AT, FP, LogBytesPerWord-1);
     __ beq(AT, SP, L);
     __ stop("broken stack frame setup in interpreter in native");
     __ bind(L);

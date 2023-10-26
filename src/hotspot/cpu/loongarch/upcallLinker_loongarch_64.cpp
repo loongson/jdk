@@ -217,6 +217,7 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Method* entry,
 
   __ block_comment("{ on_entry");
   __ lea(c_rarg0, Address(SP, frame_data_offset));
+  __ li(c_rarg1, (intptr_t)receiver);
   __ call(CAST_FROM_FN_PTR(address, UpcallLinker::on_entry), relocInfo::runtime_call_type);
   __ move(TREG, V0);
   __ reinit_heapbase();
@@ -232,9 +233,7 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Method* entry,
   __ block_comment("} argument shuffle");
 
   __ block_comment("{ receiver ");
-  __ li(shuffle_reg, (intptr_t)receiver);
-  __ resolve_jobject(shuffle_reg, SCR2, SCR1);
-  __ move(j_rarg0, shuffle_reg);
+  __ get_vm_result(j_rarg0, TREG);
   __ block_comment("} receiver ");
 
   __ mov_metadata(Rmethod, entry);
@@ -304,18 +303,6 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Method* entry,
 
   //////////////////////////////////////////////////////////////////////////////
 
-  __ block_comment("{ exception handler");
-
-  intptr_t exception_handler_offset = __ pc() - start;
-
-  // Native caller has no idea how to handle exceptions,
-  // so we just crash here. Up to callee to catch exceptions.
-  __ verify_oop(V0);
-  __ call(CAST_FROM_FN_PTR(address, UpcallLinker::handle_uncaught_exception), relocInfo::runtime_call_type);
-  __ should_not_reach_here();
-
-  __ block_comment("} exception handler");
-
   _masm->flush();
 
 #ifndef PRODUCT
@@ -331,7 +318,6 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Method* entry,
   UpcallStub* blob
     = UpcallStub::create(name,
                          &buffer,
-                         exception_handler_offset,
                          receiver,
                          in_ByteSize(frame_data_offset));
 

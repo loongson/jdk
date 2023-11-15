@@ -41,7 +41,8 @@ public:
   // Compare strings.
   void string_compare(Register str1, Register str2,
                       Register cnt1, Register cnt2, Register result,
-                      int ae, Register tmp1, Register tmp2);
+                      int ae, Register tmp1, Register tmp2,
+                      FloatRegister vtmp1, FloatRegister vtmp2);
 
   // Find index of char in Latin-1 string
   void stringL_indexof_char(Register str1, Register cnt1,

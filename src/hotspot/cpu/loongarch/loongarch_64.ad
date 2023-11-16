@@ -12731,9 +12731,7 @@ instruct storeV(memory mem, vReg src) %{
 // ------------------------------- Replicate ----------------------------------
 
 instruct replV(vReg dst, mRegI src) %{
-  match(Set dst (ReplicateB src));
-  match(Set dst (ReplicateS src));
-  match(Set dst (ReplicateI src));
+  match(Set dst (Replicate src));
   format %{ "(x)vreplgr2vr    $dst, $src\t# @replV" %}
   ins_encode %{
     if (Matcher::vector_length_in_bytes(this) > 16) {
@@ -12758,7 +12756,7 @@ instruct replV(vReg dst, mRegI src) %{
 %}
 
 instruct replVL(vReg dst, mRegL src) %{
-  match(Set dst (ReplicateL src));
+  match(Set dst (Replicate src));
   format %{ "(x)vreplgr2vr.d    $dst, $src\t# @replVL" %}
   ins_encode %{
     switch (Matcher::vector_length(this)) {
@@ -12772,7 +12770,7 @@ instruct replVL(vReg dst, mRegL src) %{
 %}
 
 instruct replVF(vReg dst, regF src) %{
-  match(Set dst (ReplicateF src));
+  match(Set dst (Replicate src));
   format %{ "(x)vreplve0.w    $dst, $src\t# @replVF" %}
   ins_encode %{
     __ vreplvei_w($dst$$FloatRegister, $src$$FloatRegister, 0);
@@ -12788,7 +12786,7 @@ instruct replVF(vReg dst, regF src) %{
 %}
 
 instruct replVD(vReg dst, regD src) %{
-  match(Set dst (ReplicateD src));
+  match(Set dst (Replicate src));
   format %{ "(x)vreplve0.d    $dst, $src\t# @replVD" %}
   ins_encode %{
     switch (Matcher::vector_length(this)) {
@@ -12802,7 +12800,8 @@ instruct replVD(vReg dst, regD src) %{
 %}
 
 instruct replVB_imm(vReg dst, immI_M128_255 imm) %{
-  match(Set dst (ReplicateB imm));
+  predicate(Matcher::vector_element_basic_type(n) == T_BYTE);
+  match(Set dst (Replicate imm));
   format %{ "(x)vldi    $dst, $imm\t# @replVB_imm" %}
   ins_encode %{
     switch (Matcher::vector_length(this)) {
@@ -12818,8 +12817,9 @@ instruct replVB_imm(vReg dst, immI_M128_255 imm) %{
 %}
 
 instruct replV_imm(vReg dst, immI10 imm) %{
-  match(Set dst (ReplicateS imm));
-  match(Set dst (ReplicateI imm));
+  predicate(Matcher::vector_element_basic_type(n) == T_SHORT ||
+            Matcher::vector_element_basic_type(n) == T_INT);
+  match(Set dst (Replicate imm));
   format %{ "(x)vldi    $dst, $imm\t# @replV_imm" %}
   ins_encode %{
     if (Matcher::vector_length_in_bytes(this) > 16) {
@@ -12842,7 +12842,8 @@ instruct replV_imm(vReg dst, immI10 imm) %{
 %}
 
 instruct replVL_imm(vReg dst, immL10 imm) %{
-  match(Set dst (ReplicateL imm));
+  predicate(Matcher::vector_element_basic_type(n) == T_LONG);
+  match(Set dst (Replicate imm));
   format %{ "(x)vldi    $dst, $imm\t# @replVL_imm" %}
   ins_encode %{
     switch (Matcher::vector_length(this)) {
@@ -12894,9 +12895,9 @@ instruct addV(vReg dst, vReg src1, vReg src2) %{
 %}
 
 instruct addV_imm(vReg dst, vReg src, immIU5 imm) %{
-  match(Set dst (AddVB src (ReplicateB imm)));
-  match(Set dst (AddVS src (ReplicateS imm)));
-  match(Set dst (AddVI src (ReplicateI imm)));
+  match(Set dst (AddVB src (Replicate imm)));
+  match(Set dst (AddVS src (Replicate imm)));
+  match(Set dst (AddVI src (Replicate imm)));
   format %{ "(x)vaddi    $dst, $src, $imm\t# @addV_imm" %}
   ins_encode %{
     if (Matcher::vector_length_in_bytes(this) > 16) {
@@ -12921,7 +12922,7 @@ instruct addV_imm(vReg dst, vReg src, immIU5 imm) %{
 %}
 
 instruct addVL_imm(vReg dst, vReg src, immLU5 imm) %{
-  match(Set dst (AddVL src (ReplicateL imm)));
+  match(Set dst (AddVL src (Replicate imm)));
   format %{ "(x)vaddi.du    $dst, $src, $imm\t# @addVL_imm" %}
   ins_encode %{
     switch (Matcher::vector_length(this)) {
@@ -12973,9 +12974,9 @@ instruct subV(vReg dst, vReg src1, vReg src2) %{
 %}
 
 instruct subV_imm(vReg dst, vReg src, immIU5 imm) %{
-  match(Set dst (SubVB src (ReplicateB imm)));
-  match(Set dst (SubVS src (ReplicateB imm)));
-  match(Set dst (SubVI src (ReplicateB imm)));
+  match(Set dst (SubVB src (Replicate imm)));
+  match(Set dst (SubVS src (Replicate imm)));
+  match(Set dst (SubVI src (Replicate imm)));
   format %{ "(x)vsubi    $dst, $src, $imm\t# @subV_imm" %}
   ins_encode %{
     if (Matcher::vector_length_in_bytes(this) > 16) {
@@ -13000,7 +13001,7 @@ instruct subV_imm(vReg dst, vReg src, immIU5 imm) %{
 %}
 
 instruct subVL_imm(vReg dst, vReg src, immLU5 imm) %{
-  match(Set dst (SubVL src (ReplicateL imm)));
+  match(Set dst (SubVL src (Replicate imm)));
   format %{ "(x)vsubi.du    $dst, $src, $imm\t# @subVL_imm" %}
   ins_encode %{
     switch (Matcher::vector_length(this)) {
@@ -14006,7 +14007,8 @@ instruct andV(vReg dst, vReg src1, vReg src2) %{
 %}
 
 instruct andVB_imm(vReg dst, vReg src, immIU8 imm) %{
-  match(Set dst (AndV src (ReplicateB imm)));
+  predicate(Matcher::vector_element_basic_type(n) == T_BYTE);
+  match(Set dst (AndV src (Replicate imm)));
   format %{ "(x)vandi.b    $dst, $src, $imm\t# @andVB_imm" %}
   ins_encode %{
     switch (Matcher::vector_length(this)) {
@@ -14040,7 +14042,8 @@ instruct orV(vReg dst, vReg src1, vReg src2) %{
 %}
 
 instruct orVB_imm(vReg dst, vReg src, immIU8 imm) %{
-  match(Set dst (OrV src (ReplicateB imm)));
+  predicate(Matcher::vector_element_basic_type(n) == T_BYTE);
+  match(Set dst (OrV src (Replicate imm)));
   format %{ "(x)vori.b    $dst, $src, $imm\t# @orVB_imm" %}
   ins_encode %{
     switch (Matcher::vector_length(this)) {
@@ -14074,7 +14077,8 @@ instruct xorV(vReg dst, vReg src1, vReg src2) %{
 %}
 
 instruct xor16B_imm(vReg dst, vReg src, immIU8 imm) %{
-  match(Set dst (XorV src (ReplicateB imm)));
+  predicate(Matcher::vector_element_basic_type(n) == T_BYTE);
+  match(Set dst (XorV src (Replicate imm)));
   format %{ "(x)vxori.b    $dst, $src, $imm\t# @xor16B_imm" %}
   ins_encode %{
     switch (Matcher::vector_length(this)) {
@@ -14092,9 +14096,7 @@ instruct xor16B_imm(vReg dst, vReg src, immIU8 imm) %{
 // --------------------------------- NOR --------------------------------------
 
 instruct norV(vReg dst, vReg src1, vReg src2, immI_M1 m1) %{
-  match(Set dst (XorV (OrV src1 src2) (ReplicateB m1)));
-  match(Set dst (XorV (OrV src1 src2) (ReplicateS m1)));
-  match(Set dst (XorV (OrV src1 src2) (ReplicateI m1)));
+  match(Set dst (XorV (OrV src1 src2) (Replicate m1)));
   format %{ "(x)vnor.v    $dst, $src1, $src2\t# @norV" %}
   ins_encode %{
     switch (Matcher::vector_length_in_bytes(this)) {
@@ -14110,7 +14112,8 @@ instruct norV(vReg dst, vReg src1, vReg src2, immI_M1 m1) %{
 %}
 
 instruct norVB_imm(vReg dst, vReg src, immIU8 imm, immI_M1 m1) %{
-  match(Set dst (XorV (OrV src (ReplicateB imm)) (ReplicateB m1)));
+  predicate(Matcher::vector_element_basic_type(n) == T_BYTE);
+  match(Set dst (XorV (OrV src (Replicate imm)) (Replicate m1)));
   format %{ "(x)vnori.b    $dst, $src, $imm\t# @norVB_imm" %}
   ins_encode %{
     switch (Matcher::vector_length(this)) {
@@ -14128,9 +14131,7 @@ instruct norVB_imm(vReg dst, vReg src, immIU8 imm, immI_M1 m1) %{
 // --------------------------------- ANDN -------------------------------------
 
 instruct andnV(vReg dst, vReg src1, vReg src2, immI_M1 m1) %{
-  match(Set dst (AndV src2 (XorV src1 (ReplicateB m1))));
-  match(Set dst (AndV src2 (XorV src1 (ReplicateS m1))));
-  match(Set dst (AndV src2 (XorV src1 (ReplicateI m1))));
+  match(Set dst (AndV src2 (XorV src1 (Replicate m1))));
   format %{ "(x)vandn.v    $dst, $src1, $src2\t# @andnV" %}
   ins_encode %{
     switch (Matcher::vector_length_in_bytes(this)) {
@@ -14148,9 +14149,7 @@ instruct andnV(vReg dst, vReg src1, vReg src2, immI_M1 m1) %{
 // --------------------------------- ORN --------------------------------------
 
 instruct ornV(vReg dst, vReg src1, vReg src2, immI_M1 m1) %{
-  match(Set dst (OrV src1 (XorV src2 (ReplicateB m1))));
-  match(Set dst (OrV src1 (XorV src2 (ReplicateS m1))));
-  match(Set dst (OrV src1 (XorV src2 (ReplicateI m1))));
+  match(Set dst (OrV src1 (XorV src2 (Replicate m1))));
   format %{ "(x)vorn.v    $dst, $src1, $src2\t# @ornV" %}
   ins_encode %{
     switch (Matcher::vector_length_in_bytes(this)) {

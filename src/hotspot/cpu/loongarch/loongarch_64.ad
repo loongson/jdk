@@ -8815,28 +8815,16 @@ instruct stringL_indexof_char(a4_RegP str1, mA5RegI cnt1, mA6RegI ch, mRegI resu
   ins_pipe( pipe_slow );
 %}
 
-instruct count_positives(a4_RegP src, mA5RegI len, mRegI result, mRegL tmp1) %{
+instruct count_positives(mRegP src, mRegI len, mRegI result,
+                         mRegL tmp1, mRegL tmp2) %{
   match(Set result (CountPositives src len));
-  effect(USE src, USE len, TEMP_DEF result, TEMP tmp1);
-  format %{ "count positives byte[] src:$src, len:$len -> $result TEMP($tmp1) @ count_positives" %}
-  ins_cost(200);
+  effect(TEMP_DEF result, TEMP tmp1, TEMP tmp2);
+
+  format %{ "count positives byte[] src:$src, len:$len -> $result TEMP($tmp1, $tmp2) @ count_positives" %}
 
   ins_encode %{
-    __ count_positives($src$$Register, $len$$Register, $result$$Register, $tmp1$$Register);
-  %}
-
-  ins_pipe( pipe_slow );
-%}
-
-instruct count_positives_v(a4_RegP src, mA5RegI len, mRegI result, mRegL tmp1) %{
-  predicate(UseLSX);
-  match(Set result (CountPositives src len));
-  effect(USE src, USE len, TEMP_DEF result, TEMP tmp1);
-  format %{ "vectorized count positives byte[] src:$src, len:$len -> $result TEMP($tmp1) @ count_positives_v" %}
-  ins_cost(150);
-
-  ins_encode %{
-    __ count_positives_v($src$$Register, $len$$Register, $result$$Register, $tmp1$$Register);
+    __ count_positives($src$$Register, $len$$Register, $result$$Register,
+                       $tmp1$$Register, $tmp2$$Register);
   %}
 
   ins_pipe( pipe_slow );

@@ -3216,55 +3216,41 @@ void MacroAssembler::kernel_crc32c(Register crc, Register buf, Register len, Reg
 //     }
 //     return len;
 //   }
-void MacroAssembler::count_positives(Register src, Register len, Register result, Register tmp1) {
-    Label Loop, Negative, Result, Done;
+void MacroAssembler::count_positives(Register src, Register len, Register result,
+                                     Register tmp1, Register tmp2) {
+  Label Loop, Negative, Once, Done;
 
-    move(result, R0);
-    li(tmp1, 0x8080808080808080);
+  move(result, R0);
+  beqz(len, Done);
+
+  addi_w(tmp2, len, -8);
+  blt(tmp2, R0, Once);
+
+  li(tmp1, 0x8080808080808080);
 
   bind(Loop);
     ldx_d(AT, src, result);
     andr(AT, AT, tmp1);
     bnez(AT, Negative);
+    addi_w(result, result, 8);
+    bge(tmp2, result, Loop);
 
-    addi_d(result, result, 8);
-    blt(result, len, Loop);
-    b(Result);
+  beq(result, len, Done);
+  ldx_d(AT, src, tmp2);
+  andr(AT, AT, tmp1);
+  move(result, tmp2);
 
   bind(Negative);
     ctz_d(AT, AT);
-    srai_d(AT, AT, 3);
-    add_d(result, result, AT);
+    srai_w(AT, AT, 3);
+    add_w(result, result, AT);
+    b(Done);
 
-  bind(Result);
-    blt(result, len, Done);
-    move(result, len);
-
-  bind(Done);
-}
-
-void MacroAssembler::count_positives_v(Register src, Register len, Register result, Register tmp1) {
-    Label Loop, Negative, Result, Done;
-
-    move(result, R0);
-    li(tmp1, (u1)16);
-
-  bind(Loop);
-    vldx(fscratch, src, result);
-    vfrstpi_b(fscratch, fscratch, 0);
-    vpickve2gr_bu(AT, fscratch, 0);
-    bne(tmp1, AT, Negative);
-
-    add_d(result, result, tmp1);
-    blt(result, len, Loop);
-    b(Result);
-
-  bind(Negative);
-    add_d(result, result, AT);
-
-  bind(Result);
-    blt(result, len, Done);
-    move(result, len);
+  bind(Once);
+    ldx_b(tmp1, src, result);
+    blt(tmp1, R0, Done);
+    addi_w(result, result, 1);
+    blt(result, len, Once);
 
   bind(Done);
 }

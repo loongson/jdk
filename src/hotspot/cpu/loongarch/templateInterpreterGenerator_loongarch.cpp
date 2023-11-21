@@ -39,6 +39,7 @@
 #include "oops/methodData.hpp"
 #include "oops/oop.inline.hpp"
 #include "oops/resolvedIndyEntry.hpp"
+#include "oops/resolvedMethodEntry.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "prims/jvmtiThreadState.hpp"
 #include "runtime/arguments.hpp"
@@ -596,10 +597,9 @@ address TemplateInterpreterGenerator::generate_return_entry_for(TosState state, 
     __ ld_hu(cache, Address(cache, in_bytes(ResolvedIndyEntry::num_parameters_offset())));
     __ alsl_d(SP, cache, SP, Interpreter::logStackElementSize - 1);
   } else {
-    __ get_cache_and_index_at_bcp(cache, index, 1, index_size);
-    __ alsl_d(AT, index, cache, Address::times_ptr - 1);
-    __ ld_d(cache, AT, in_bytes(ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::flags_offset()));
-    __ andi(cache, cache, ConstantPoolCacheEntry::parameter_size_mask);
+    assert(index_size == sizeof(u2), "Can only be u2");
+    __ load_method_entry(cache, index);
+    __ ld_hu(cache, Address(cache, in_bytes(ResolvedMethodEntry::num_parameters_offset())));
     __ alsl_d(SP, cache, SP, Interpreter::logStackElementSize - 1);
   }
 

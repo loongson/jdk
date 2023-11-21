@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,12 +26,7 @@
 #ifndef CPU_LOONGARCH_TEMPLATETABLE_LOONGARCH_64_HPP
 #define CPU_LOONGARCH_TEMPLATETABLE_LOONGARCH_64_HPP
 
-  static void prepare_invoke(int byte_no,
-                             Register method,         // linked method (or i-klass)
-                             Register index = noreg,  // itable index, MethodType, etc.
-                             Register recv  = noreg,  // if caller wants to see it
-                             Register flags = noreg   // if caller wants to test it
-                             );
+  static void prepare_invoke(Register cache, Register recv);
   static void invokevirtual_helper(Register index, Register recv,
                                    Register flags);
   static void volatile_barrier();

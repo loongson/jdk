@@ -35,6 +35,7 @@
 #include "oops/methodData.hpp"
 #include "oops/resolvedFieldEntry.hpp"
 #include "oops/resolvedIndyEntry.hpp"
+#include "oops/resolvedMethodEntry.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "prims/jvmtiThreadState.hpp"
 #include "runtime/basicLock.hpp"
@@ -256,63 +257,6 @@ void InterpreterMacroAssembler::get_cache_index_at_bcp(Register index,
   }
 }
 
-
-void InterpreterMacroAssembler::get_cache_and_index_at_bcp(Register cache,
-                                                           Register index,
-                                                           int bcp_offset,
-                                                           size_t index_size) {
-  assert_different_registers(cache, index);
-  get_cache_index_at_bcp(index, bcp_offset, index_size);
-  ld_d(cache, FP, frame::interpreter_frame_cache_offset * wordSize);
-  assert(sizeof(ConstantPoolCacheEntry) == 4 * wordSize, "adjust code below");
-  assert(exact_log2(in_words(ConstantPoolCacheEntry::size())) == 2, "else change next line");
-  slli_d(index, index, 2);
-}
-
-
-void InterpreterMacroAssembler::get_cache_and_index_and_bytecode_at_bcp(Register cache,
-                                                                        Register index,
-                                                                        Register bytecode,
-                                                                        int byte_no,
-                                                                        int bcp_offset,
-                                                                        size_t index_size) {
-  get_cache_and_index_at_bcp(cache, index, bcp_offset, index_size);
-  // We use a 32-bit load here since the layout of 64-bit words on
-  // little-endian machines allow us that.
-  alsl_d(AT, index, cache, Address::times_ptr - 1);
-  ld_w(bytecode, AT, in_bytes(ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::indices_offset()));
-  if(os::is_MP()) {
-    membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
-  }
-
-  const int shift_count = (1 + byte_no) * BitsPerByte;
-  assert((byte_no == TemplateTable::f1_byte && shift_count == ConstantPoolCacheEntry::bytecode_1_shift) ||
-         (byte_no == TemplateTable::f2_byte && shift_count == ConstantPoolCacheEntry::bytecode_2_shift),
-         "correct shift count");
-  srli_d(bytecode, bytecode, shift_count);
-  assert(ConstantPoolCacheEntry::bytecode_1_mask == ConstantPoolCacheEntry::bytecode_2_mask, "common mask");
-  li(AT, ConstantPoolCacheEntry::bytecode_1_mask);
-  andr(bytecode, bytecode, AT);
-}
-
-void InterpreterMacroAssembler::get_cache_entry_pointer_at_bcp(Register cache,
-                                                               Register tmp,
-                                                               int bcp_offset,
-                                                               size_t index_size) {
-  assert(bcp_offset > 0, "bcp is still pointing to start of bytecode");
-  assert(cache != tmp, "must use different register");
-  get_cache_index_at_bcp(tmp, bcp_offset, index_size);
-  assert(sizeof(ConstantPoolCacheEntry) == 4 * wordSize, "adjust code below");
-  // convert from field index to ConstantPoolCacheEntry index
-  // and from word offset to byte offset
-  assert(exact_log2(in_bytes(ConstantPoolCacheEntry::size_in_bytes())) == 2 + LogBytesPerWord, "else change next line");
-  slli_d(tmp, tmp, 2 + LogBytesPerWord);
-  ld_d(cache, FP, frame::interpreter_frame_cache_offset * wordSize);
-  // skip past the header
-  addi_d(cache, cache, in_bytes(ConstantPoolCache::base_offset()));
-  add_d(cache, cache, tmp);
-}
-
 void InterpreterMacroAssembler::get_method_counters(Register method,
                                                     Register mcs, Label& skip) {
   Label has_counters;
@@ -354,6 +298,19 @@ void InterpreterMacroAssembler::load_field_entry(Register cache, Register index,
   add_d(cache, cache, index);
 }
 
+void InterpreterMacroAssembler::load_method_entry(Register cache, Register index, int bcp_offset) {
+  // Get index out of bytecode pointer
+  get_cache_index_at_bcp(index, bcp_offset, sizeof(u2));
+  li(cache, sizeof(ResolvedMethodEntry));
+  mul_d(index, index, cache); // Scale the index to be the entry index * sizeof(ResolvedMethodEntry)
+
+  ld_d(cache, FP, frame::interpreter_frame_cache_offset * wordSize);
+  // Get address of field entries array
+  ld_d(cache, Address(cache, ConstantPoolCache::method_entries_offset()));
+  addi_d(cache, cache, Array<ResolvedMethodEntry>::base_offset_in_bytes());
+  add_d(cache, cache, index);
+}
+
 // Load object from cpool->resolved_references(index)
 void InterpreterMacroAssembler::load_resolved_reference_at_index(
                                            Register result, Register index, Register tmp) {
@@ -378,19 +335,6 @@ void InterpreterMacroAssembler::load_resolved_klass_at_index(Register cpool,
   ld_d(resolved_klasses, Address(cpool, ConstantPool::resolved_klasses_offset()));
   alsl_d(AT, index, resolved_klasses, Address::times_ptr - 1);
   ld_d(klass, AT, Array<Klass*>::base_offset_in_bytes());
-}
-
-void InterpreterMacroAssembler::load_resolved_method_at_index(int byte_no,
-                                                              Register method,
-                                                              Register cache,
-                                                              Register index) {
-  const int method_offset = in_bytes(
-    ConstantPoolCache::base_offset() +
-      ((byte_no == TemplateTable::f2_byte)
-       ? ConstantPoolCacheEntry::f2_offset()
-       : ConstantPoolCacheEntry::f1_offset()));
-
-  ld_d(method, Address(cache, index, Address::times_ptr, method_offset)); // get f1 Method*
 }
 
 // Resets LVP to locals.  Register sub_klass cannot be any of the above.

@@ -394,7 +394,7 @@ void BarrierSetAssembler::nmethod_entry_barrier(MacroAssembler* masm, Label* slo
     Label skip_barrier;
     __ beq(SCR1, SCR2, skip_barrier);
 
-    __ call_long(StubRoutines::la::method_entry_barrier());
+    __ call_long(StubRoutines::method_entry_barrier());
     __ b(skip_barrier);
 
     __ bind(local_guard);

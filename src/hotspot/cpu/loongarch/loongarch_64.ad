@@ -8855,16 +8855,19 @@ instruct string_compress(a2_RegP src, mRegP dst, mRegI len, mRegI result,
 
 // byte[] to char[] inflation
 instruct string_inflate(Universe dummy, a4_RegP src, a5_RegP dst, mA6RegI len,
-                        regF vtemp1, regF vtemp2)
+                        mRegL tmp1, mRegL tmp2, regF vtemp1, regF vtemp2)
 %{
   predicate(UseLSX);
   match(Set dummy (StrInflatedCopy src (Binary dst len)));
-  effect(USE_KILL src, USE_KILL dst, USE_KILL len, TEMP vtemp1, TEMP vtemp2);
+  effect(TEMP tmp1, TEMP tmp2, TEMP vtemp1, TEMP vtemp2,
+         USE_KILL src, USE_KILL dst, USE_KILL len);
 
-  format %{ "String Inflate $src,$dst @ string_inflate " %}
+  format %{ "String Inflate $src, $dst, len:$len "
+            "TEMP($tmp1, $tmp2, $vtemp1, $vtemp2) @ string_inflate " %}
 
   ins_encode %{
     __ byte_array_inflate($src$$Register, $dst$$Register, $len$$Register,
+                          $tmp1$$Register, $tmp2$$Register,
                           $vtemp1$$FloatRegister, $vtemp2$$FloatRegister);
   %}
 

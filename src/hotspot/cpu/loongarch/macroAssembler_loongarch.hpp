@@ -685,6 +685,7 @@ class MacroAssembler: public Assembler {
 
   // Code for java.lang.StringLatin1::inflate intrinsic.
   void byte_array_inflate(Register src, Register dst, Register len,
+                          Register tmp1, Register tmp2,
                           FloatRegister vtemp1, FloatRegister vtemp2);
 
   // Encode UTF16 to ISO_8859_1 or ASCII.

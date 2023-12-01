@@ -11823,7 +11823,6 @@ instruct compareAndSwapI(mRegI res, memory_exclusive mem_ptr, mRegI oldval, mReg
 %}
 
 instruct compareAndSwapL(mRegI res, memory_exclusive mem_ptr, mRegL oldval, mRegL newval) %{
-  predicate(VM_Version::supports_cx8());
   match(Set res (CompareAndSwapL mem_ptr (Binary oldval newval)));
   effect(TEMP_DEF res);
   ins_cost(3 * MEMORY_REF_COST);

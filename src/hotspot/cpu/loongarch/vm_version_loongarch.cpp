@@ -160,8 +160,6 @@ void VM_Version::get_processor_features() {
   get_cpu_info_stub(&_cpuid_info);
   _features |= get_feature_flags_by_cpucfg();
 
-  _supports_cx8 = true;
-
   if (UseG1GC && FLAG_IS_DEFAULT(MaxGCPauseMillis)) {
     FLAG_SET_DEFAULT(MaxGCPauseMillis, 150);
   }

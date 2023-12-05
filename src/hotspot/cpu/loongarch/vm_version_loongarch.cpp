@@ -409,6 +409,11 @@ void VM_Version::get_processor_features() {
       UseFPUForSpilling = false;
     }
   }
+
+  if (FLAG_IS_DEFAULT(UsePoly1305Intrinsics)) {
+    FLAG_SET_DEFAULT(UsePoly1305Intrinsics, true);
+  }
+
 #endif
 
   // This machine allows unaligned memory accesses

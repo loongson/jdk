@@ -10870,6 +10870,28 @@ instruct convHF2F_reg_reg(regF dst, mRegI src, regF tmp) %{
   ins_pipe(pipe_slow);
 %}
 
+instruct round_float_reg(mRegI dst, regF src, mRegL tmp)
+%{
+  match(Set dst (RoundF src));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "round_float $dst, $src\t# @round_float_reg" %}
+  ins_encode %{
+    __ java_round_float($dst$$Register, $src$$FloatRegister, $tmp$$Register);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct round_double_reg(mRegL dst, regD src, mRegL tmp)
+%{
+  match(Set dst (RoundD src));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "round_double $dst, $src\t# @round_double_reg" %}
+  ins_encode %{
+    __ java_round_double($dst$$Register, $src$$FloatRegister, $tmp$$Register);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 instruct roundD(regD dst, regD src, immI rmode) %{
   predicate(UseLSX);
   match(Set dst (RoundDoubleMode src rmode));
@@ -12512,26 +12534,6 @@ instruct safePoint_poll_tls(mRegP poll) %{
   %}
 
   ins_pipe( pipe_serial );
-%}
-
-//----------Arithmetic Conversion Instructions---------------------------------
-
-instruct roundFloat_nop(regF dst)
-%{
-  match(Set dst (RoundFloat dst));
-
-  ins_cost(0);
-  ins_encode();
-  ins_pipe( empty );
-%}
-
-instruct roundDouble_nop(regD dst)
-%{
-  match(Set dst (RoundDouble dst));
-
-  ins_cost(0);
-  ins_encode();
-  ins_pipe( empty );
 %}
 
 //----------BSWAP Instructions-------------------------------------------------
@@ -14219,6 +14221,64 @@ instruct reduceVD(regD dst, regD src, vReg vsrc, vReg tmp) %{
   ins_encode %{
     __ reduce($dst$$FloatRegister, $src$$FloatRegister, $vsrc$$FloatRegister, $tmp$$FloatRegister,
               T_DOUBLE, this->ideal_Opcode(), Matcher::vector_length_in_bytes(this, $vsrc));
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+// ------------------------------ Vector Round ---------------------------------
+
+instruct round_float_lsx(vReg dst, vReg src, vReg vtemp1, vReg vtemp2) %{
+  predicate(Matcher::vector_length_in_bytes(n) <= 16);
+  match(Set dst (RoundVF src));
+  effect(TEMP_DEF dst, TEMP vtemp1, TEMP vtemp2);
+  format %{ "round_float_lsx $dst, $src\t# @round_float_lsx" %}
+  ins_encode %{
+    __ java_round_float_lsx($dst$$FloatRegister,
+                            $src$$FloatRegister,
+                            $vtemp1$$FloatRegister,
+                            $vtemp2$$FloatRegister);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct round_float_lasx(vReg dst, vReg src, vReg vtemp1, vReg vtemp2) %{
+  predicate(Matcher::vector_length_in_bytes(n) > 16);
+  match(Set dst (RoundVF src));
+  effect(TEMP_DEF dst, TEMP vtemp1, TEMP vtemp2);
+  format %{ "round_float_lasx $dst, $src\t# @round_float_lasx" %}
+  ins_encode %{
+    __ java_round_float_lasx($dst$$FloatRegister,
+                             $src$$FloatRegister,
+                             $vtemp1$$FloatRegister,
+                             $vtemp2$$FloatRegister);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct round_double_lsx(vReg dst, vReg src, vReg vtemp1, vReg vtemp2) %{
+  predicate(Matcher::vector_length_in_bytes(n) <= 16);
+  match(Set dst (RoundVD src));
+  effect(TEMP_DEF dst, TEMP vtemp1, TEMP vtemp2);
+  format %{ "round_double_lsx $dst, $src\t# @round_double_lsx" %}
+  ins_encode %{
+    __ java_round_double_lsx($dst$$FloatRegister,
+                             $src$$FloatRegister,
+                             $vtemp1$$FloatRegister,
+                             $vtemp2$$FloatRegister);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct round_double_lasx(vReg dst, vReg src, vReg vtemp1, vReg vtemp2) %{
+  predicate(Matcher::vector_length_in_bytes(n) > 16);
+  match(Set dst (RoundVD src));
+  effect(TEMP_DEF dst, TEMP vtemp1, TEMP vtemp2);
+  format %{ "round_double_lasx $dst, $src\t# @round_double_lasx" %}
+  ins_encode %{
+    __ java_round_double_lasx($dst$$FloatRegister,
+                              $src$$FloatRegister,
+                              $vtemp1$$FloatRegister,
+                              $vtemp2$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}

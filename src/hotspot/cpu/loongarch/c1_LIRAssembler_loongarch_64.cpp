@@ -1324,7 +1324,9 @@ void LIR_Assembler::emit_typecheck_helper(LIR_OpTypeCheck *op, Label* success,
     __ load_klass(recv, obj);
     type_profile_helper(mdo, md, data, recv, &update_done);
     Address counter_addr(mdo, md->byte_offset_of_slot(data, CounterData::count_offset()));
-    __ increment(counter_addr, DataLayout::counter_increment);
+    __ ld_d(SCR2, counter_addr);
+    __ addi_d(SCR2, SCR2, DataLayout::counter_increment);
+    __ st_d(SCR2, counter_addr);
     __ bind(update_done);
   } else {
     __ beqz(obj, *obj_is_null);
@@ -1436,7 +1438,9 @@ void LIR_Assembler::emit_opTypeCheck(LIR_OpTypeCheck* op) {
       __ load_klass(recv, value);
       type_profile_helper(mdo, md, data, recv, &update_done);
       Address counter_addr(mdo, md->byte_offset_of_slot(data, CounterData::count_offset()));
-      __ increment(counter_addr, DataLayout::counter_increment);
+      __ ld_d(SCR2, counter_addr);
+      __ addi_d(SCR2, SCR2, DataLayout::counter_increment);
+      __ st_d(SCR2, counter_addr);
       __ bind(update_done);
     } else {
       __ beqz(value, done);

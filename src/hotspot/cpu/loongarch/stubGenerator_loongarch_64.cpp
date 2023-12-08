@@ -36,6 +36,7 @@
 #include "oops/objArrayKlass.hpp"
 #include "oops/oop.inline.hpp"
 #include "prims/methodHandles.hpp"
+#include "prims/upcallLinker.hpp"
 #include "runtime/continuation.hpp"
 #include "runtime/continuationEntry.inline.hpp"
 #include "runtime/frame.inline.hpp"
@@ -4898,6 +4899,20 @@ class StubGenerator: public StubCodeGenerator {
 
 #endif // INCLUDE_JFR
 
+  // exception handler for upcall stubs
+  address generate_upcall_stub_exception_handler() {
+    StubCodeMark mark(this, "StubRoutines", "upcall stub exception handler");
+    address start = __ pc();
+
+    // Native caller has no idea how to handle exceptions,
+    // so we just crash here. Up to callee to catch exceptions.
+    __ verify_oop(A0); // return a exception oop in a0
+    __ call(CAST_FROM_FN_PTR(address, UpcallLinker::handle_uncaught_exception), relocInfo::runtime_call_type);
+    __ should_not_reach_here();
+
+    return start;
+  }
+
 #undef __
 #define __ masm->
 
@@ -5635,6 +5650,8 @@ class StubGenerator: public StubCodeGenerator {
     if (bs_nm != nullptr) {
       StubRoutines::la::_method_entry_barrier = generate_method_entry_barrier();
     }
+
+    StubRoutines::_upcall_stub_exception_handler = generate_upcall_stub_exception_handler();
   }
 
   void generate_compiler_stubs() {

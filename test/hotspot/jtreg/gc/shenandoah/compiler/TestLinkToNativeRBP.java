@@ -29,7 +29,6 @@
 
 /**
  * @test
- * @enablePreview
  * @bug 8259937
  * @summary guarantee(loc != NULL) failed: missing saved register with native invoke
  *

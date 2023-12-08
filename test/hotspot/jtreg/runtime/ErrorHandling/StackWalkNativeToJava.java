@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2023, These
+ * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 import jdk.test.lib.process.OutputAnalyzer;
 import jdk.test.lib.process.ProcessTools;
 import jdk.test.lib.Utils;
@@ -33,7 +39,7 @@ import java.util.List;
  * @test StackWalkNativeToJava
  * @bug 8316309
  * @summary Check that walking the stack works fine when going from C++ frame to Java frame.
- * @requires os.arch=="amd64" | os.arch=="x86_64" | os.arch=="aarch64"
+ * @requires os.arch=="amd64" | os.arch=="x86_64" | os.arch=="aarch64" | os.arch=="loongarch64"
  * @requires os.family != "windows"
  * @requires vm.flagless
  * @library /test/lib

@@ -673,8 +673,8 @@ class MacroAssembler: public Assembler {
   void kernel_crc32c(Register crc, Register buf, Register len, Register tmp);
 
   // Code for java.lang.StringCoding::countPositives intrinsic.
-  void count_positives(Register src, Register len, Register result, Register tmp1);
-  void count_positives_v(Register src, Register len, Register result, Register tmp1);
+  void count_positives(Register src, Register len, Register result,
+                       Register tmp1, Register tmp2);
 
   // Code for java.lang.StringUTF16::compress intrinsic.
   void char_array_compress(Register src, Register dst,
@@ -685,6 +685,7 @@ class MacroAssembler: public Assembler {
 
   // Code for java.lang.StringLatin1::inflate intrinsic.
   void byte_array_inflate(Register src, Register dst, Register len,
+                          Register tmp1, Register tmp2,
                           FloatRegister vtemp1, FloatRegister vtemp2);
 
   // Encode UTF16 to ISO_8859_1 or ASCII.

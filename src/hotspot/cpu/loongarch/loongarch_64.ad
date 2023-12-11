@@ -8619,61 +8619,65 @@ instruct clear_array(a2RegL cnt, a0_RegP base, Universe dummy, a1RegL value) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct string_compareL(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2, mRegI result, mRegL tmp1, mRegL tmp2) %{
+instruct string_compareL(a4_RegP str1, mA5RegI cnt1, a6_RegP str2, mA7RegI cnt2, mRegI result, mRegL tmp1, mRegL tmp2, regF vtmp1, regF vtmp2) %{
   predicate(((StrCompNode*)n)->encoding() == StrIntrinsicNode::LL);
   match(Set result (StrComp (Binary str1 cnt1) (Binary str2 cnt2)));
-  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2, TEMP tmp1,TEMP tmp2, TEMP_DEF result);
+  effect(TEMP_DEF result, TEMP tmp1, TEMP tmp2, TEMP vtmp1, TEMP vtmp2, USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2);
 
-  format %{ "String Compare byte[] $str1[len: $cnt1], $str2[len: $cnt2] tmp1:$tmp1, tmp2:$tmp2 -> $result @ string_compareL" %}
+  format %{ "String Compare byte[] $str1[len: $cnt1], $str2[len: $cnt2] tmp1:$tmp1, tmp2:$tmp2, vtmp1:$vtmp1, vtmp2:$vtmp2 -> $result @ string_compareL" %}
   ins_encode %{
     __ string_compare($str1$$Register, $str2$$Register,
                       $cnt1$$Register, $cnt2$$Register, $result$$Register,
-                      StrIntrinsicNode::LL, $tmp1$$Register, $tmp2$$Register);
+                      StrIntrinsicNode::LL, $tmp1$$Register, $tmp2$$Register,
+                      $vtmp1$$FloatRegister, $vtmp2$$FloatRegister);
   %}
 
   ins_pipe( pipe_slow );
 %}
 
-instruct string_compareU(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2, mRegI result, mRegL tmp1, mRegL tmp2) %{
+instruct string_compareU(a4_RegP str1, mA5RegI cnt1, a6_RegP str2, mA7RegI cnt2, mRegI result, mRegL tmp1, mRegL tmp2, regF vtmp1, regF vtmp2) %{
   predicate(((StrCompNode*)n)->encoding() == StrIntrinsicNode::UU);
   match(Set result (StrComp (Binary str1 cnt1) (Binary str2 cnt2)));
-  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2, TEMP tmp1, TEMP tmp2, TEMP_DEF result);
+  effect(TEMP_DEF result, TEMP tmp1, TEMP tmp2, TEMP vtmp1, TEMP vtmp2, USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2);
 
-  format %{ "String Compare char[] $str1[len: $cnt1], $str2[len: $cnt2] tmp1:$tmp1, tmp2:$tmp2 -> $result @ string_compareU" %}
+  format %{ "String Compare char[] $str1[len: $cnt1], $str2[len: $cnt2] tmp1:$tmp1, tmp2:$tmp2, vtmp1:$vtmp1, vtmp2:$vtmp2 -> $result @ string_compareU" %}
   ins_encode %{
     __ string_compare($str1$$Register, $str2$$Register,
                       $cnt1$$Register, $cnt2$$Register, $result$$Register,
-                      StrIntrinsicNode::UU, $tmp1$$Register, $tmp2$$Register);
+                      StrIntrinsicNode::UU, $tmp1$$Register, $tmp2$$Register,
+                      $vtmp1$$FloatRegister, $vtmp2$$FloatRegister);
   %}
 
   ins_pipe( pipe_slow );
 %}
 
-instruct string_compareLU(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2, mRegI result, mRegL tmp1, mRegL tmp2) %{
+instruct string_compareLU(a4_RegP str1, mA5RegI cnt1, a6_RegP str2, mA7RegI cnt2, mRegI result, mRegL tmp1, mRegL tmp2, regF vtmp1, regF vtmp2) %{
   predicate(((StrCompNode*)n)->encoding() == StrIntrinsicNode::LU);
   match(Set result (StrComp (Binary str1 cnt1) (Binary str2 cnt2)));
-  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2, TEMP tmp1, TEMP tmp2, TEMP_DEF result);
+  effect(TEMP_DEF result, TEMP tmp1, TEMP tmp2, TEMP vtmp1, TEMP vtmp2, USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2);
 
-  format %{ "String Compare byte[] $str1[len: $cnt1], $str2[len: $cnt2] tmp1:$tmp1, tmp2:$tmp2 -> $result @ string_compareLU" %}
+  format %{ "String Compare byte[] $str1[len: $cnt1], $str2[len: $cnt2] tmp1:$tmp1, tmp2:$tmp2, vtmp1:$vtmp1, vtmp2:$vtmp2 -> $result @ string_compareLU" %}
   ins_encode %{
     __ string_compare($str1$$Register, $str2$$Register,
                       $cnt1$$Register, $cnt2$$Register, $result$$Register,
-                      StrIntrinsicNode::LU, $tmp1$$Register, $tmp2$$Register);
+                      StrIntrinsicNode::LU, $tmp1$$Register, $tmp2$$Register,
+                      $vtmp1$$FloatRegister, $vtmp2$$FloatRegister);
   %}
 
   ins_pipe( pipe_slow );
 %}
 
-instruct string_compareUL(a4_RegP str1, mA5RegI cnt1, a6_RegP str2,  mA7RegI cnt2, mRegI result, mRegL tmp1, mRegL tmp2) %{
+instruct string_compareUL(a4_RegP str1, mA5RegI cnt1, a6_RegP str2, mA7RegI cnt2, mRegI result, mRegL tmp1, mRegL tmp2, regF vtmp1, regF vtmp2) %{
   predicate(((StrCompNode*)n)->encoding() == StrIntrinsicNode::UL);
   match(Set result (StrComp (Binary str1 cnt1) (Binary str2 cnt2)));
-  effect(USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2, TEMP tmp1, TEMP tmp2, TEMP_DEF result);
+  effect(TEMP_DEF result, TEMP tmp1, TEMP tmp2, TEMP vtmp1, TEMP vtmp2, USE_KILL str1, USE_KILL str2, USE_KILL cnt1, USE_KILL cnt2);
 
-  format %{ "String Compare byte[] $str1[len: $cnt1], $str2[len: $cnt2] tmp1:$tmp1 tmp2:$tmp2 -> $result @ string_compareUL" %}
+  format %{ "String Compare byte[] $str1[len: $cnt1], $str2[len: $cnt2] tmp1:$tmp1, tmp2:$tmp2, vtmp1:$vtmp1, vtmp2:$vtmp2 -> $result @ string_compareUL" %}
   ins_encode %{
     __ string_compare($str1$$Register, $str2$$Register,
                       $cnt1$$Register, $cnt2$$Register, $result$$Register,
-                      StrIntrinsicNode::UL, $tmp1$$Register, $tmp2$$Register);
+                      StrIntrinsicNode::UL, $tmp1$$Register, $tmp2$$Register,
+                      $vtmp1$$FloatRegister, $vtmp2$$FloatRegister);
   %}
 
   ins_pipe( pipe_slow );
@@ -8811,28 +8815,16 @@ instruct stringL_indexof_char(a4_RegP str1, mA5RegI cnt1, mA6RegI ch, mRegI resu
   ins_pipe( pipe_slow );
 %}
 
-instruct count_positives(a4_RegP src, mA5RegI len, mRegI result, mRegL tmp1) %{
+instruct count_positives(mRegP src, mRegI len, mRegI result,
+                         mRegL tmp1, mRegL tmp2) %{
   match(Set result (CountPositives src len));
-  effect(USE src, USE len, TEMP_DEF result, TEMP tmp1);
-  format %{ "count positives byte[] src:$src, len:$len -> $result TEMP($tmp1) @ count_positives" %}
-  ins_cost(200);
+  effect(TEMP_DEF result, TEMP tmp1, TEMP tmp2);
+
+  format %{ "count positives byte[] src:$src, len:$len -> $result TEMP($tmp1, $tmp2) @ count_positives" %}
 
   ins_encode %{
-    __ count_positives($src$$Register, $len$$Register, $result$$Register, $tmp1$$Register);
-  %}
-
-  ins_pipe( pipe_slow );
-%}
-
-instruct count_positives_v(a4_RegP src, mA5RegI len, mRegI result, mRegL tmp1) %{
-  predicate(UseLSX);
-  match(Set result (CountPositives src len));
-  effect(USE src, USE len, TEMP_DEF result, TEMP tmp1);
-  format %{ "vectorized count positives byte[] src:$src, len:$len -> $result TEMP($tmp1) @ count_positives_v" %}
-  ins_cost(150);
-
-  ins_encode %{
-    __ count_positives_v($src$$Register, $len$$Register, $result$$Register, $tmp1$$Register);
+    __ count_positives($src$$Register, $len$$Register, $result$$Register,
+                       $tmp1$$Register, $tmp2$$Register);
   %}
 
   ins_pipe( pipe_slow );
@@ -8863,16 +8855,19 @@ instruct string_compress(a2_RegP src, mRegP dst, mRegI len, mRegI result,
 
 // byte[] to char[] inflation
 instruct string_inflate(Universe dummy, a4_RegP src, a5_RegP dst, mA6RegI len,
-                        regF vtemp1, regF vtemp2)
+                        mRegL tmp1, mRegL tmp2, regF vtemp1, regF vtemp2)
 %{
   predicate(UseLSX);
   match(Set dummy (StrInflatedCopy src (Binary dst len)));
-  effect(USE_KILL src, USE_KILL dst, USE_KILL len, TEMP vtemp1, TEMP vtemp2);
+  effect(TEMP tmp1, TEMP tmp2, TEMP vtemp1, TEMP vtemp2,
+         USE_KILL src, USE_KILL dst, USE_KILL len);
 
-  format %{ "String Inflate $src,$dst @ string_inflate " %}
+  format %{ "String Inflate $src, $dst, len:$len "
+            "TEMP($tmp1, $tmp2, $vtemp1, $vtemp2) @ string_inflate " %}
 
   ins_encode %{
     __ byte_array_inflate($src$$Register, $dst$$Register, $len$$Register,
+                          $tmp1$$Register, $tmp2$$Register,
                           $vtemp1$$FloatRegister, $vtemp2$$FloatRegister);
   %}
 

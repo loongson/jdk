@@ -52,7 +52,6 @@ class la {
   // stack. The variable holds that location.
   static address _vector_iota_indices;
   static juint   _crc_table[];
-  static address _method_entry_barrier;
 
   static address _string_indexof_linear_ll;
   static address _string_indexof_linear_uu;
@@ -77,10 +76,6 @@ class la {
 public:
   // Call back points for traps in compiled code
   static address vector_iota_indices()              { return _vector_iota_indices; }
-
-  static address method_entry_barrier() {
-    return _method_entry_barrier;
-  }
 
   static address string_indexof_linear_ul() {
     return _string_indexof_linear_ul;

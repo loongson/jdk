@@ -752,9 +752,7 @@ int SharedRuntime::vector_calling_convention(VMRegPair *regs,
 
 int SharedRuntime::c_calling_convention(const BasicType *sig_bt,
                                          VMRegPair *regs,
-                                         VMRegPair *regs2,
                                          int total_args_passed) {
-  assert(regs2 == nullptr, "not needed on LA");
 
   // We return the amount of VMRegImpl stack slots we need to reserve for all
   // the arguments NOT counting out_preserve_stack_slots.
@@ -1394,7 +1392,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   // the 1st six register arguments). It's weird see int_stk_helper.
   //
   int out_arg_slots;
-  out_arg_slots = c_calling_convention(out_sig_bt, out_regs, nullptr, total_c_args);
+  out_arg_slots = c_calling_convention(out_sig_bt, out_regs, total_c_args);
 
   // Compute framesize for the wrapper.  We need to handlize all oops in
   // registers. We must create space for them here that is disjoint from

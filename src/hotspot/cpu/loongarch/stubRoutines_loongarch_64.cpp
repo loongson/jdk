@@ -32,7 +32,6 @@
 // a description of how to extend it, see the stubRoutines.hpp file.
 
 //find the last fp value
-address StubRoutines::la::_method_entry_barrier      = nullptr;
 address StubRoutines::la::_vector_iota_indices       = nullptr;
 address StubRoutines::la::_string_indexof_linear_ll  = nullptr;
 address StubRoutines::la::_string_indexof_linear_uu  = nullptr;

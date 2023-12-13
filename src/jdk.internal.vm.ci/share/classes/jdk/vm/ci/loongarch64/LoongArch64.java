@@ -172,6 +172,8 @@ public class LoongArch64 extends Architecture {
         LLSYNC,
         TGTSYNC,
         ULSYNC,
+        LAM_BH,
+        LAMCAS,
         UAL
     }
 

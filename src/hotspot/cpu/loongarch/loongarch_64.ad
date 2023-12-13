@@ -994,6 +994,20 @@ bool Matcher::match_rule_supported(int opcode) {
     case Op_FmaVD:
       if (!UseFMA)
         return false;
+    case Op_CompareAndSwapB:
+    case Op_CompareAndSwapS:
+    case Op_CompareAndExchangeB:
+    case Op_CompareAndExchangeS:
+    case Op_WeakCompareAndSwapB:
+    case Op_WeakCompareAndSwapS:
+      if (!UseAMCAS)
+        return false;
+    case Op_GetAndSetB:
+    case Op_GetAndSetS:
+    case Op_GetAndAddB:
+    case Op_GetAndAddS:
+      if (!UseAMBH)
+        return false;
     default:
       break;
   }
@@ -2229,6 +2243,8 @@ bool is_CAS(int opcode)
 {
   switch(opcode) {
   // We handle these
+  case Op_CompareAndSwapB:
+  case Op_CompareAndSwapS:
   case Op_CompareAndSwapI:
   case Op_CompareAndSwapL:
   case Op_CompareAndSwapP:
@@ -2239,10 +2255,14 @@ bool is_CAS(int opcode)
   case Op_ShenandoahWeakCompareAndSwapN:
   case Op_ShenandoahCompareAndExchangeP:
   case Op_ShenandoahCompareAndExchangeN:
+  case Op_GetAndSetB:
+  case Op_GetAndSetS:
   case Op_GetAndSetI:
   case Op_GetAndSetL:
   case Op_GetAndSetP:
   case Op_GetAndSetN:
+  case Op_GetAndAddB:
+  case Op_GetAndAddS:
   case Op_GetAndAddI:
   case Op_GetAndAddL:
     return true;
@@ -11752,6 +11772,40 @@ instruct partialSubtypeCheckVsZero_short( mRegP sub, mRegP super, mRegP tmp1, mR
   ins_short_branch(1);
 %}
 
+instruct compareAndSwapB(mRegI res, memory_exclusive mem_ptr, mRegI oldval, mRegI newval) %{
+  predicate(UseAMCAS);
+  match(Set res (CompareAndSwapB mem_ptr (Binary oldval newval)));
+  effect(TEMP_DEF res);
+  ins_cost(3 * MEMORY_REF_COST);
+  format %{ "CMPXCHG $newval, [$mem_ptr], $oldval @ compareAndSwapB" %}
+  ins_encode %{
+    Register newval = $newval$$Register;
+    Register oldval = $oldval$$Register;
+    Register res    = $res$$Register;
+    Address  addr(as_Register($mem_ptr$$base), $mem_ptr$$disp);
+
+    __ cmpxchg8(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* acquire */);
+  %}
+  ins_pipe( long_memory_op );
+%}
+
+instruct compareAndSwapS(mRegI res, memory_exclusive mem_ptr, mRegI oldval, mRegI newval) %{
+  predicate(UseAMCAS);
+  match(Set res (CompareAndSwapS mem_ptr (Binary oldval newval)));
+  effect(TEMP_DEF res);
+  ins_cost(3 * MEMORY_REF_COST);
+  format %{ "CMPXCHG $newval, [$mem_ptr], $oldval @ compareAndSwapS" %}
+  ins_encode %{
+    Register newval = $newval$$Register;
+    Register oldval = $oldval$$Register;
+    Register res    = $res$$Register;
+    Address  addr(as_Register($mem_ptr$$base), $mem_ptr$$disp);
+
+    __ cmpxchg16(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* acquire */);
+  %}
+  ins_pipe( long_memory_op );
+%}
+
 instruct compareAndSwapI(mRegI res, memory_exclusive mem_ptr, mRegI oldval, mRegI newval) %{
   match(Set res (CompareAndSwapI mem_ptr (Binary oldval newval)));
   effect(TEMP_DEF res);
@@ -11763,7 +11817,7 @@ instruct compareAndSwapI(mRegI res, memory_exclusive mem_ptr, mRegI oldval, mReg
     Register res    = $res$$Register;
     Address  addr(as_Register($mem_ptr$$base), $mem_ptr$$disp);
 
-    __ cmpxchg32(addr, oldval, newval, res, true, false, true /* acquire */);
+    __ cmpxchg32(addr, oldval, newval, res, true /* sign */, false /* retold*/, true /* acquire */);
   %}
   ins_pipe( long_memory_op );
 %}
@@ -11818,6 +11872,38 @@ instruct compareAndSwapN(mRegI res, indirect mem_ptr, mRegN oldval, mRegN newval
   ins_pipe( long_memory_op );
 %}
 
+instruct get_and_setB(indirect mem, mRegI newv, mRegI prev) %{
+  predicate(UseAMBH);
+  match(Set prev (GetAndSetB mem newv));
+  effect(TEMP_DEF prev);
+  ins_cost(2 * MEMORY_REF_COST);
+  format %{ "amswap_db_b $prev, $newv, [$mem] @get_and_setB" %}
+  ins_encode %{
+    Register prev = $prev$$Register;
+    Register newv = $newv$$Register;
+    Register addr = as_Register($mem$$base);
+
+    __ amswap_db_b(prev, newv, addr);
+  %}
+  ins_pipe( pipe_serial );
+%}
+
+instruct get_and_setS(indirect mem, mRegI newv, mRegI prev) %{
+  predicate(UseAMBH);
+  match(Set prev (GetAndSetS mem newv));
+  effect(TEMP_DEF prev);
+  ins_cost(2 * MEMORY_REF_COST);
+  format %{ "amswap_db_s $prev, $newv, [$mem] @get_and_setS" %}
+  ins_encode %{
+    Register prev = $prev$$Register;
+    Register newv = $newv$$Register;
+    Register addr = as_Register($mem$$base);
+
+    __ amswap_db_h(prev, newv, addr);
+  %}
+  ins_pipe( pipe_serial );
+%}
+
 instruct get_and_setI(indirect mem, mRegI newv, mRegI prev) %{
   match(Set prev (GetAndSetI mem newv));
   effect(TEMP_DEF prev);
@@ -11856,6 +11942,7 @@ instruct get_and_setN(indirect mem, mRegN newv, mRegN prev) %{
     Register prev = $prev$$Register;
     Register newv = $newv$$Register;
     Register addr = as_Register($mem$$base);
+
     __ amswap_db_w(AT, newv, addr);
     __ bstrpick_d(prev, AT, 31, 0);
   %}
@@ -11929,6 +12016,100 @@ instruct get_and_addI_no_res(indirect mem, Universe dummy, mRegIorL2I incr) %{
   ins_pipe( pipe_serial );
 %}
 
+instruct get_and_addB(indirect mem, mRegI newval, mRegIorL2I incr) %{
+  predicate(UseAMBH);
+  match(Set newval (GetAndAddB mem incr));
+  effect(TEMP_DEF newval);
+  ins_cost(2 * MEMORY_REF_COST + 1);
+  format %{ "amadd_db_b $newval, [$mem], $incr @get_and_addB" %}
+  ins_encode %{
+    Register newv = $newval$$Register;
+    Register incr = $incr$$Register;
+    Register addr = as_Register($mem$$base);
+
+    __ amadd_db_b(newv, incr, addr);
+  %}
+  ins_pipe( pipe_serial );
+%}
+
+instruct get_and_addB_no_res(indirect mem, Universe dummy, mRegIorL2I incr) %{
+  predicate(UseAMBH);
+  predicate(n->as_LoadStore()->result_not_used());
+  match(Set dummy (GetAndAddB mem incr));
+  ins_cost(2 * MEMORY_REF_COST);
+  format %{ "amadd_db_b [$mem], $incr @get_and_addB_no_res" %}
+  ins_encode %{
+    __ amadd_db_b(R0, $incr$$Register, as_Register($mem$$base));
+  %}
+  ins_pipe( pipe_serial );
+%}
+
+instruct get_and_addS(indirect mem, mRegI newval, mRegIorL2I incr) %{
+  predicate(UseAMBH);
+  match(Set newval (GetAndAddS mem incr));
+  effect(TEMP_DEF newval);
+  ins_cost(2 * MEMORY_REF_COST + 1);
+  format %{ "amadd_db_s $newval, [$mem], $incr @get_and_addS" %}
+  ins_encode %{
+    Register newv = $newval$$Register;
+    Register incr = $incr$$Register;
+    Register addr = as_Register($mem$$base);
+
+    __ amadd_db_h(newv, incr, addr);
+  %}
+  ins_pipe( pipe_serial );
+%}
+
+instruct get_and_addS_no_res(indirect mem, Universe dummy, mRegIorL2I incr) %{
+  predicate(UseAMBH);
+  predicate(n->as_LoadStore()->result_not_used());
+  match(Set dummy (GetAndAddS mem incr));
+  ins_cost(2 * MEMORY_REF_COST);
+  format %{ "amadd_db_s [$mem], $incr @get_and_addS_no_res" %}
+  ins_encode %{
+    __ amadd_db_h(R0, $incr$$Register, as_Register($mem$$base));
+  %}
+  ins_pipe( pipe_serial );
+%}
+
+instruct compareAndExchangeB(mRegI res, memory_exclusive mem, mRegI oldval, mRegI newval) %{
+  predicate(UseAMCAS);
+  match(Set res (CompareAndExchangeB mem (Binary oldval newval)));
+  ins_cost(2 * MEMORY_REF_COST);
+  effect(TEMP_DEF res);
+  format %{
+    "cmpxchg8 $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @compareAndExchangeB"
+  %}
+  ins_encode %{
+    Register newval = $newval$$Register;
+    Register oldval = $oldval$$Register;
+    Register res    = $res$$Register;
+    Address  addr(as_Register($mem$$base), $mem$$disp);
+
+    __ cmpxchg8(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* acquire */, false /* weak */, true /* exchange */);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct compareAndExchangeS(mRegI res, memory_exclusive mem, mRegI oldval, mRegI newval) %{
+  predicate(UseAMCAS);
+  match(Set res (CompareAndExchangeS mem (Binary oldval newval)));
+  ins_cost(2 * MEMORY_REF_COST);
+  effect(TEMP_DEF res);
+  format %{
+    "cmpxchg16 $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @compareAndExchangeS"
+  %}
+  ins_encode %{
+    Register newval = $newval$$Register;
+    Register oldval = $oldval$$Register;
+    Register res    = $res$$Register;
+    Address  addr(as_Register($mem$$base), $mem$$disp);
+
+    __ cmpxchg16(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* acquire */, false /* weak */, true /* exchange */);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 instruct compareAndExchangeI(mRegI res, memory_exclusive mem, mRegI oldval, mRegI newval) %{
 
   match(Set res (CompareAndExchangeI mem (Binary oldval newval)));
@@ -11943,7 +12124,7 @@ instruct compareAndExchangeI(mRegI res, memory_exclusive mem, mRegI oldval, mReg
     Register res    = $res$$Register;
     Address  addr(as_Register($mem$$base), $mem$$disp);
 
-    __ cmpxchg32(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* barrier */, false /* weak */, true /* exchange */);
+    __ cmpxchg32(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* acquire */, false /* weak */, true /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -11962,7 +12143,7 @@ instruct compareAndExchangeL(mRegL res, memory_exclusive mem, mRegL oldval, mReg
     Register res    = $res$$Register;
     Address  addr(as_Register($mem$$base), $mem$$disp);
 
-    __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* barrier */, false /* weak */, true /* exchange */);
+    __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* acquire */, false /* weak */, true /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -11981,7 +12162,7 @@ instruct compareAndExchangeP(mRegP res, memory_exclusive mem, mRegP oldval, mReg
     Register res    = $res$$Register;
     Address  addr(as_Register($mem$$base), $mem$$disp);
 
-    __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* barrier */, false /* weak */, true /* exchange */);
+    __ cmpxchg(addr, oldval, newval, res, false /* retold */, true /* acquire */, false /* weak */, true /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -12001,6 +12182,44 @@ instruct compareAndExchangeN(mRegN res, memory_exclusive mem, mRegN oldval, mReg
     Address  addr(as_Register($mem$$base), $mem$$disp);
 
     __ cmpxchg32(addr, oldval, newval, res, false /* sign */, false /* retold */, true /* acquire */, false /* weak */, true /* exchange */);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct weakCompareAndSwapB(mRegI res, memory_exclusive mem, mRegI oldval, mRegI newval) %{
+  predicate(UseAMCAS);
+  match(Set res (WeakCompareAndSwapB mem (Binary oldval newval)));
+  effect(TEMP_DEF res);
+  ins_cost(2 * MEMORY_REF_COST);
+  format %{
+    "CMPXCHG $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapB"
+  %}
+  ins_encode %{
+    Register newval = $newval$$Register;
+    Register oldval = $oldval$$Register;
+    Register res    = $res$$Register;
+    Address  addr(as_Register($mem$$base), $mem$$disp);
+
+    __ cmpxchg8(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* acquire */, true /* weak */, false /* exchange */);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct weakCompareAndSwapS(mRegI res, memory_exclusive mem, mRegI oldval, mRegI newval) %{
+  predicate(UseAMCAS);
+  match(Set res (WeakCompareAndSwapS mem (Binary oldval newval)));
+  effect(TEMP_DEF res);
+  ins_cost(2 * MEMORY_REF_COST);
+  format %{
+    "CMPXCHG $res = $mem, $oldval, $newval\t# if $mem == $oldval then $mem <-- $newval @weakCompareAndSwapS"
+  %}
+  ins_encode %{
+    Register newval = $newval$$Register;
+    Register oldval = $oldval$$Register;
+    Register res    = $res$$Register;
+    Address  addr(as_Register($mem$$base), $mem$$disp);
+
+    __ cmpxchg16(addr, oldval, newval, res, true /* sign */, false /* retold */, true /* acquire */, true /* weak */, false /* exchange */);
   %}
   ins_pipe( pipe_slow );
 %}

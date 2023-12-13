@@ -72,6 +72,8 @@ class LoongArch64HotSpotVMConfig extends HotSpotVMConfigAccess {
     final long loongarch64LLSYNC = getConstant("VM_Version::CPU_LLSYNC", Long.class);
     final long loongarch64TGTSYNC = getConstant("VM_Version::CPU_TGTSYNC", Long.class);
     final long loongarch64ULSYNC = getConstant("VM_Version::CPU_ULSYNC", Long.class);
+    final long loongarch64LAM_BH = getConstant("VM_Version::CPU_LAM_BH", Long.class);
+    final long loongarch64LAMCAS = getConstant("VM_Version::CPU_LAMCAS", Long.class);
     final long loongarch64UAL = getConstant("VM_Version::CPU_UAL", Long.class);
     // Checkstyle: resume
 }

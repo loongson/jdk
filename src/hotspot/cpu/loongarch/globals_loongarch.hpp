@@ -95,6 +95,12 @@ define_pd_global(intx, InitArrayShortSize, 8*BytesPerLong);
   product(bool, UseGR2CF, false,                                            \
                 "Use GR to CFR instructions")                               \
                                                                             \
+  product(bool, UseAMBH, false,                                             \
+                "Use AM{SWAP/ADD}{_DB}.{B/H} instructions")                 \
+                                                                            \
+  product(bool, UseAMCAS, false,                                            \
+                "Use AMCAS{_DB}.{B/H/W/D} instructions")                    \
+                                                                            \
   product(bool, UseBarriersForVolatile, false,                              \
           "Use memory barriers to implement volatile accesses")             \
                                                                             \

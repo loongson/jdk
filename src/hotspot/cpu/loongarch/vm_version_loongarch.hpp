@@ -81,7 +81,10 @@ public:
                LBT_MIPS   : 1,
                LSPW       : 1,
                LAM        : 1,
-                          : 9;
+               UNUSED     : 4,
+               LAM_BH     : 1,
+               LAMCAS     : 1,
+                          : 3;
     } bits;
   };
 
@@ -216,6 +219,8 @@ public:
     decl(LLSYNC,        llsync,          20)    \
     decl(TGTSYNC,       tgtsync,         21)    \
     decl(ULSYNC,        ulsync,          22)    \
+    decl(LAM_BH,        lam_bh,          23)    \
+    decl(LAMCAS,        lamcas,          24)    \
 
   enum Feature_Flag {
 #define DECLARE_CPU_FEATURE_FLAG(id, name, bit) CPU_##id = (1 << bit),
@@ -287,6 +292,8 @@ public:
   static bool needs_llsync()        { return !supports_lldbar(); }
   static bool needs_tgtsync()       { return 1; }
   static bool needs_ulsync()        { return 1; }
+  static bool supports_lam_bh()     { return _features & CPU_LAM_BH; }
+  static bool supports_lamcas()     { return _features & CPU_LAMCAS; }
 
   static bool supports_fast_class_init_checks() { return true; }
   static bool supports_float16() { return UseLSX; }

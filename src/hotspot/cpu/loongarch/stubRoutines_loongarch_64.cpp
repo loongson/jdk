@@ -187,11 +187,9 @@ ATTRIBUTE_ALIGNED(64) jdouble StubRoutines::la::_pio2[] = {
 };
 
 ATTRIBUTE_ALIGNED(64) jfloat StubRoutines::la::_round_float_imm[] = {
-  0.49999997f, // round positive
-  0.5f,        // round negative
+  -0.5f, 0.49999997f // magic number for ties
 };
 
 ATTRIBUTE_ALIGNED(64) jdouble StubRoutines::la::_round_double_imm[] = {
-  0.49999999999999994d, // round positive
-  0.5d,                 // round negative
+  -0.5d, 0.49999999999999994d // magic number for ties
 };

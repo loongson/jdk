@@ -3717,25 +3717,31 @@ void MacroAssembler::encode_iso_array(Register src, Register dst,
 // in the IEEE-754-2008. For single-precision floatings,
 // the following algorithm can be used to effectively
 // implement rounding via standard operations.
-//
-// if src >= 0:
-//   dst = floor(src + 0.49999997f)
-// else:
-//   dst = floor(src + 0.5f)
 void MacroAssembler::java_round_float(Register dst,
                                       FloatRegister src,
-                                      Register tmp) {
+                                      FloatRegister vtemp1) {
   block_comment("java_round_float: { ");
+
+  Label L_abnormal, L_done;
+
   li(AT, StubRoutines::la::round_float_imm());
 
-  movfr2gr_s(tmp, src);
-  bstrpick_w(tmp, tmp, 31, 31);
-  slli_w(tmp, tmp, 2);
-  fldx_s(fscratch, AT, tmp);
-  fadd_s(fscratch, fscratch, src);
+  // if src is -0.5f, return 0 as result
+  fld_s(vtemp1, AT, 0);
+  fcmp_ceq_s(FCC0, vtemp1, src);
+  bceqz(FCC0, L_abnormal);
+  move(dst, R0);
+  b(L_done);
 
+  // else, floor src with the magic number
+  bind(L_abnormal);
+  fld_s(vtemp1, AT, 4);
+  fadd_s(fscratch, vtemp1, src);
   ftintrm_w_s(fscratch, fscratch);
   movfr2gr_s(dst, fscratch);
+
+  bind(L_done);
+
   block_comment("} java_round_float");
 }
 
@@ -3745,18 +3751,13 @@ void MacroAssembler::java_round_float_lsx(FloatRegister dst,
                                           FloatRegister vtemp2) {
   block_comment("java_round_float_lsx: { ");
   li(AT, StubRoutines::la::round_float_imm());
+  vldrepl_w(vtemp1, AT, 0);  // repl -0.5f
+  vldrepl_w(vtemp2, AT, 1);  // repl 0.49999997f
 
-  vldrepl_w(vtemp2, AT, 1);  // repl 0.5f
-  vslti_w(fscratch, src, 0);  // masked add
-  vand_v(vtemp2, fscratch, vtemp2);
-  vfadd_s(dst, src, vtemp2);
-
-  vldrepl_w(vtemp1, AT, 0);  // repl 0.49999997f
-  vnor_v(fscratch, fscratch, fscratch);  // rev mask
-  vand_v(vtemp1, fscratch, vtemp1);
-  vfadd_s(dst, dst, vtemp1);
-
-  vftintrm_w_s(dst, dst);
+  vfcmp_cne_s(fscratch, src, vtemp1);  // generate the mask
+  vand_v(fscratch, fscratch, src);     // clear the special
+  vfadd_s(dst, fscratch, vtemp2);      // plus the magic
+  vftintrm_w_s(dst, dst);              // floor the result
   block_comment("} java_round_float_lsx");
 }
 
@@ -3766,18 +3767,13 @@ void MacroAssembler::java_round_float_lasx(FloatRegister dst,
                                            FloatRegister vtemp2) {
   block_comment("java_round_float_lasx: { ");
   li(AT, StubRoutines::la::round_float_imm());
+  xvldrepl_w(vtemp1, AT, 0);  // repl -0.5f
+  xvldrepl_w(vtemp2, AT, 1);  // repl 0.49999997f
 
-  xvldrepl_w(vtemp2, AT, 1);  // repl 0.5f
-  xvslti_w(fscratch, src, 0);  // masked add
-  xvand_v(vtemp2, fscratch, vtemp2);
-  xvfadd_s(dst, src, vtemp2);
-
-  xvldrepl_w(vtemp1, AT, 0);  // repl 0.49999997f
-  xvnor_v(fscratch, fscratch, fscratch);  // rev mask
-  xvand_v(vtemp1, fscratch, vtemp1);
-  xvfadd_s(dst, dst, vtemp1);
-
-  xvftintrm_w_s(dst, dst);
+  xvfcmp_cne_s(fscratch, src, vtemp1);  // generate the mask
+  xvand_v(fscratch, fscratch, src);     // clear the special
+  xvfadd_s(dst, fscratch, vtemp2);      // plus the magic
+  xvftintrm_w_s(dst, dst);              // floor the result
   block_comment("} java_round_float_lasx");
 }
 
@@ -3786,25 +3782,31 @@ void MacroAssembler::java_round_float_lasx(FloatRegister dst,
 // in the IEEE-754-2008. For double-precision floatings,
 // the following algorithm can be used to effectively
 // implement rounding via standard operations.
-//
-// if src >= 0:
-//   dst = floor(src + 0.49999999999999994d)
-// else:
-//   dst = floor(src + 0.5d)
 void MacroAssembler::java_round_double(Register dst,
                                        FloatRegister src,
-                                       Register tmp) {
+                                       FloatRegister vtemp1) {
   block_comment("java_round_double: { ");
+
+  Label L_abnormal, L_done;
+
   li(AT, StubRoutines::la::round_double_imm());
 
-  movfr2gr_d(tmp, src);
-  bstrpick_d(tmp, tmp, 63, 63);
-  slli_d(tmp, tmp, 3);
-  fldx_d(fscratch, AT, tmp);
-  fadd_d(fscratch, fscratch, src);
+  // if src is -0.5d, return 0 as result
+  fld_d(vtemp1, AT, 0);
+  fcmp_ceq_d(FCC0, vtemp1, src);
+  bceqz(FCC0, L_abnormal);
+  move(dst, R0);
+  b(L_done);
 
+  // else, floor src with the magic number
+  bind(L_abnormal);
+  fld_d(vtemp1, AT, 8);
+  fadd_d(fscratch, vtemp1, src);
   ftintrm_l_d(fscratch, fscratch);
   movfr2gr_d(dst, fscratch);
+
+  bind(L_done);
+
   block_comment("} java_round_double");
 }
 
@@ -3814,18 +3816,13 @@ void MacroAssembler::java_round_double_lsx(FloatRegister dst,
                                            FloatRegister vtemp2) {
   block_comment("java_round_double_lsx: { ");
   li(AT, StubRoutines::la::round_double_imm());
+  vldrepl_d(vtemp1, AT, 0);  // repl -0.5d
+  vldrepl_d(vtemp2, AT, 1);  // repl 0.49999999999999994d
 
-  vldrepl_d(vtemp2, AT, 1);  // repl 0.5d
-  vslti_d(fscratch, src, 0);  // masked add
-  vand_v(vtemp2, fscratch, vtemp2);
-  vfadd_d(dst, src, vtemp2);
-
-  vldrepl_d(vtemp1, AT, 0);  // repl 0.49999999999999994d
-  vnor_v(fscratch, fscratch, fscratch);  // rev mask
-  vand_v(vtemp1, fscratch, vtemp1);
-  vfadd_d(dst, dst, vtemp1);
-
-  vftintrm_l_d(dst, dst);
+  vfcmp_cne_d(fscratch, src, vtemp1);  // generate the mask
+  vand_v(fscratch, fscratch, src);     // clear the special
+  vfadd_d(dst, fscratch, vtemp2);      // plus the magic
+  vftintrm_l_d(dst, dst);              // floor the result
   block_comment("} java_round_double_lsx");
 }
 
@@ -3835,18 +3832,13 @@ void MacroAssembler::java_round_double_lasx(FloatRegister dst,
                                             FloatRegister vtemp2) {
   block_comment("java_round_double_lasx: { ");
   li(AT, StubRoutines::la::round_double_imm());
+  xvldrepl_d(vtemp1, AT, 0);  // repl -0.5d
+  xvldrepl_d(vtemp2, AT, 1);  // repl 0.49999999999999994d
 
-  xvldrepl_d(vtemp2, AT, 1);  // repl 0.5d
-  xvslti_d(fscratch, src, 0);  // masked add
-  xvand_v(vtemp2, fscratch, vtemp2);
-  xvfadd_d(dst, src, vtemp2);
-
-  xvldrepl_d(vtemp1, AT, 0);  // repl 0.49999999999999994d
-  xvnor_v(fscratch, fscratch, fscratch);  // rev mask
-  xvand_v(vtemp1, fscratch, vtemp1);
-  xvfadd_d(dst, dst, vtemp1);
-
-  xvftintrm_l_d(dst, dst);
+  xvfcmp_cne_d(fscratch, src, vtemp1);  // generate the mask
+  xvand_v(fscratch, fscratch, src);     // clear the special
+  xvfadd_d(dst, fscratch, vtemp2);      // plus the magic
+  xvftintrm_l_d(dst, dst);              // floor the result
   block_comment("} java_round_double_lasx");
 }
 

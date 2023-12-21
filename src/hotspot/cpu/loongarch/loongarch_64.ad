@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
-// Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+// Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
 // DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 //
 // This code is free software; you can redistribute it and/or modify it
@@ -8990,6 +8990,25 @@ instruct encode_ascii_array(a2_RegP src, mRegP dst, mRegI len, mRegI result,
                         $vtemp3$$FloatRegister, $vtemp4$$FloatRegister);
   %}
 
+  ins_pipe( pipe_slow );
+%}
+
+// fast ArraysSupport.vectorizedHashCode
+instruct arrays_hashcode(a1_RegP ary, mA2RegI cnt, mA0RegI result, immI basic_type,
+                         mRegL tmp1, mRegL tmp2, mRegL tmp3, mRegL tmp4,
+                         mRegL tmp5, mRegL tmp6, mRegL tmp7)
+%{
+  match(Set result (VectorizedHashCode (Binary ary cnt) (Binary result basic_type)));
+  effect(TEMP tmp1, TEMP tmp2, TEMP tmp3, TEMP tmp4, TEMP tmp5, TEMP tmp6, TEMP tmp7,
+         USE_KILL ary, USE_KILL cnt, USE basic_type);
+
+  format %{ "Array HashCode array[] $ary,$cnt,$result,$basic_type -> $result @ arrays_hashcode" %}
+  ins_encode %{
+    __ arrays_hashcode($ary$$Register, $cnt$$Register, $result$$Register,
+                       $tmp1$$Register, $tmp2$$Register, $tmp3$$Register,
+                       $tmp4$$Register, $tmp5$$Register, $tmp6$$Register,
+                       $tmp7$$Register, (BasicType)$basic_type$$constant);
+  %}
   ins_pipe( pipe_slow );
 %}
 

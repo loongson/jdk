@@ -42,6 +42,10 @@ import jdk.test.whitebox.cpuinfo.CPUInfo;
  * @bug 8247645
  * @summary ChaCha20 Intrinsics
  * @library /test/lib
+ * @requires (vm.cpu.features ~= ".*avx512.*" | vm.cpu.features ~= ".*avx2.*" | vm.cpu.features ~= ".*avx.*") |
+ *           (os.arch=="aarch64" & vm.cpu.features ~= ".*simd.*") |
+ *           (os.arch == "riscv64" & vm.cpu.features ~= ".*v,.*") |
+ *           (os.arch == "loongarch64" & vm.cpu.features ~= ".*lsx.*")
  * @build   compiler.intrinsics.chacha.ExerciseChaCha20
  *          jdk.test.whitebox.WhiteBox
  * @run driver jdk.test.lib.helpers.ClassFileInstaller jdk.test.whitebox.WhiteBox
@@ -63,9 +67,13 @@ public class TestChaCha20 {
         return n;
     }
 
-    private static boolean containsFuzzy(List<String> list, String sub) {
+    private static boolean containsFuzzy(List<String> list, String sub, Boolean matchExactly) {
         for (String s : list) {
-            if (s.contains(sub)) return true;
+            if (matchExactly) {
+                if (s.equals(sub)) return true;
+            } else {
+                if (s.contains(sub)) return true;
+            }
         }
         return false;
     }
@@ -85,32 +93,38 @@ public class TestChaCha20 {
             }
 
             // Otherwise, select the tests that make sense on current platform.
-            if (containsFuzzy(cpuFeatures, "avx512")) {
+            if (containsFuzzy(cpuFeatures, "avx512", false)) {
                 System.out.println("Setting up AVX512 worker");
                 configs.add(List.of("-XX:UseAVX=3"));
             }
-            if (containsFuzzy(cpuFeatures, "avx2")) {
+            if (containsFuzzy(cpuFeatures, "avx2", false)) {
                 System.out.println("Setting up AVX2 worker");
                 configs.add(List.of("-XX:UseAVX=2"));
             }
-            if (containsFuzzy(cpuFeatures, "avx")) {
+            if (containsFuzzy(cpuFeatures, "avx", false)) {
                 System.out.println("Setting up AVX worker");
                 configs.add(List.of("-XX:UseAVX=1"));
             }
         } else if (Platform.isAArch64()) {
             // AArch64 intrinsics require the advanced simd instructions
-            if (containsFuzzy(cpuFeatures, "simd")) {
+            if (containsFuzzy(cpuFeatures, "simd", false)) {
                 System.out.println("Setting up ASIMD worker");
                 configs.add(new ArrayList());
             }
+        } else if (Platform.isRISCV64()) {
+            // Riscv64 intrinsics require the vector instructions
+            if (containsFuzzy(cpuFeatures, "v", true)) {
+                System.out.println("Setting up vector worker");
+                configs.add(List.of("-XX:+UseRVV"));
+            }
         } else if (Platform.isLoongArch64()) {
             // LoongArch64 intrinsics require the lsx instructions
-            if (containsFuzzy(cpuFeatures, "lsx")) {
+            if (containsFuzzy(cpuFeatures, "lsx", false)) {
                 System.out.println("Setting up LSX worker");
                 configs.add(new ArrayList());
             }
         } else {
-            // We only have ChaCha20 intrinsics on x64 and aarch64
+            // We only have ChaCha20 intrinsics on x64, aarch64, riscv64 and loongarch64
             // currently.  If the platform is neither of these then
             // the ChaCha20 known answer tests in
             // com/sun/crypto/provider/Cipher are sufficient.

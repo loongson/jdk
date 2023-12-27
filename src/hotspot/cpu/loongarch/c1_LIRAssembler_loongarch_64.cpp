@@ -1507,7 +1507,6 @@ void LIR_Assembler::casl(Register addr, Register newval, Register cmpval, Regist
 }
 
 void LIR_Assembler::emit_compare_and_swap(LIR_OpCompareAndSwap* op) {
-  assert(VM_Version::supports_cx8(), "wrong machine");
   Register addr;
   if (op->addr()->is_register()) {
     addr = as_reg(op->addr());
@@ -2977,7 +2976,10 @@ void LIR_Assembler::emit_profile_type(LIR_OpProfileType* op) {
   __ verify_oop(obj);
 
   if (tmp != obj) {
+    assert_different_registers(obj, tmp, SCR1, SCR2, mdo_addr.base(), mdo_addr.index());
     __ move(tmp, obj);
+  } else {
+    assert_different_registers(obj, SCR1, SCR2, mdo_addr.base(), mdo_addr.index());
   }
   if (do_null) {
     __ bnez(tmp, update);
@@ -3036,10 +3038,11 @@ void LIR_Assembler::emit_profile_type(LIR_OpProfileType* op) {
           __ beqz(SCR2, none);
           __ li(SCR1, (u1)TypeEntries::null_seen);
           __ beq(SCR2, SCR1, none);
-          // There is a chance that the checks above (re-reading profiling
-          // data from memory) fail if another thread has just set the
+          // There is a chance that the checks above
+          // fail if another thread has just set the
           // profiling to this obj's klass
           membar_acquire();
+          __ XOR(tmp, tmp, SCR2); // get back original value before XOR
           __ ld_d(SCR2, mdo_addr);
           __ XOR(tmp, tmp, SCR2);
           assert(TypeEntries::type_klass_mask == -4, "must be");
@@ -3066,6 +3069,11 @@ void LIR_Assembler::emit_profile_type(LIR_OpProfileType* op) {
         __ bind(none);
         // first time here. Set profile type.
         __ st_d(tmp, mdo_addr);
+#ifdef ASSERT
+        assert(TypeEntries::type_mask == -2, "must be");
+        __ bstrpick_d(tmp, tmp, 63, 1);
+        __ verify_klass_ptr(tmp);
+#endif
       }
     } else {
       // There's a single possible klass at this profile point
@@ -3099,6 +3107,11 @@ void LIR_Assembler::emit_profile_type(LIR_OpProfileType* op) {
 #endif
         // first time here. Set profile type.
         __ st_d(tmp, mdo_addr);
+#ifdef ASSERT
+        assert(TypeEntries::type_mask == -2, "must be");
+        __ bstrpick_d(tmp, tmp, 63, 1);
+        __ verify_klass_ptr(tmp);
+#endif
       } else {
         assert(ciTypeEntries::valid_ciklass(current_klass) != nullptr &&
                ciTypeEntries::valid_ciklass(current_klass) != exact_klass, "inconsistent");

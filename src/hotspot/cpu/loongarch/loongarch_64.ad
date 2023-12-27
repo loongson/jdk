@@ -1040,6 +1040,9 @@ bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType bt) {
       if (vlen < 4 || !UseLASX)
         return false;
       break;
+    case Op_VectorUCastB2X:
+    case Op_VectorUCastS2X:
+    case Op_VectorUCastI2X:
     case Op_VectorCastB2X:
     case Op_VectorCastS2X:
     case Op_VectorCastI2X:
@@ -2434,6 +2437,11 @@ encode %{
         ciEnv::current()->record_failure("CodeCache is full");
         return;
       }
+    } else if (_method->intrinsic_id() == vmIntrinsicID::_ensureMaterializedForStackWalk) {
+      // The NOP here is purely to ensure that eliding a call to
+      // JVM_EnsureMaterializedForStackWalk doesn't change the code size.
+      __ nop();
+      __ block_comment("call JVM_EnsureMaterializedForStackWalk (elided)");
     } else {
       int method_index = resolved_method_index(cbuf);
       RelocationHolder rspec = _optimized_virtual ? opt_virtual_call_Relocation::spec(method_index)
@@ -10885,24 +10893,30 @@ instruct convHF2F_reg_reg(regF dst, mRegI src, regF tmp) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct round_float_reg(mRegI dst, regF src, mRegL tmp)
+instruct round_float_reg(mRegI dst, regF src, regF vtemp1)
 %{
   match(Set dst (RoundF src));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "round_float $dst, $src\t# @round_float_reg" %}
+  effect(TEMP_DEF dst, TEMP vtemp1);
+  format %{ "round_float    $dst, $src\t# "
+            "TEMP($vtemp1) @round_float_reg" %}
   ins_encode %{
-    __ java_round_float($dst$$Register, $src$$FloatRegister, $tmp$$Register);
+    __ java_round_float($dst$$Register,
+                        $src$$FloatRegister,
+                        $vtemp1$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct round_double_reg(mRegL dst, regD src, mRegL tmp)
+instruct round_double_reg(mRegL dst, regD src, regD vtemp1)
 %{
   match(Set dst (RoundD src));
-  effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "round_double $dst, $src\t# @round_double_reg" %}
+  effect(TEMP_DEF dst, TEMP vtemp1);
+  format %{ "round_double    $dst, $src\t# "
+            "TEMP($vtemp1) @round_double_reg" %}
   ins_encode %{
-    __ java_round_double($dst$$Register, $src$$FloatRegister, $tmp$$Register);
+    __ java_round_double($dst$$Register,
+                         $src$$FloatRegister,
+                         $vtemp1$$FloatRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -14443,7 +14457,8 @@ instruct round_float_lsx(vReg dst, vReg src, vReg vtemp1, vReg vtemp2) %{
   predicate(Matcher::vector_length_in_bytes(n) <= 16);
   match(Set dst (RoundVF src));
   effect(TEMP_DEF dst, TEMP vtemp1, TEMP vtemp2);
-  format %{ "round_float_lsx $dst, $src\t# @round_float_lsx" %}
+  format %{ "round_float_lsx    $dst, $src\t# "
+            "TEMP($vtemp1, $vtemp2) @round_float_lsx" %}
   ins_encode %{
     __ java_round_float_lsx($dst$$FloatRegister,
                             $src$$FloatRegister,
@@ -14457,7 +14472,8 @@ instruct round_float_lasx(vReg dst, vReg src, vReg vtemp1, vReg vtemp2) %{
   predicate(Matcher::vector_length_in_bytes(n) > 16);
   match(Set dst (RoundVF src));
   effect(TEMP_DEF dst, TEMP vtemp1, TEMP vtemp2);
-  format %{ "round_float_lasx $dst, $src\t# @round_float_lasx" %}
+  format %{ "round_float_lasx    $dst, $src\t# "
+            "TEMP($vtemp1, $vtemp2) @round_float_lasx" %}
   ins_encode %{
     __ java_round_float_lasx($dst$$FloatRegister,
                              $src$$FloatRegister,
@@ -14471,7 +14487,8 @@ instruct round_double_lsx(vReg dst, vReg src, vReg vtemp1, vReg vtemp2) %{
   predicate(Matcher::vector_length_in_bytes(n) <= 16);
   match(Set dst (RoundVD src));
   effect(TEMP_DEF dst, TEMP vtemp1, TEMP vtemp2);
-  format %{ "round_double_lsx $dst, $src\t# @round_double_lsx" %}
+  format %{ "round_double_lsx $dst, $src\t# "
+            "TEMP($vtemp1, $vtemp2) @round_double_lsx" %}
   ins_encode %{
     __ java_round_double_lsx($dst$$FloatRegister,
                              $src$$FloatRegister,
@@ -14485,7 +14502,8 @@ instruct round_double_lasx(vReg dst, vReg src, vReg vtemp1, vReg vtemp2) %{
   predicate(Matcher::vector_length_in_bytes(n) > 16);
   match(Set dst (RoundVD src));
   effect(TEMP_DEF dst, TEMP vtemp1, TEMP vtemp2);
-  format %{ "round_double_lasx $dst, $src\t# @round_double_lasx" %}
+  format %{ "round_double_lasx $dst, $src\t# "
+            "TEMP($vtemp1, $vtemp2) @round_double_lasx" %}
   ins_encode %{
     __ java_round_double_lasx($dst$$FloatRegister,
                               $src$$FloatRegister,
@@ -14515,6 +14533,54 @@ instruct roundVD(vReg dst, vReg src, immI rmode) %{
       }
     } else {
       ShouldNotReachHere();
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+// ---------------------------- Vector UCast B2X -------------------------------
+
+instruct cvtVUB(vReg dst, vReg src) %{
+  match(Set dst (VectorUCastB2X src));
+  format %{ "(x)vconvert    $dst, $src\t# @cvtVUB" %}
+  ins_encode %{
+    switch (Matcher::vector_element_basic_type(this)) {
+      case T_SHORT : __ vext2xv_hu_bu($dst$$FloatRegister, $src$$FloatRegister); break;
+      case T_INT   : __ vext2xv_wu_bu($dst$$FloatRegister, $src$$FloatRegister); break;
+      case T_LONG  : __ vext2xv_du_bu($dst$$FloatRegister, $src$$FloatRegister); break;
+      default:
+        ShouldNotReachHere();
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+// ---------------------------- Vector UCast S2X -------------------------------
+
+instruct cvtVUS(vReg dst, vReg src) %{
+  match(Set dst (VectorUCastS2X src));
+  format %{ "(x)vconvert    $dst, $src\t# @cvtVUS" %}
+  ins_encode %{
+    switch (Matcher::vector_element_basic_type(this)) {
+      case T_INT   : __ vext2xv_wu_hu($dst$$FloatRegister, $src$$FloatRegister); break;
+      case T_LONG  : __ vext2xv_du_hu($dst$$FloatRegister, $src$$FloatRegister); break;
+      default:
+        ShouldNotReachHere();
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+// ---------------------------- Vector UCast I2X -------------------------------
+
+instruct cvtVUI(vReg dst, vReg src) %{
+  match(Set dst (VectorUCastI2X src));
+  format %{ "(x)vconvert    $dst, $src\t# @cvtVUI" %}
+  ins_encode %{
+    switch (Matcher::vector_element_basic_type(this)) {
+      case T_LONG  : __ vext2xv_du_wu($dst$$FloatRegister, $src$$FloatRegister); break;
+      default:
+        ShouldNotReachHere();
     }
   %}
   ins_pipe( pipe_slow );

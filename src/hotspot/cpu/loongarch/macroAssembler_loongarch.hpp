@@ -316,12 +316,14 @@ class MacroAssembler: public Assembler {
   void sign_extend_byte(Register reg)  { ext_w_b(reg, reg); }
 
   // java.lang.Math::round intrinsics
-  void java_round_float(Register dst, FloatRegister src, Register tmp);
+  void java_round_float(Register dst, FloatRegister src,
+                        FloatRegister vtemp1);
   void java_round_float_lsx(FloatRegister dst, FloatRegister src,
                             FloatRegister vtemp1, FloatRegister vtemp2);
   void java_round_float_lasx(FloatRegister dst, FloatRegister src,
                              FloatRegister vtemp1, FloatRegister vtemp2);
-  void java_round_double(Register dst, FloatRegister src, Register tmp);
+  void java_round_double(Register dst, FloatRegister src,
+                         FloatRegister vtemp1);
   void java_round_double_lsx(FloatRegister dst, FloatRegister src,
                              FloatRegister vtemp1, FloatRegister vtemp2);
   void java_round_double_lasx(FloatRegister dst, FloatRegister src,
@@ -708,6 +710,12 @@ class MacroAssembler: public Assembler {
   // Code for java.math.BigInteger::mulAdd intrinsic.
   void mul_add(Register out, Register in, Register offset,
                Register len, Register k);
+  void cad(Register dst, Register src1, Register src2, Register carry);
+  void cadc(Register dst, Register src1, Register src2, Register carry);
+  void adc(Register dst, Register src1, Register src2, Register carry);
+  void wide_mul(Register prod_lo, Register prod_hi, Register n, Register m);
+  void wide_madd(Register sum_lo, Register sum_hi, Register n,
+                Register m, Register tmp1, Register tmp2);
 
   void movoop(Register dst, jobject obj);
 

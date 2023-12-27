@@ -21,6 +21,12 @@
  * questions.
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2023. These
+ * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 package compiler.vectorapi.reshape.utils;
 
 import java.util.List;
@@ -259,4 +265,62 @@ public class TestCastMethods {
             makePair(DSPEC128, LSPEC128),
             makePair(DSPEC128, FSPEC64)
     );
+
+    public static final List<VectorSpeciesPair> LASX_CAST_TESTS = List.of(
+            makePair(BSPEC64, SSPEC128),
+            makePair(BSPEC128, SSPEC256),
+            makePair(BSPEC64, ISPEC256),
+            makePair(BSPEC64, FSPEC256),
+            makePair(SSPEC128, BSPEC64),
+            makePair(SSPEC256, BSPEC128),
+            makePair(SSPEC64, ISPEC128),
+            makePair(SSPEC128, ISPEC256),
+            makePair(SSPEC64, LSPEC256),
+            makePair(SSPEC64, FSPEC128),
+            makePair(SSPEC128, FSPEC256),
+            makePair(SSPEC64, DSPEC256),
+            makePair(ISPEC256, BSPEC64),
+            makePair(ISPEC128, SSPEC64),
+            makePair(ISPEC256, SSPEC128),
+            makePair(ISPEC64, LSPEC128),
+            makePair(ISPEC128, LSPEC256),
+            makePair(ISPEC64, FSPEC64),
+            makePair(ISPEC128, FSPEC128),
+            makePair(ISPEC256, FSPEC256),
+            makePair(ISPEC64, DSPEC128),
+            makePair(ISPEC128, DSPEC256),
+            makePair(LSPEC256, SSPEC64),
+            makePair(LSPEC128, ISPEC64),
+            makePair(LSPEC256, ISPEC128),
+            makePair(LSPEC128, FSPEC64),
+            makePair(LSPEC256, FSPEC128),
+            makePair(LSPEC128, DSPEC128),
+            makePair(LSPEC256, DSPEC256),
+            makePair(FSPEC256, BSPEC64),
+            makePair(FSPEC128, SSPEC64),
+            makePair(FSPEC256, SSPEC128),
+            makePair(FSPEC64, ISPEC64),
+            makePair(FSPEC128, ISPEC128),
+            makePair(FSPEC256, ISPEC256),
+            makePair(FSPEC64, LSPEC128),
+            makePair(FSPEC128, LSPEC256),
+            makePair(FSPEC64, DSPEC128),
+            makePair(FSPEC128, DSPEC256),
+            makePair(DSPEC256, SSPEC64),
+            makePair(DSPEC128, ISPEC64),
+            makePair(DSPEC256, ISPEC128),
+            makePair(DSPEC128, LSPEC128),
+            makePair(DSPEC256, LSPEC256),
+            makePair(DSPEC128, FSPEC64),
+            makePair(DSPEC256, FSPEC128),
+            makePair(BSPEC64, SSPEC128, true),
+            makePair(BSPEC128, SSPEC256, true),
+            makePair(BSPEC64, ISPEC256, true),
+            makePair(SSPEC64, ISPEC128, true),
+            makePair(SSPEC128, ISPEC256, true),
+            makePair(SSPEC64, LSPEC256, true),
+            makePair(ISPEC64, LSPEC128, true),
+            makePair(ISPEC128, LSPEC256, true)
+    );
+
 }

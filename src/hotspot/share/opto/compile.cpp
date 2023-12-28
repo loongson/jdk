@@ -746,7 +746,7 @@ Compile::Compile( ciEnv* ci_env, ciMethod* target, int osr_bci,
     TracePhase tp("parse", &timers[_t_parser]);
 
     // Put top into the hash table ASAP.
-    initial_gvn()->transform_no_reclaim(top());
+    initial_gvn()->transform(top());
 
     // Set up tf(), start(), and find a CallGenerator.
     CallGenerator* cg = nullptr;
@@ -984,7 +984,7 @@ Compile::Compile( ciEnv* ci_env,
   {
     PhaseGVN gvn;
     set_initial_gvn(&gvn);    // not significant, but GraphKit guys use it pervasively
-    gvn.transform_no_reclaim(top());
+    gvn.transform(top());
 
     GraphKit kit;
     kit.gen_stub(stub_function, stub_name, is_fancy_jump, pass_tls, return_pc);

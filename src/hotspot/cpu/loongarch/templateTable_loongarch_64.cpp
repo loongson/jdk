@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -3653,14 +3653,13 @@ void TemplateTable::_new() {
   // get InstanceKlass
   __ load_resolved_klass_at_index(A1, A2, T3);
 
-  // make sure klass is initialized & doesn't have finalizer
-  // make sure klass is fully initialized
-  __ ld_hu(T1, T3, in_bytes(InstanceKlass::init_state_offset()));
-  __ addi_d(AT, T1, - (int)InstanceKlass::fully_initialized);
-  __ bnez(AT, slow_case);
+  // make sure klass is initialized
+  assert(VM_Version::supports_fast_class_init_checks(), "Optimization requires support for fast class initialization checks");
+  __ clinit_barrier(T3, T1, nullptr /*L_fast_path*/, &slow_case);
 
-  // has_finalizer
+  // get instance_size in InstanceKlass (scaled to a count of bytes)
   __ ld_w(T0, T3, in_bytes(Klass::layout_helper_offset()) );
+  // test to see if it has a finalizer or is malformed in some way
   __ andi(AT, T0, Klass::_lh_instance_slow_path_bit);
   __ bnez(AT, slow_case);
 

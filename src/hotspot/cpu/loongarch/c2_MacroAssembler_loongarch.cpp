@@ -56,14 +56,13 @@ void C2_MacroAssembler::fast_lock_c2(Register oop, Register box, Register flag,
   if (DiagnoseSyncOnValueBasedClasses != 0) {
     load_klass(flag, oop);
     ld_wu(flag, Address(flag, Klass::access_flags_offset()));
-    li(AT, JVM_ACC_IS_VALUE_BASED_CLASS);
-    andr(AT, flag, AT);
+    test_bit(AT, flag, exact_log2(JVM_ACC_IS_VALUE_BASED_CLASS));
     move(flag, R0);
     bnez(AT, cont);
   }
 
   // Check for existing monitor
-  andi(AT, disp_hdr, markWord::monitor_value);
+  test_bit(AT, disp_hdr, exact_log2(markWord::monitor_value));
   bnez(AT, object_has_monitor); // inflated vs stack-locked|neutral|bias
 
   if (LockingMode == LM_MONITOR) {
@@ -161,7 +160,7 @@ void C2_MacroAssembler::fast_unlock_c2(Register oop, Register box, Register flag
 
   // Handle existing monitor.
   ld_d(tmp, oop, oopDesc::mark_offset_in_bytes());
-  andi(AT, tmp, markWord::monitor_value);
+  test_bit(AT, tmp, exact_log2(markWord::monitor_value));
   bnez(AT, object_has_monitor);
 
   if (LockingMode == LM_MONITOR) {
@@ -188,11 +187,8 @@ void C2_MacroAssembler::fast_unlock_c2(Register oop, Register box, Register flag
     // If the owner is anonymous, we need to fix it -- in an outline stub.
     Register tmp2 = disp_hdr;
     ld_d(tmp2, Address(tmp, ObjectMonitor::owner_offset()));
-    // We cannot use tbnz here, the target might be too far away and cannot
-    // be encoded.
     assert_different_registers(tmp2, AT);
-    li(AT, (uint64_t)ObjectMonitor::ANONYMOUS_OWNER);
-    andr(AT, tmp2, AT);
+    test_bit(AT, tmp2, exact_log2(ObjectMonitor::ANONYMOUS_OWNER));
     C2HandleAnonOMOwnerStub* stub = new (Compile::current()->comp_arena()) C2HandleAnonOMOwnerStub(tmp, tmp2);
     Compile::current()->output()->add_stub(stub);
     bnez(AT, stub->entry());

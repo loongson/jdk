@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,8 +53,7 @@ int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr
   if (DiagnoseSyncOnValueBasedClasses != 0) {
     load_klass(hdr, obj);
     ld_w(hdr, Address(hdr, Klass::access_flags_offset()));
-    li(SCR1, JVM_ACC_IS_VALUE_BASED_CLASS);
-    andr(SCR1, hdr, SCR1);
+    test_bit(SCR1, hdr, exact_log2(JVM_ACC_IS_VALUE_BASED_CLASS));
     bnez(SCR1, slow_case);
   }
 
@@ -121,9 +120,7 @@ void C1_MacroAssembler::unlock_object(Register hdr, Register obj, Register disp_
   verify_oop(obj);
   if (LockingMode == LM_LIGHTWEIGHT) {
     ld_d(hdr, Address(obj, oopDesc::mark_offset_in_bytes()));
-    // We cannot use tbnz here, the target might be too far away and cannot
-    // be encoded.
-    andi(AT, hdr, markWord::monitor_value);
+    test_bit(AT, hdr, exact_log2(markWord::monitor_value));
     bnez(AT, slow_case);
     lightweight_unlock(obj, hdr, SCR1, SCR2, slow_case);
   } else if (LockingMode == LM_LEGACY) {

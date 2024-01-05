@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -772,8 +772,7 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         Register t = A5;
         __ load_klass(t, A0);
         __ ld_w(t, Address(t, Klass::access_flags_offset()));
-        __ li(SCR1, JVM_ACC_HAS_FINALIZER);
-        __ andr(SCR1, t, SCR1);
+        __ test_bit(SCR1, t, exact_log2(JVM_ACC_HAS_FINALIZER));
         __ bnez(SCR1, register_finalizer);
         __ jr(RA);
 

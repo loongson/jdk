@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -134,25 +134,23 @@ void InterpreterMacroAssembler::call_VM_base(Register oop_result,
   restore_locals();
 }
 
-
 void InterpreterMacroAssembler::check_and_handle_popframe(Register java_thread) {
   if (JvmtiExport::can_pop_frame()) {
     Label L;
     // Initiate popframe handling only if it is not already being
-    // processed.  If the flag has the popframe_processing bit set, it
-    // means that this code is called *during* popframe handling - we
+    // processed. If the flag has the popframe_processing bit set,
+    // it means that this code is called *during* popframe handling - we
     // don't want to reenter.
     // This method is only called just after the call into the vm in
     // call_VM_base, so the arg registers are available.
-    // Not clear if any other register is available, so load AT twice
     assert(AT != java_thread, "check");
-    ld_w(AT, java_thread, in_bytes(JavaThread::popframe_condition_offset()));
-    andi(AT, AT, JavaThread::popframe_pending_bit);
-    beq(AT, R0, L);
-
-    ld_w(AT, java_thread, in_bytes(JavaThread::popframe_condition_offset()));
-    andi(AT, AT, JavaThread::popframe_processing_bit);
-    bne(AT, R0, L);
+    ld_w(AT, Address(java_thread, JavaThread::popframe_condition_offset()));
+    test_bit(T8, AT, exact_log2(JavaThread::popframe_pending_bit));
+    beqz(T8, L);
+    test_bit(T8, AT, exact_log2(JavaThread::popframe_processing_bit));
+    bnez(T8, L);
+    // Call Interpreter::remove_activation_preserving_args_entry() to get the
+    // address of the same-named entrypoint in the generated interpreter code.
     call_VM_leaf(CAST_FROM_FN_PTR(address, Interpreter::remove_activation_preserving_args_entry));
     jr(V0);
     bind(L);
@@ -520,7 +518,7 @@ void InterpreterMacroAssembler::dispatch_base(TosState state,
   if (needs_thread_local_poll) {
     NOT_PRODUCT(block_comment("Thread-local Safepoint poll"));
     ld_d(SCR1, TREG, in_bytes(JavaThread::polling_word_offset()));
-    andi(SCR1, SCR1, SafepointMechanism::poll_bit());
+    test_bit(SCR1, SCR1, exact_log2(SafepointMechanism::poll_bit()));
     bnez(SCR1, safepoint);
   }
 
@@ -618,7 +616,7 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
   // get method access flags
   ld_d(AT, FP, frame::interpreter_frame_method_offset * wordSize);
   ld_wu(AT, AT, in_bytes(Method::access_flags_offset()));
-  andi(AT, AT, JVM_ACC_SYNCHRONIZED);
+  test_bit(AT, AT, exact_log2(JVM_ACC_SYNCHRONIZED));
   beqz(AT, unlocked);
 
   // Don't unlock anything if the _do_not_unlock_if_synchronized flag is set.
@@ -783,9 +781,8 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
     if (DiagnoseSyncOnValueBasedClasses != 0) {
       load_klass(tmp_reg, scr_reg);
       ld_w(tmp_reg, Address(tmp_reg, Klass::access_flags_offset()));
-      li(AT, JVM_ACC_IS_VALUE_BASED_CLASS);
-      andr(AT, AT, tmp_reg);
-      bnez(AT, slow_case);
+      test_bit(tmp_reg, tmp_reg, exact_log2(JVM_ACC_IS_VALUE_BASED_CLASS));
+      bnez(tmp_reg, slow_case);
     }
 
     if (LockingMode == LM_LIGHTWEIGHT) {
@@ -889,7 +886,7 @@ void InterpreterMacroAssembler::unlock_object(Register lock_reg) {
       bne(scr_reg, tmp, slow_case);
 
       ld_d(hdr_reg, Address(scr_reg, oopDesc::mark_offset_in_bytes()));
-      andi(AT, hdr_reg, markWord::monitor_value);
+      test_bit(AT, hdr_reg, exact_log2(markWord::monitor_value));
       bnez(AT, slow_case);
       lightweight_unlock(scr_reg, hdr_reg, tmp_reg, SCR1, slow_case);
       b(count);
@@ -1542,7 +1539,7 @@ void InterpreterMacroAssembler::profile_obj_type(Register obj, const Address& md
   bstrpick_d(T5, obj, 63, 2);
   beqz(T5, next);
 
-  andi(T5, obj, TypeEntries::type_unknown);
+  test_bit(T5, obj, exact_log2(TypeEntries::type_unknown));
   bnez(T5, next);
 
   beqz(AT, none);

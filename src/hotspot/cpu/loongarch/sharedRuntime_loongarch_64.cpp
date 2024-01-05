@@ -725,7 +725,7 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
 
     { // Bypass the barrier for non-static methods
       __ ld_w(AT, Address(Rmethod, Method::access_flags_offset()));
-      __ andi(AT, AT, JVM_ACC_STATIC);
+      __ test_bit(AT, AT, exact_log2(JVM_ACC_STATIC));
       __ beqz(AT, L_skip_barrier); // non-static
     }
 
@@ -1925,7 +1925,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     } else {
       assert(LockingMode == LM_LIGHTWEIGHT, "");
       __ ld_d(lock_reg, Address(obj_reg, oopDesc::mark_offset_in_bytes()));
-      __ andi(AT, lock_reg, markWord::monitor_value);
+      __ test_bit(AT, lock_reg, exact_log2(markWord::monitor_value));
       __ bnez(AT, slow_path_unlock);
       __ lightweight_unlock(obj_reg, lock_reg, swap_reg, SCR1, slow_path_unlock);
       __ decrement(Address(TREG, JavaThread::held_monitor_count_offset()));

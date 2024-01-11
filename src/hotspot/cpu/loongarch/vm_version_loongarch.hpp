@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -295,6 +295,7 @@ public:
   static bool supports_lam_bh()     { return _features & CPU_LAM_BH; }
   static bool supports_lamcas()     { return _features & CPU_LAMCAS; }
 
+  // LoongArch64 supports fast class initialization checks
   static bool supports_fast_class_init_checks() { return true; }
   static bool supports_float16() { return UseLSX; }
   constexpr static bool supports_stack_watermark_barrier() { return true; }

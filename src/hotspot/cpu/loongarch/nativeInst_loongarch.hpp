@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -536,15 +536,21 @@ public:
     return is_nop() && ((uint_at(4) & 0xffc0001f) == 0x03800000);
   }
 
-  jint displacement() const {
+  bool decode(int32_t& oopmap_slot, int32_t& cb_offset) const {
     uint32_t first_ori = uint_at(4);
     uint32_t second_ori = uint_at(8);
     int lo = ((first_ori >> 5) & 0xffff);
     int hi = ((second_ori >> 5) & 0xffff);
-    return (jint) ((hi << 16) | lo);
+    uint32_t data = (hi << 16) | lo;
+    if (data == 0) {
+      return false; // no information encoded
+    }
+    cb_offset = (data & 0xffffff);
+    oopmap_slot = (data >> 24) & 0xff;
+    return true; // decoding succeeded
   }
 
-  void patch(jint diff);
+  bool patch(int32_t oopmap_slot, int32_t cb_offset);
   void make_deopt();
 };
 

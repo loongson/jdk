@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1753,15 +1753,15 @@ public:
   // Test if x is within signed immediate range for nbits.
   static bool is_simm  (int x, unsigned int nbits) {
     assert(0 < nbits && nbits < 32, "out of bounds");
-    const int   min      = -( ((int)1) << nbits-1 );
-    const int   maxplus1 =  ( ((int)1) << nbits-1 );
+    const int   min      = -( ((int)1) << (nbits-1) );
+    const int   maxplus1 =  ( ((int)1) << (nbits-1) );
     return min <= x && x < maxplus1;
   }
 
   static bool is_simm(jlong x, unsigned int nbits) {
     assert(0 < nbits && nbits < 64, "out of bounds");
-    const jlong min      = -( ((jlong)1) << nbits-1 );
-    const jlong maxplus1 =  ( ((jlong)1) << nbits-1 );
+    const jlong min      = -( ((jlong)1) << (nbits-1) );
+    const jlong maxplus1 =  ( ((jlong)1) << (nbits-1) );
     return min <= x && x < maxplus1;
   }
 

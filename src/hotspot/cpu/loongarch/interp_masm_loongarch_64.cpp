@@ -1474,19 +1474,19 @@ void InterpreterMacroAssembler::narrow(Register result) {
   addi_d(AT, T4, -T_BOOLEAN);
   bne(AT, R0, notBool);
   andi(result, result, 0x1);
-  beq(R0, R0, done);
+  b(done);
 
   bind(notBool);
   addi_d(AT, T4, -T_BYTE);
   bne(AT, R0, notByte);
   ext_w_b(result, result);
-  beq(R0, R0, done);
+  b(done);
 
   bind(notByte);
   addi_d(AT, T4, -T_CHAR);
   bne(AT, R0, notChar);
   bstrpick_d(result, result, 15, 0);
-  beq(R0, R0, done);
+  b(done);
 
   bind(notChar);
   ext_w_h(result, result);

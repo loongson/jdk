@@ -1681,7 +1681,7 @@ void TemplateTable::branch(bool is_jsr, bool is_wide) {
       __ increment_mask_and_jump(mdo_backedge_counter, increment, mask,
                                  T1, false, Assembler::zero,
                                  UseOnStackReplacement ? &backedge_counter_overflow : &dispatch);
-      __ beq(R0, R0, dispatch);
+      __ b(dispatch);
     }
     __ bind(no_mdo);
     // Increment backedge counter in MethodCounters*
@@ -3847,7 +3847,7 @@ void TemplateTable::instanceof() {
 
   // Collect counts on whether this test sees nulls a lot or not.
   if (ProfileInterpreter) {
-    __ beq(R0, R0, done);
+    __ b(done);
     __ bind(is_null);
     __ profile_null_seen(T3);
   } else {

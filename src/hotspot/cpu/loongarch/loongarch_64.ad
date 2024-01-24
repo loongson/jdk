@@ -15879,6 +15879,39 @@ instruct signumV(vReg dst, vReg src, vReg zero, vReg one, vReg tmp) %{
   ins_pipe(pipe_slow);
 %}
 
+// ------------------------------ ReverseBytesV --------------------------------
+
+instruct reverseBytesV(vReg dst, vReg src) %{
+  match(Set dst (ReverseBytesV src));
+  format %{ "(x)vreverse_byte    $dst, $src\t# @reverseBytesV" %}
+  ins_encode %{
+    if (Matcher::vector_length_in_bytes(this) > 16) {
+      switch (Matcher::vector_element_basic_type(this)) {
+        case T_BYTE  : if ($dst$$FloatRegister != $src$$FloatRegister)
+                       __ xvori_b($dst$$FloatRegister, $src$$FloatRegister, 0); break;
+        case T_SHORT : __ xvshuf4i_b($dst$$FloatRegister, $src$$FloatRegister, 0b10110001); break;
+        case T_INT   : __ xvshuf4i_b($dst$$FloatRegister, $src$$FloatRegister, 0b00011011); break;
+        case T_LONG  : __ xvshuf4i_w($dst$$FloatRegister, $src$$FloatRegister, 0b10110001);
+                       __ xvshuf4i_b($dst$$FloatRegister, $dst$$FloatRegister, 0b00011011); break;
+        default:
+          ShouldNotReachHere();
+      }
+    } else {
+      switch (Matcher::vector_element_basic_type(this)) {
+        case T_BYTE  : if ($dst$$FloatRegister != $src$$FloatRegister)
+                       __ vori_b($dst$$FloatRegister, $src$$FloatRegister, 0); break;
+        case T_SHORT : __ vshuf4i_b($dst$$FloatRegister, $src$$FloatRegister, 0b10110001); break;
+        case T_INT   : __ vshuf4i_b($dst$$FloatRegister, $src$$FloatRegister, 0b00011011); break;
+        case T_LONG  : __ vshuf4i_w($dst$$FloatRegister, $src$$FloatRegister, 0b10110001);
+                       __ vshuf4i_b($dst$$FloatRegister, $dst$$FloatRegister, 0b00011011); break;
+        default:
+          ShouldNotReachHere();
+      }
+    }
+  %}
+  ins_pipe(pipe_slow);
+%}
+
 
 //----------PEEPHOLE RULES-----------------------------------------------------
 // These must follow all instruction definitions as they use the names

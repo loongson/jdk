@@ -47,7 +47,7 @@ public class TestLoadLoad {
         command.add("-XX:+PrintInterpreter");
         command.add("-version");
 
-        ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(command);
+        ProcessBuilder pb = ProcessTools.createLimitedTestJavaProcessBuilder(command);
         OutputAnalyzer analyzer = new OutputAnalyzer(pb.start());
 
         analyzer.shouldHaveExitValue(0);

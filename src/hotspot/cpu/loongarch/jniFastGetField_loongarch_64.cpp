@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2004, 2010, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -74,9 +74,9 @@ address JNI_FastGetField::generate_fast_get_int_field0(BasicType type) {
 
   __ li(counter_addr, SafepointSynchronize::safepoint_counter_addr());
   __ ld_w(counter_prev_val, counter_addr, 0);
-
   // Parameters(A0~A3) should not be modified, since they will be used in slow path
-  __ andi(tmp1, counter_prev_val, 1);
+  __ test_bit(tmp1, counter_prev_val, exact_log2(1));
+  // An even value means there are no ongoing safepoint operations
   __ bnez(tmp1, slow);
 
   if (JvmtiExport::can_post_field_access()) {

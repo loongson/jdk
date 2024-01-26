@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -3031,7 +3031,7 @@ void LIR_Assembler::emit_profile_type(LIR_OpProfileType* op) {
         // set already but no need to check.
         __ beqz(SCR1, next);
 
-        __ andi(SCR1, tmp, TypeEntries::type_unknown);
+        __ test_bit(SCR1, tmp, exact_log2(TypeEntries::type_unknown));
         __ bnez(SCR1, next); // already unknown. Nothing to do anymore.
 
         if (TypeEntries::is_type_none(current_klass)) {
@@ -3054,7 +3054,7 @@ void LIR_Assembler::emit_profile_type(LIR_OpProfileType* op) {
                ciTypeEntries::valid_ciklass(current_klass) != exact_klass, "conflict only");
 
         __ ld_d(tmp, mdo_addr);
-        __ andi(SCR2, tmp, TypeEntries::type_unknown);
+        __ test_bit(SCR1, tmp, exact_log2(TypeEntries::type_unknown));
         __ bnez(SCR2, next); // already unknown. Nothing to do anymore.
       }
 
@@ -3117,7 +3117,7 @@ void LIR_Assembler::emit_profile_type(LIR_OpProfileType* op) {
                ciTypeEntries::valid_ciklass(current_klass) != exact_klass, "inconsistent");
 
         __ ld_d(tmp, mdo_addr);
-        __ andi(SCR1, tmp, TypeEntries::type_unknown);
+        __ test_bit(SCR1, tmp, exact_log2(TypeEntries::type_unknown));
         __ bnez(SCR1, next); // already unknown. Nothing to do anymore.
 
         __ ori(tmp, tmp, TypeEntries::type_unknown);

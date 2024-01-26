@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -68,6 +68,15 @@ public:
   void arrays_equals(Register str1, Register str2,
                      Register cnt, Register tmp1, Register tmp2, Register result,
                      bool is_char, bool is_array);
+
+  void arrays_hashcode(Register ary, Register cnt, Register result,
+                       Register tmp1, Register tmp2,
+                       Register tmp3, Register tmp4,
+                       Register tmp5, Register tmp6,
+                       Register tmp7, BasicType eltype);
+  // helper function for arrays_hashcode
+  int arrays_hashcode_elsize(BasicType eltype);
+  void arrays_hashcode_elload(Register dst, Address src, BasicType eltype);
 
  // Memory Data Type
   #define INT_TYPE 0x100

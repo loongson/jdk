@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,11 @@
 #include "runtime/objectMonitor.hpp"
 #include "runtime/stubRoutines.hpp"
 
+#ifdef PRODUCT
+#define BLOCK_COMMENT(str) /* nothing */
+#else
+#define BLOCK_COMMENT(str) block_comment(str)
+#endif
 
 // using the cr register as the bool result: 0 for failed; others success.
 void C2_MacroAssembler::fast_lock_c2(Register oop, Register box, Register flag,
@@ -51,14 +56,13 @@ void C2_MacroAssembler::fast_lock_c2(Register oop, Register box, Register flag,
   if (DiagnoseSyncOnValueBasedClasses != 0) {
     load_klass(flag, oop);
     ld_wu(flag, Address(flag, Klass::access_flags_offset()));
-    li(AT, JVM_ACC_IS_VALUE_BASED_CLASS);
-    andr(AT, flag, AT);
+    test_bit(AT, flag, exact_log2(JVM_ACC_IS_VALUE_BASED_CLASS));
     move(flag, R0);
     bnez(AT, cont);
   }
 
   // Check for existing monitor
-  andi(AT, disp_hdr, markWord::monitor_value);
+  test_bit(AT, disp_hdr, exact_log2(markWord::monitor_value));
   bnez(AT, object_has_monitor); // inflated vs stack-locked|neutral|bias
 
   if (LockingMode == LM_MONITOR) {
@@ -156,7 +160,7 @@ void C2_MacroAssembler::fast_unlock_c2(Register oop, Register box, Register flag
 
   // Handle existing monitor.
   ld_d(tmp, oop, oopDesc::mark_offset_in_bytes());
-  andi(AT, tmp, markWord::monitor_value);
+  test_bit(AT, tmp, exact_log2(markWord::monitor_value));
   bnez(AT, object_has_monitor);
 
   if (LockingMode == LM_MONITOR) {
@@ -183,11 +187,8 @@ void C2_MacroAssembler::fast_unlock_c2(Register oop, Register box, Register flag
     // If the owner is anonymous, we need to fix it -- in an outline stub.
     Register tmp2 = disp_hdr;
     ld_d(tmp2, Address(tmp, ObjectMonitor::owner_offset()));
-    // We cannot use tbnz here, the target might be too far away and cannot
-    // be encoded.
     assert_different_registers(tmp2, AT);
-    li(AT, (uint64_t)ObjectMonitor::ANONYMOUS_OWNER);
-    andr(AT, tmp2, AT);
+    test_bit(AT, tmp2, exact_log2(ObjectMonitor::ANONYMOUS_OWNER));
     C2HandleAnonOMOwnerStub* stub = new (Compile::current()->comp_arena()) C2HandleAnonOMOwnerStub(tmp, tmp2);
     Compile::current()->output()->add_stub(stub);
     bnez(AT, stub->entry());
@@ -1900,4 +1901,111 @@ bool C2_MacroAssembler::in_scratch_emit_size() {
     }
   }
   return MacroAssembler::in_scratch_emit_size();
+}
+
+// jdk.internal.util.ArraysSupport.vectorizedHashCode
+void C2_MacroAssembler::arrays_hashcode(Register ary, Register cnt, Register result,
+                                        Register tmp1, Register tmp2, Register tmp3,
+                                        Register tmp4, Register tmp5, Register tmp6,
+                                        Register tmp7, BasicType eltype)
+{
+  assert_different_registers(ary, cnt, result, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, SCR1);
+
+  const int elsize = arrays_hashcode_elsize(eltype);
+  const int chunks_end_shift = exact_log2(elsize);
+
+  switch (eltype) {
+  case T_BOOLEAN: BLOCK_COMMENT("arrays_hashcode(unsigned byte) {"); break;
+  case T_CHAR:    BLOCK_COMMENT("arrays_hashcode(char) {");          break;
+  case T_BYTE:    BLOCK_COMMENT("arrays_hashcode(byte) {");          break;
+  case T_SHORT:   BLOCK_COMMENT("arrays_hashcode(short) {");         break;
+  case T_INT:     BLOCK_COMMENT("arrays_hashcode(int) {");           break;
+  default:
+    ShouldNotReachHere();
+  }
+
+  const int stride = 4;
+  const Register pow31_4 = tmp1;
+  const Register pow31_3 = tmp2;
+  const Register pow31_2 = tmp3;
+  const Register chunks  = tmp4;
+  const Register chunks_end = chunks;
+
+  Label DONE, TAIL, TAIL_LOOP, WIDE_LOOP;
+
+  // result has a value initially
+
+  beqz(cnt, DONE);
+
+  srli_d(chunks, cnt, stride>>1);
+  slli_d(chunks, chunks, stride>>1);
+  beqz(chunks, TAIL);
+
+  li(pow31_4, 923521);           // [31^^4]
+  li(pow31_3,  29791);           // [31^^3]
+  li(pow31_2,    961);           // [31^^2]
+
+  slli_d(chunks_end, chunks, chunks_end_shift);
+  add_d(chunks_end, ary, chunks_end);
+  andi(cnt, cnt, stride-1);      // don't forget about tail!
+
+  bind(WIDE_LOOP);
+  mul_w(result, result, pow31_4); // 31^^4 * h
+  arrays_hashcode_elload(SCR1, Address(ary, 0 * elsize), eltype);
+  arrays_hashcode_elload(tmp7, Address(ary, 1 * elsize), eltype);
+  arrays_hashcode_elload(tmp5, Address(ary, 2 * elsize), eltype);
+  arrays_hashcode_elload(tmp6, Address(ary, 3 * elsize), eltype);
+  mul_w(SCR1, SCR1, pow31_3);    // 31^^3 * ary[i+0]
+  add_w(result, result, SCR1);
+  mul_w(tmp7, tmp7, pow31_2);    // 31^^2 * ary[i+1]
+  add_w(result, result, tmp7);
+  slli_w(SCR1, tmp5, 5);         // optimize 31^^1 * ary[i+2]
+  sub_w(tmp5, SCR1, tmp5);       // with ary[i+2]<<5 - ary[i+2]
+  add_w(result, result, tmp5);
+  add_w(result, result, tmp6);   // 31^^4 * h + 31^^3 * ary[i+0] + 31^^2 * ary[i+1]
+                                 //           + 31^^1 * ary[i+2] + 31^^0 * ary[i+3]
+  addi_d(ary, ary, elsize * stride);
+  bne(ary, chunks_end, WIDE_LOOP);
+  beqz(cnt, DONE);
+
+  bind(TAIL);
+  slli_d(chunks_end, cnt, chunks_end_shift);
+  add_d(chunks_end, ary, chunks_end);
+
+  bind(TAIL_LOOP);
+  arrays_hashcode_elload(SCR1, Address(ary), eltype);
+  slli_w(tmp7, result, 5);         // optimize 31 * result
+  sub_w(result, tmp7, result);   // with result<<5 - result
+  add_w(result, result, SCR1);
+  addi_d(ary, ary, elsize);
+  bne(ary, chunks_end, TAIL_LOOP);
+
+  bind(DONE);
+  BLOCK_COMMENT("} // arrays_hashcode");
+}
+
+int C2_MacroAssembler::arrays_hashcode_elsize(BasicType eltype) {
+  switch (eltype) {
+  case T_BOOLEAN: return sizeof(jboolean);
+  case T_BYTE:    return sizeof(jbyte);
+  case T_SHORT:   return sizeof(jshort);
+  case T_CHAR:    return sizeof(jchar);
+  case T_INT:     return sizeof(jint);
+  default:
+    ShouldNotReachHere();
+    return -1;
+  }
+}
+
+void C2_MacroAssembler::arrays_hashcode_elload(Register dst, Address src, BasicType eltype) {
+  switch (eltype) {
+  // T_BOOLEAN used as surrogate for unsigned byte
+  case T_BOOLEAN: ld_bu(dst, src);   break;
+  case T_BYTE:     ld_b(dst, src);   break;
+  case T_SHORT:    ld_h(dst, src);   break;
+  case T_CHAR:    ld_hu(dst, src);   break;
+  case T_INT:      ld_w(dst, src);   break;
+  default:
+    ShouldNotReachHere();
+  }
 }

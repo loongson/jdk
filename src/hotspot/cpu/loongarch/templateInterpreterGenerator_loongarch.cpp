@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -99,7 +99,7 @@ address TemplateInterpreterGenerator::generate_slow_signature_handler() {
     FloatRegister floatreg = as_FloatRegister(i + FA0->encoding());
     Label isdouble, done;
 
-    __ andi(AT, A3, 1 << i);
+    __ test_bit(AT, A3, i);
     __ bnez(AT, isdouble);
     __ fld_s(floatreg, SP, (10 + i) * wordSize);
     __ b(done);
@@ -851,7 +851,7 @@ void TemplateInterpreterGenerator::lock_method(void) {
 #ifdef ASSERT
   { Label L;
     __ ld_w(T0, Rmethod, in_bytes(Method::access_flags_offset()));
-    __ andi(T0, T0, JVM_ACC_SYNCHRONIZED);
+    __ test_bit(T0, T0, exact_log2(JVM_ACC_SYNCHRONIZED));
     __ bne(T0, R0, L);
     __ stop("method doesn't need synchronization");
     __ bind(L);
@@ -861,7 +861,7 @@ void TemplateInterpreterGenerator::lock_method(void) {
   {
     Label done;
     __ ld_w(T0, Rmethod, in_bytes(Method::access_flags_offset()));
-    __ andi(T2, T0, JVM_ACC_STATIC);
+    __ test_bit(T2, T0, exact_log2(JVM_ACC_STATIC));
     __ ld_d(T0, LVP, Interpreter::local_offset_in_bytes(0));
     __ beq(T2, R0, done);
     __ load_mirror(T0, Rmethod, SCR2, SCR1);
@@ -1074,14 +1074,14 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   __ ld_w(T0, Rmethod, in_bytes(Method::access_flags_offset()));
   {
     Label L;
-    __ andi(AT, T0, JVM_ACC_NATIVE);
+    __ test_bit(AT, T0, exact_log2(JVM_ACC_NATIVE));
     __ bne(AT, R0, L);
     __ stop("tried to execute native method as non-native");
     __ bind(L);
   }
   {
     Label L;
-    __ andi(AT, T0, JVM_ACC_ABSTRACT);
+    __ test_bit(AT, T0, exact_log2(JVM_ACC_ABSTRACT));
     __ beq(AT, R0, L);
     __ stop("tried to execute abstract method in interpreter");
     __ bind(L);
@@ -1122,7 +1122,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     {
       Label L;
       __ ld_w(T0, Rmethod, in_bytes(Method::access_flags_offset()));
-      __ andi(AT, T0, JVM_ACC_SYNCHRONIZED);
+      __ test_bit(AT, T0, exact_log2(JVM_ACC_SYNCHRONIZED));
       __ beq(AT, R0, L);
       __ stop("method needs synchronization");
       __ bind(L);
@@ -1177,7 +1177,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     // LoongArch ABI: caller does not reserve space for the register auguments.
     // A0 and A1(if needed)
     __ ld_w(AT, Rmethod, in_bytes(Method::access_flags_offset()));
-    __ andi(AT, AT, JVM_ACC_STATIC);
+    __ test_bit(AT, AT, exact_log2(JVM_ACC_STATIC));
     __ beq(AT, R0, Lstatic);
     __ addi_d(t, t, 1);
     __ bind(Lstatic);
@@ -1257,7 +1257,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   {
     Label L;
     __ ld_w(t, method, in_bytes(Method::access_flags_offset()));
-    __ andi(AT, t, JVM_ACC_STATIC);
+    __ test_bit(AT, t, exact_log2(JVM_ACC_STATIC));
     __ beq(AT, R0, L);
 
     // get mirror
@@ -1489,7 +1489,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     const Register monitor_reg = T0;
     Label L;
     __ ld_w(t, method, in_bytes(Method::access_flags_offset()));
-    __ andi(t, t, JVM_ACC_SYNCHRONIZED);
+    __ test_bit(t, t, exact_log2(JVM_ACC_SYNCHRONIZED));
     __ addi_d(monitor_reg, FP, frame::interpreter_frame_initial_sp_offset * wordSize - (int)sizeof(BasicObjectLock));
     __ beq(t, R0, L);
     // the code below should be shared with interpreter macro assembler implementation
@@ -1663,14 +1663,14 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
   __ ld_d(AT, Rmethod, in_bytes(Method::access_flags_offset()));
   {
     Label L;
-    __ andi(T2, AT, JVM_ACC_NATIVE);
+    __ test_bit(T2, AT, exact_log2(JVM_ACC_NATIVE));
     __ beq(T2, R0, L);
     __ stop("tried to execute native method as non-native");
     __ bind(L);
   }
   {
     Label L;
-    __ andi(T2, AT, JVM_ACC_ABSTRACT);
+    __ test_bit(T2, AT, exact_log2(JVM_ACC_ABSTRACT));
     __ beq(T2, R0, L);
     __ stop("tried to execute abstract method in interpreter");
     __ bind(L);
@@ -1717,8 +1717,8 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
 #ifdef ASSERT
     { Label L;
       __ ld_w(AT, Rmethod, in_bytes(Method::access_flags_offset()));
-      __ andi(T2, AT, JVM_ACC_SYNCHRONIZED);
-      __ beq(T2, R0, L);
+      __ test_bit(AT, AT, exact_log2(JVM_ACC_SYNCHRONIZED));
+      __ beqz(AT, L);
       __ stop("method needs synchronization");
       __ bind(L);
     }

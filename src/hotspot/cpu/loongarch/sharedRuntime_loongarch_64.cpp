@@ -725,7 +725,7 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
 
     { // Bypass the barrier for non-static methods
       __ ld_w(AT, Address(Rmethod, Method::access_flags_offset()));
-      __ andi(AT, AT, JVM_ACC_STATIC);
+      __ test_bit(AT, AT, exact_log2(JVM_ACC_STATIC));
       __ beqz(AT, L_skip_barrier); // non-static
     }
 
@@ -1925,7 +1925,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     } else {
       assert(LockingMode == LM_LIGHTWEIGHT, "");
       __ ld_d(lock_reg, Address(obj_reg, oopDesc::mark_offset_in_bytes()));
-      __ andi(AT, lock_reg, markWord::monitor_value);
+      __ test_bit(AT, lock_reg, exact_log2(markWord::monitor_value));
       __ bnez(AT, slow_path_unlock);
       __ lightweight_unlock(obj_reg, lock_reg, swap_reg, SCR1, slow_path_unlock);
       __ decrement(Address(TREG, JavaThread::held_monitor_count_offset()));
@@ -2474,15 +2474,12 @@ void SharedRuntime::generate_deopt_blob() {
 }
 
 #ifdef COMPILER2
-
 //------------------------------generate_uncommon_trap_blob--------------------
-// Ought to generate an ideal graph & compile, but here's some SPARC ASM
-// instead.
 void SharedRuntime::generate_uncommon_trap_blob() {
-  // allocate space for the code
+  // Allocate space for the code
   ResourceMark rm;
-  // setup code generation tools
-  CodeBuffer  buffer ("uncommon_trap_blob", 512*80 , 512*40 );
+  // Setup code generation tools
+  CodeBuffer buffer("uncommon_trap_blob", 2048, 1024);
   MacroAssembler* masm = new MacroAssembler(&buffer);
 
   enum frame_layout {
@@ -2491,40 +2488,51 @@ void SharedRuntime::generate_uncommon_trap_blob() {
     framesize
   };
   assert(framesize % 4 == 0, "sp not 16-byte aligned");
+
   address start = __ pc();
 
   // Push self-frame.
   __ addi_d(SP, SP, -framesize * BytesPerInt);
-
   __ st_d(RA, SP, return_off * BytesPerInt);
   __ st_d(FP, SP, fp_off * BytesPerInt);
+  // we don't expect an arg reg save area
+#ifndef PRODUCT
+  assert(frame::arg_reg_save_area_bytes == 0, "not expecting frame reg save area");
+#endif
+  // compiler left unloaded_class_index in j_rarg0 move to where the
+  // runtime expects it.
+  __ addi_w(c_rarg1, j_rarg0, 0);
 
-  __ addi_d(FP, SP, framesize * BytesPerInt);
-
-  // set last_Java_sp
+  // we need to set the past SP to the stack pointer of the stub frame
+  // and the pc to the address where this runtime call will return
+  // although actually any pc in this code blob will do).
   Label retaddr;
-  __ set_last_Java_frame(NOREG, FP, retaddr);
-  // Call C code.  Need thread but NOT official VM entry
-  // crud.  We cannot block on this call, no GC can happen.  Call should
-  // capture callee-saved registers as well as return values.
-  __ move(A0, TREG);
-  // argument already in T0
-  __ move(A1, T0);
-  __ addi_d(A2, R0, Deoptimization::Unpack_uncommon_trap);
-  __ call((address)Deoptimization::uncommon_trap, relocInfo::runtime_call_type);
+  __ set_last_Java_frame(noreg, noreg, retaddr);
+
+  // Call C code. We cannot block on this call, no GC can happen.
+  // Call should capture callee-saved registers as well as return values.
+  //
+  // UnrollBlock* uncommon_trap(JavaThread* thread, jint unloaded_class_index, jint exec_mode)
+  //
+  __ move(c_rarg0, TREG);
+  __ addi_w(c_rarg2, R0, (unsigned)Deoptimization::Unpack_uncommon_trap);
+  __ call(CAST_FROM_FN_PTR(address, Deoptimization::uncommon_trap),
+          relocInfo::runtime_call_type);
   __ bind(retaddr);
 
   // Set an oopmap for the call site
   OopMapSet *oop_maps = new OopMapSet();
-  OopMap* map =  new OopMap( framesize, 0 );
 
-  oop_maps->add_gc_map(__ pc() - start, map);
+  oop_maps->add_gc_map(__ pc() - start, new OopMap(framesize, 0));
 
   __ reset_last_Java_frame(false);
 
-  // Load UnrollBlock into S7
-  Register unroll = S7;
-  __ move(unroll, V0);
+  Register unroll = T8;
+  Register pcs    = T6;
+  Register sizes  = T5;
+  Register count  = T4;
+
+  __ move(unroll, c_rarg0); // move call return value to unroll
 
 #ifdef ASSERT
   { Label L;
@@ -2541,107 +2549,98 @@ void SharedRuntime::generate_uncommon_trap_blob() {
   // Frame picture (youngest to oldest)
   // 1: self-frame (no frame link)
   // 2: deopting frame  (no frame link)
-  // 3: possible-i2c-adapter-frame
-  // 4: caller of deopting frame (could be compiled/interpreted. If interpreted we will create an
-  //    and c2i here)
+  // 3: caller of deopting frame (could be compiled/interpreted).
 
-  __ addi_d(SP, SP, framesize * BytesPerInt);
+  __ addi_d(SP, SP, framesize << LogBytesPerInt);
 
-  // Pop deoptimized frame
-  __ ld_w(T8, Address(unroll, Deoptimization::UnrollBlock::size_of_deoptimized_frame_offset()));
-  __ add_d(SP, SP, T8);
+  // Pop deoptimized frame (int)
+  __ ld_wu(AT, Address(unroll, Deoptimization::UnrollBlock::size_of_deoptimized_frame_offset()));
+  __ add_d(SP, SP, AT);
+  // LoongArch do not need to restore RA and FP here, since:
+  // 1: The RA shall be loaded by frame PC array (frame_pcs) later
+  // 2: The FP is protected via frame::initial_deoptimization_info()
 
 #ifdef ASSERT
   // Compilers generate code that bang the stack by as much as the
   // interpreter would need. So this stack banging should never
   // trigger a fault. Verify that it does not on non product builds.
-  __ ld_w(TSR, Address(unroll, Deoptimization::UnrollBlock::total_frame_sizes_offset()));
-  __ bang_stack_size(TSR, T8);
+  __ ld_wu(sizes, Address(unroll, Deoptimization::UnrollBlock::total_frame_sizes_offset()));
+  __ bang_stack_size(sizes, pcs /* tmp */);
 #endif
 
-  // register for frame pcs
-  Register pcs = T8;
-  // register for frame sizes
-  Register sizes = T4;
-  // register for frame count
-  Register count = T3;
-  // register for the sender's sp
-  Register sender_sp = T1;
-
-  // sp should be pointing at the return address to the caller (4)
-  // Load array of frame pcs
   __ ld_d(pcs, Address(unroll, Deoptimization::UnrollBlock::frame_pcs_offset()));
-
-  // Load array of frame sizes
   __ ld_d(sizes, Address(unroll, Deoptimization::UnrollBlock::frame_sizes_offset()));
   __ ld_wu(count, Address(unroll, Deoptimization::UnrollBlock::number_of_frames_offset()));
 
   // Pick up the initial fp we should save
   __ ld_d(FP, Address(unroll, Deoptimization::UnrollBlock::initial_info_offset()));
 
-  // Now adjust the caller's stack to make up for the extra locals
-  // but record the original sp so that we can save it in the skeletal interpreter
-  // frame and the stack walking of interpreter_sender will get the unextended sp
-  // value and not the "real" sp value.
-  __ move(sender_sp, SP);
-  __ ld_w(AT, Address(unroll, Deoptimization::UnrollBlock::caller_adjustment_offset()));
+  // Now adjust the caller's stack to make up for the extra locals but
+  // record the original sp so that we can save it in the skeletal
+  // interpreter frame and the stack walking of interpreter_sender
+  // will get the unextended sp value and not the "real" sp value.
+
+  __ move(Rsender, SP);
+  __ ld_wu(AT, Address(unroll, Deoptimization::UnrollBlock::caller_adjustment_offset()));
   __ sub_d(SP, SP, AT);
 
   // Push interpreter frames in a loop
   Label loop;
   __ bind(loop);
-  __ ld_d(T2, sizes, 0);          // Load frame size
-  __ ld_d(RA, pcs, 0);           // save return address
-  __ addi_d(T2, T2, -2*wordSize);           // we'll push pc and fp, by hand
+  __ ld_d(AT, sizes, 0);            // load frame size
+  __ ld_d(RA, pcs, 0);              // save return address
+  __ addi_d(AT, AT, -2 * wordSize); // we'll push RA and FP, by hand
   __ enter();
-  __ sub_d(SP, SP, T2);                   // Prolog!
+  __ sub_d(SP, SP, AT);
+  // Save Rsender to make it walkable, and then pass it to next frame.
+  __ st_d(Rsender, FP, frame::interpreter_frame_sender_sp_offset * wordSize);
+  __ move(Rsender, SP);
   // This value is corrected by layout_activation_impl
   __ st_d(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);
-  __ st_d(sender_sp, FP, frame::interpreter_frame_sender_sp_offset * wordSize);// Make it walkable
-  __ move(sender_sp, SP);       // pass to next frame
-  __ addi_d(count, count, -1);    // decrement counter
-  __ addi_d(sizes, sizes, wordSize);     // Bump array pointer (sizes)
-  __ addi_d(pcs, pcs, wordSize);      // Bump array pointer (pcs)
-  __ bne(count, R0, loop);
+  __ addi_d(count, count, -1);
+  __ addi_d(sizes, sizes, wordSize);
+  __ addi_d(pcs, pcs, wordSize);
+  __ blt(R0, count, loop);
 
-  __ ld_d(RA, pcs, 0);
+  __ ld_d(RA, pcs, 0); // save final return address
 
-  // Re-push self-frame
-  // save old & set new FP
-  // save final return address
   __ enter();
 
-  // Use FP because the frames look interpreted now
-  // Save "the_pc" since it cannot easily be retrieved using the last_java_SP after we aligned SP.
-  // Don't need the precise return PC here, just precise enough to point into this code blob.
+  // Use FP because the frames look interpreted now. Save "the_pc" since it
+  // cannot easily be retrieved using the last_java_SP after we aligned SP.
+  // Do not need the precise return PC address here, just precise enough to
+  // point into this code blob.
   Label L;
   address the_pc = __ pc();
   __ bind(L);
-  __ set_last_Java_frame(NOREG, FP, L);
+  __ set_last_Java_frame(SP, FP, L);
 
   assert(StackAlignmentInBytes == 16, "must be");
-  __ bstrins_d(SP, R0, 3, 0);   // Fix stack alignment as required by ABI
+  __ bstrins_d(SP, R0, 3, 0);
 
-  // Call C code.  Need thread but NOT official VM entry
-  // crud.  We cannot block on this call, no GC can happen.  Call should
-  // restore return values to their stack-slots with the new SP.
-  __ move(A0, TREG);
-  __ li(A1, Deoptimization::Unpack_uncommon_trap);
-  __ call((address)Deoptimization::unpack_frames, relocInfo::runtime_call_type);
+  // Call C code. We cannot block on this call, no GC can happen.
+  // Call should capture callee-saved registers as well as return values.
+  //
+  // BasicType unpack_frames(JavaThread* thread, int exec_mode)
+  //
+  __ move(c_rarg0, TREG);
+  __ addi_w(c_rarg1, R0, (unsigned)Deoptimization::Unpack_uncommon_trap);
+  __ call(CAST_FROM_FN_PTR(address, Deoptimization::unpack_frames),
+          relocInfo::runtime_call_type);
+
   // Set an oopmap for the call site
+  // Use the same PC we used for the last java frame
   oop_maps->add_gc_map(the_pc - start, new OopMap(framesize, 0));
 
   __ reset_last_Java_frame(true);
 
-  // Pop self-frame.
-  __ leave();     // Epilog!
-
-  // Jump to interpreter
+  __ leave();
   __ jr(RA);
-  // -------------
+
   // make sure all code is generated
   masm->flush();
-  _uncommon_trap_blob = UncommonTrapBlob::create(&buffer, oop_maps, framesize / 2);
+
+  _uncommon_trap_blob = UncommonTrapBlob::create(&buffer, oop_maps, framesize >> 1);
 }
 
 #endif // COMPILER2

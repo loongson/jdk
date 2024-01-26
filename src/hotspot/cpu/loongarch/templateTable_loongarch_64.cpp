@@ -1057,12 +1057,8 @@ void TemplateTable::bastore() {
   // since both types share the bastore bytecode.
   __ load_klass(T4, A1);
   __ ld_w(T4, T4, in_bytes(Klass::layout_helper_offset()));
-
-  int diffbit = Klass::layout_helper_boolean_diffbit();
-  __ li(AT, diffbit);
-
   Label L_skip;
-  __ andr(AT, T4, AT);
+  __ test_bit(AT, T4, exact_log2(Klass::layout_helper_boolean_diffbit()));
   __ beq(AT, R0, L_skip);
   __ andi(FSR, FSR, 0x1);
   __ bind(L_skip);
@@ -1685,7 +1681,7 @@ void TemplateTable::branch(bool is_jsr, bool is_wide) {
       __ increment_mask_and_jump(mdo_backedge_counter, increment, mask,
                                  T1, false, Assembler::zero,
                                  UseOnStackReplacement ? &backedge_counter_overflow : &dispatch);
-      __ beq(R0, R0, dispatch);
+      __ b(dispatch);
     }
     __ bind(no_mdo);
     // Increment backedge counter in MethodCounters*
@@ -2127,9 +2123,8 @@ void TemplateTable::_return(TosState state) {
     __ ld_d(c_rarg1, aaddress(0));
     __ load_klass(LVP, c_rarg1);
     __ ld_w(LVP, Address(LVP, Klass::access_flags_offset()));
-    __ li(AT, JVM_ACC_HAS_FINALIZER);
-    __ andr(AT, AT, LVP);
     Label skip_register_finalizer;
+    __ test_bit(AT, LVP, exact_log2(JVM_ACC_HAS_FINALIZER));
     __ beqz(AT, skip_register_finalizer);
 
     __ call_VM(noreg, CAST_FROM_FN_PTR(address,
@@ -2148,7 +2143,7 @@ void TemplateTable::_return(TosState state) {
   if (_desc->bytecode() != Bytecodes::_return_register_finalizer) {
     Label no_safepoint;
     __ ld_d(AT, Address(TREG, JavaThread::polling_word_offset()));
-    __ andi(AT, AT, 1 << exact_log2(SafepointMechanism::poll_bit()));
+    __ test_bit(AT, AT, exact_log2(SafepointMechanism::poll_bit()));
     __ beqz(AT, no_safepoint);
     __ push(state);
     __ push_cont_fastpath(TREG);
@@ -2319,7 +2314,7 @@ void TemplateTable::load_resolved_method_entry_handle(Register cache,
 
   // maybe push appendix to arguments (just before return address)
   Label L_no_push;
-  __ andi(AT, flags, 1 << ResolvedMethodEntry::has_appendix_shift);
+  __ test_bit(AT, flags, ResolvedMethodEntry::has_appendix_shift);
   __ beqz(AT, L_no_push);
   // invokehandle uses an index into the resolved references array
   __ ld_hu(ref_index, Address(cache, in_bytes(ResolvedMethodEntry::resolved_references_index_offset())));
@@ -2353,9 +2348,9 @@ void TemplateTable::load_resolved_method_entry_interface(Register cache,
   // Otherwise, the registers will be populated with the klass and method.
 
   Label NotVirtual; Label NotVFinal; Label Done;
-  __ andi(AT, flags, 1 << ResolvedMethodEntry::is_forced_virtual_shift);
+  __ test_bit(AT, flags, ResolvedMethodEntry::is_forced_virtual_shift);
   __ beqz(AT, NotVirtual);
-  __ andi(AT, flags, 1 << ResolvedMethodEntry::is_vfinal_shift);
+  __ test_bit(AT, flags, ResolvedMethodEntry::is_vfinal_shift);
   __ beqz(AT, NotVFinal);
   __ ld_d(method_or_table_index, Address(cache, in_bytes(ResolvedMethodEntry::method_offset())));
   __ b(Done);
@@ -2383,7 +2378,7 @@ void TemplateTable::load_resolved_method_entry_virtual(Register cache,
 
   // method_or_table_index can either be an itable index or a method depending on the virtual final flag
   Label NotVFinal; Label Done;
-  __ andi(AT, flags, 1 << ResolvedMethodEntry::is_vfinal_shift);
+  __ test_bit(AT, flags, ResolvedMethodEntry::is_vfinal_shift);
   __ beqz(AT, NotVFinal);
   __ ld_d(method_or_table_index, Address(cache, in_bytes(ResolvedMethodEntry::method_offset())));
   __ b(Done);
@@ -2434,7 +2429,7 @@ void TemplateTable::load_invokedynamic_entry(Register method) {
   Label L_no_push;
   // Check if there is an appendix
   __ ld_bu(index, Address(cache, in_bytes(ResolvedIndyEntry::flags_offset())));
-  __ andi(AT, index, 1UL << ResolvedIndyEntry::has_appendix_shift);
+  __ test_bit(AT, index, ResolvedIndyEntry::has_appendix_shift);
   __ beqz(AT, L_no_push);
 
   // Get appendix
@@ -2539,10 +2534,8 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static, RewriteContr
   load_resolved_field_entry(obj, cache, tos_state, off, flags, is_static);
 
   {
-    __ li(scratch, 1 << ResolvedFieldEntry::is_volatile_shift);
-    __ andr(scratch, scratch, flags);
-
     Label notVolatile;
+    __ test_bit(scratch, flags, ResolvedFieldEntry::is_volatile_shift);
     __ beq(scratch, R0, notVolatile);
     __ membar(MacroAssembler::AnyAny);
     __ bind(notVolatile);
@@ -2787,15 +2780,12 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
 
   Label Done;
   {
-    __ li(scratch, 1 << ResolvedFieldEntry::is_volatile_shift);
-    __ andr(scratch, scratch, flags);
-
     Label notVolatile;
+    __ test_bit(scratch, flags, ResolvedFieldEntry::is_volatile_shift);
     __ beq(scratch, R0, notVolatile);
     __ membar(Assembler::Membar_mask_bits(__ StoreStore | __ LoadStore));
     __ bind(notVolatile);
   }
-
 
   Label notByte, notBool, notInt, notShort, notChar, notLong, notFloat, notObj, notDouble;
 
@@ -3064,10 +3054,8 @@ void TemplateTable::fast_storefield(TosState state) {
 
   Label Done;
   {
-    __ li(scratch, 1 << ResolvedFieldEntry::is_volatile_shift);
-    __ andr(scratch, scratch, T1);
-
     Label notVolatile;
+    __ test_bit(scratch, T1, ResolvedFieldEntry::is_volatile_shift);
     __ beq(scratch, R0, notVolatile);
     __ membar(Assembler::Membar_mask_bits(__ StoreStore | __ LoadStore));
     __ bind(notVolatile);
@@ -3163,10 +3151,8 @@ void TemplateTable::fast_accessfield(TosState state) {
   __ ld_bu(T1, Address(T3, in_bytes(ResolvedFieldEntry::flags_offset())));
 
   {
-    __ li(scratch, 1 << ResolvedFieldEntry::is_volatile_shift);
-    __ andr(scratch, scratch, T1);
-
     Label notVolatile;
+    __ test_bit(scratch, T1, ResolvedFieldEntry::is_volatile_shift);
     __ beqz(scratch, notVolatile);
     __ membar(MacroAssembler::AnyAny);
     __ bind(notVolatile);
@@ -3236,8 +3222,7 @@ void TemplateTable::fast_xaccess(TosState state) {
 
   {
     __ ld_bu(AT, Address(T3, in_bytes(ResolvedFieldEntry::flags_offset())));
-    __ li(scratch, 1 << ResolvedFieldEntry::is_volatile_shift);
-    __ andr(scratch, scratch, AT);
+    __ test_bit(scratch, AT, ResolvedFieldEntry::is_volatile_shift);
 
     Label notVolatile;
     __ beq(scratch, R0, notVolatile);
@@ -3316,7 +3301,7 @@ void TemplateTable::invokevirtual_helper(Register index,
 
   // Test for an invoke of a final method
   Label notFinal;
-  __ andi(AT, flags, 1 << ResolvedMethodEntry::is_vfinal_shift);
+  __ test_bit(AT, flags, ResolvedMethodEntry::is_vfinal_shift);
   __ beq(AT, R0, notFinal);
 
   Register method = index;  // method must be Rmethod
@@ -3445,7 +3430,7 @@ void TemplateTable::invokeinterface(int byte_no) {
   // Special case of invokeinterface called for virtual method of
   // java.lang.Object.  See cpCache.cpp for details.
   Label notObjectMethod;
-  __ andi(AT, T1, 1 << ResolvedMethodEntry::is_forced_virtual_shift);
+  __ test_bit(AT, T1, ResolvedMethodEntry::is_forced_virtual_shift);
   __ beqz(AT, notObjectMethod);
 
   invokevirtual_helper(Rmethod, T3, T1);
@@ -3457,7 +3442,7 @@ void TemplateTable::invokeinterface(int byte_no) {
 
   // Check for private method invocation - indicated by vfinal
   Label notVFinal;
-  __ andi(AT, T1, 1 << ResolvedMethodEntry::is_vfinal_shift);
+  __ test_bit(AT, T1, ResolvedMethodEntry::is_vfinal_shift);
   __ beqz(AT, notVFinal);
 
   // Get receiver klass into FSR
@@ -3660,7 +3645,7 @@ void TemplateTable::_new() {
   // get instance_size in InstanceKlass (scaled to a count of bytes)
   __ ld_w(T0, T3, in_bytes(Klass::layout_helper_offset()) );
   // test to see if it has a finalizer or is malformed in some way
-  __ andi(AT, T0, Klass::_lh_instance_slow_path_bit);
+  __ test_bit(AT, T0, exact_log2(Klass::_lh_instance_slow_path_bit));
   __ bnez(AT, slow_case);
 
   // Allocate the instance:
@@ -3862,7 +3847,7 @@ void TemplateTable::instanceof() {
 
   // Collect counts on whether this test sees nulls a lot or not.
   if (ProfileInterpreter) {
-    __ beq(R0, R0, done);
+    __ b(done);
     __ bind(is_null);
     __ profile_null_seen(T3);
   } else {

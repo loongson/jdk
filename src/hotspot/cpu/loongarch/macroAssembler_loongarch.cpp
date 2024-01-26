@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2017, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2017, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1020,7 +1020,7 @@ void MacroAssembler::safepoint_poll(Label& slow_path, Register thread_reg, bool 
     // we may safely use the sp instead to perform the stack watermark check.
     blt_far(AT, in_nmethod ? SP : FP, slow_path, false /* signed */);
   } else {
-    andi(AT, AT, SafepointMechanism::poll_bit());
+    test_bit(AT, AT, exact_log2(SafepointMechanism::poll_bit()));
     bnez(AT, slow_path);
   }
 }
@@ -1343,6 +1343,10 @@ void MacroAssembler::bswap_hu(Register dst, Register src) {
 void MacroAssembler::bswap_w(Register dst, Register src) {
   revb_2w(dst, src);
   slli_w(dst, dst, 0);  // keep sign, clear upper bits
+}
+
+void MacroAssembler::test_bit(Register dst, Register src, uint32_t bit_pos) {
+  bstrpick_d(dst, src, bit_pos, bit_pos);
 }
 
 void MacroAssembler::cmpxchg(Address addr, Register oldval, Register newval,
@@ -2743,7 +2747,7 @@ void MacroAssembler::resolve_jobject(Register value, Register tmp1, Register tmp
 
   bind(tagged);
   // Test for jweak tag.
-  andi(AT, value, JNIHandles::TypeTag::weak_global);
+  test_bit(AT, value, exact_log2(JNIHandles::TypeTag::weak_global));
   bnez(AT, weak_tagged);
 
   // Resolve global handle
@@ -2769,7 +2773,7 @@ void MacroAssembler::resolve_global_jobject(Register value, Register tmp1, Regis
 #ifdef ASSERT
   {
     Label valid_global_tag;
-    andi(AT, value, JNIHandles::TypeTag::global); // Test for global tag.
+    test_bit(AT, value, exact_log2(JNIHandles::TypeTag::global));
     bnez(AT, valid_global_tag);
     stop("non global jobject using resolve_global_jobject");
     bind(valid_global_tag);

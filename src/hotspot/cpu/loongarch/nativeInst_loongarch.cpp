@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -511,12 +511,16 @@ void NativePostCallNop::make_deopt() {
   NativeDeoptInstruction::insert(addr_at(0));
 }
 
-void NativePostCallNop::patch(jint diff) {
-  assert(diff != 0, "must be");
+bool NativePostCallNop::patch(int32_t oopmap_slot, int32_t cb_offset) {
+  if (((oopmap_slot & 0xff) != oopmap_slot) || ((cb_offset & 0xffffff) != cb_offset)) {
+    return false; // cannot encode
+  }
+  uint32_t data = ((uint32_t)oopmap_slot << 24) | cb_offset;
+  assert(data != 0, "must be");
   assert(check(), "must be");
 
-  int lo = (diff & 0xffff);
-  int hi = ((diff >> 16) & 0xffff);
+  int lo = (data & 0xffff);
+  int hi = ((data >> 16) & 0xffff);
 
   uint32_t *code_pos_first  = (uint32_t *) addr_at(4);
   uint32_t *code_pos_second = (uint32_t *) addr_at(8);
@@ -525,6 +529,7 @@ void NativePostCallNop::patch(jint diff) {
 
   *((uint32_t *)(code_pos_first))  = (uint32_t) ((opcode | lo) << 5);
   *((uint32_t *)(code_pos_second)) = (uint32_t) ((opcode | hi) << 5);
+  return true; // successfully encoded
 }
 
 void NativeDeoptInstruction::verify() {

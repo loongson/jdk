@@ -142,6 +142,7 @@ class MacroAssembler: public Assembler {
 
   // Alignment
   void align(int modulus);
+  void align(int modulus, int target);
 
   void post_call_nop();
 
@@ -492,6 +493,8 @@ class MacroAssembler: public Assembler {
 
   // Emit the CompiledIC call idiom
   address ic_call(address entry, jint method_index = 0);
+  static int ic_check_size();
+  int ic_check(int end_alignment);
 
   void emit_static_call_stub();
 

@@ -27,6 +27,7 @@
 #include "asm/assembler.hpp"
 #include "asm/assembler.inline.hpp"
 #include "asm/macroAssembler.inline.hpp"
+#include "code/compiledIC.hpp"
 #include "compiler/disassembler.hpp"
 #include "compiler/oopMap.hpp"
 #include "gc/shared/barrierSet.hpp"
@@ -596,6 +597,41 @@ address MacroAssembler::ic_call(address entry, jint method_index) {
   assert(entry != nullptr, "call most probably wrong");
   InstructionMark im(this);
   return trampoline_call(AddressLiteral(entry, rh));
+}
+
+int MacroAssembler::ic_check_size() {
+  return 4 * 5;
+}
+
+int MacroAssembler::ic_check(int end_alignment) {
+  Register receiver = j_rarg0;
+  Register data = IC_Klass;
+  Register tmp1 = SCR1;
+  Register tmp2 = SCR2;
+
+  // The UEP of a code blob ensures that the VEP is padded. However, the padding of the UEP is placed
+  // before the inline cache check, so we don't have to execute any nop instructions when dispatching
+  // through the UEP, yet we can ensure that the VEP is aligned appropriately. That's why we align
+  // before the inline cache check here, and not after
+  align(end_alignment, offset() + ic_check_size());
+  int uep_offset = offset();
+
+  if (UseCompressedClassPointers) {
+    ld_wu(tmp1, Address(receiver, oopDesc::klass_offset_in_bytes()));
+    ld_wu(tmp2, Address(data, CompiledICData::speculated_klass_offset()));
+  } else {
+    ld_d(tmp1,  Address(receiver, oopDesc::klass_offset_in_bytes()));
+    ld_d(tmp2, Address(data, CompiledICData::speculated_klass_offset()));
+  }
+
+  Label ic_hit;
+  beq(tmp1, tmp2, ic_hit);
+  relocate(relocInfo::runtime_call_type);
+  patchable_jump(SharedRuntime::get_ic_miss_stub(), true /* force patchable */);
+  bind(ic_hit);
+
+  assert((offset() % end_alignment) == 0, "Misaligned verified entry point.");
+  return uep_offset;
 }
 
 void MacroAssembler::emit_static_call_stub() {
@@ -1778,7 +1814,14 @@ void MacroAssembler::pop_cont_fastpath(Register java_thread) {
 }
 
 void MacroAssembler::align(int modulus) {
-  while (offset() % modulus != 0) nop();
+  align(modulus, offset());
+}
+
+// Ensure that the code at target bytes offset from the current offset() is aligned
+// according to modulus.
+void MacroAssembler::align(int modulus, int target) {
+  int delta = target - offset();
+  while ((offset() + delta) % modulus != 0) nop();
 }
 
 void MacroAssembler::post_call_nop() {

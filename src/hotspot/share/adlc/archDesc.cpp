@@ -22,6 +22,11 @@
 //
 //
 
+/*
+ * This file has been modified by Loongson Technology in 2024. These
+ * modifications are Copyright (c) 2024, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
 
 // archDesc.cpp - Internal format for architecture definition
 #include <unordered_set>
@@ -756,7 +761,7 @@ bool ArchDesc::check_usage() {
   callback.do_form_by_name("vecA");
   callback.do_form_by_name("vecD");
   callback.do_form_by_name("vecX");
-#elif defined(IA32) || defined(AMD64)
+#elif defined(IA32) || defined(AMD64) || defined(LOONGARCH64)
   callback.do_form_by_name("vecS");
   callback.do_form_by_name("vecD");
   callback.do_form_by_name("vecX");

@@ -11027,6 +11027,7 @@ instruct storeSSD(stackSlotD dst, regD src)
 %}
 
 instruct cmpFastLock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2) %{
+  predicate(LockingMode != LM_LIGHTWEIGHT);
   match(Set cr (FastLock object box));
   effect(TEMP tmp1, TEMP tmp2);
 
@@ -11040,6 +11041,7 @@ instruct cmpFastLock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRe
 %}
 
 instruct cmpFastUnlock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2) %{
+  predicate(LockingMode != LM_LIGHTWEIGHT);
   match(Set cr (FastUnlock object box));
   effect(TEMP tmp1, TEMP tmp2);
 
@@ -11047,6 +11049,34 @@ instruct cmpFastUnlock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_m
 
   ins_encode %{
     __ fast_unlock_c2($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register);
+  %}
+
+  ins_pipe( pipe_slow );
+%}
+
+instruct cmpFastLockLightweight(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2, no_CR_mRegP tmp3) %{
+  predicate(LockingMode == LM_LIGHTWEIGHT);
+  match(Set cr (FastLock object box));
+  effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
+
+  format %{ "FASTLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3 #@ cmpFastLockLightweight" %}
+
+  ins_encode %{
+    __ fast_lock_lightweight($object$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register, $tmp3$$Register);
+  %}
+
+  ins_pipe( pipe_slow );
+%}
+
+instruct cmpFastUnlockLightweight(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2, no_CR_mRegP tmp3) %{
+  predicate(LockingMode == LM_LIGHTWEIGHT);
+  match(Set cr (FastUnlock object box));
+  effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
+
+  format %{ "FASTUNLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3 #@ cmpFastUnlockLightweight" %}
+
+  ins_encode %{
+    __ fast_unlock_lightweight($object$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register, $tmp3$$Register);
   %}
 
   ins_pipe( pipe_slow );

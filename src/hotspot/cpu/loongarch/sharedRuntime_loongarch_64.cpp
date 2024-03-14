@@ -1746,7 +1746,6 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       __ bne(swap_reg, R0, slow_path_lock);
     } else {
       assert(LockingMode == LM_LIGHTWEIGHT, "must be");
-      __ ld_d(swap_reg, Address(obj_reg, oopDesc::mark_offset_in_bytes()));
       // FIXME
       Register tmp = T1;
       __ lightweight_lock(obj_reg, swap_reg, tmp, SCR1, slow_path_lock);
@@ -1909,9 +1908,6 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       __ decrement(Address(TREG, JavaThread::held_monitor_count_offset()), 1);
     } else {
       assert(LockingMode == LM_LIGHTWEIGHT, "");
-      __ ld_d(lock_reg, Address(obj_reg, oopDesc::mark_offset_in_bytes()));
-      __ test_bit(AT, lock_reg, exact_log2(markWord::monitor_value));
-      __ bnez(AT, slow_path_unlock);
       __ lightweight_unlock(obj_reg, lock_reg, swap_reg, SCR1, slow_path_unlock);
       __ decrement(Address(TREG, JavaThread::held_monitor_count_offset()));
     }

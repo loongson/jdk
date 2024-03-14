@@ -37,6 +37,11 @@ public:
                  Register disp_hdr, Register tmp);
   void fast_unlock_c2(Register oop, Register box, Register flag,
                    Register disp_hdr, Register tmp);
+  // Code used by cmpFastLockLightweight and cmpFastUnlockLightweight mach instructions in .ad file.
+  void fast_lock_lightweight(Register object, Register flag,
+                             Register tmp1, Register tmp2, Register tmp3);
+  void fast_unlock_lightweight(Register object, Register flag,
+                               Register tmp1, Register tmp2, Register tmp3);
 
   // Compare strings.
   void string_compare(Register str1, Register str2,

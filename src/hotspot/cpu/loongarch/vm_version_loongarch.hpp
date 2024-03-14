@@ -300,6 +300,8 @@ public:
   static bool supports_float16() { return UseLSX; }
   constexpr static bool supports_stack_watermark_barrier() { return true; }
 
+  constexpr static bool supports_recursive_lightweight_locking() { return true; }
+
   // Check intrinsic support
   static bool is_intrinsic_supported(vmIntrinsicID id);
 

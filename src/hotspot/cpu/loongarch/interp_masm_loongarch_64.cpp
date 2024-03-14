@@ -786,7 +786,6 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
     }
 
     if (LockingMode == LM_LIGHTWEIGHT) {
-      ld_d(tmp_reg, Address(scr_reg, oopDesc::mark_offset_in_bytes()));
       lightweight_lock(scr_reg, tmp_reg, SCR1, SCR2, slow_case);
       b(count);
     } else if (LockingMode == LM_LEGACY) {
@@ -873,21 +872,6 @@ void InterpreterMacroAssembler::unlock_object(Register lock_reg) {
     if (LockingMode == LM_LIGHTWEIGHT) {
       Label slow_case;
 
-      // Check for non-symmetric locking. This is allowed by the spec and the interpreter
-      // must handle it.
-      Register tmp = SCR1;
-      // First check for lock-stack underflow.
-      ld_wu(tmp, Address(TREG, JavaThread::lock_stack_top_offset()));
-      li(AT, (unsigned)LockStack::start_offset());
-      bgeu(AT, tmp, slow_case);
-      // Then check if the top of the lock-stack matches the unlocked object.
-      addi_w(tmp, tmp, -oopSize);
-      ldx_d(tmp, TREG, tmp);
-      bne(scr_reg, tmp, slow_case);
-
-      ld_d(hdr_reg, Address(scr_reg, oopDesc::mark_offset_in_bytes()));
-      test_bit(AT, hdr_reg, exact_log2(markWord::monitor_value));
-      bnez(AT, slow_case);
       lightweight_unlock(scr_reg, hdr_reg, tmp_reg, SCR1, slow_case);
       b(count);
       bind(slow_case);

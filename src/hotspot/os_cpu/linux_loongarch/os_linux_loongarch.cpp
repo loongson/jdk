@@ -238,7 +238,7 @@ bool PosixSignals::pd_hotspot_signal_handler(int sig, siginfo_t* info,
         // here if the underlying file has been truncated.
         // Do not crash the VM in such a case.
         CodeBlob* cb = CodeCache::find_blob(pc);
-        CompiledMethod* nm = (cb != nullptr) ? cb->as_compiled_method_or_null() : nullptr;
+        nmethod* nm = (cb != nullptr) ? cb->as_nmethod_or_null() : nullptr;
 #ifdef PRINT_SIGNAL_HANDLE
         tty->print("cb = %lx, nm = %lx\n", cb, nm);
 #endif

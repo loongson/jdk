@@ -1103,8 +1103,7 @@ static void gen_continuation_enter(MacroAssembler* masm,
 
     __ b(exit);
 
-    CodeBuffer* cbuf = masm->code_section()->outer();
-    CompiledDirectCall::emit_to_interp_stub(*cbuf, mark);
+    CompiledDirectCall::emit_to_interp_stub(masm, mark);
   }
 
   // compiled entry
@@ -1168,8 +1167,7 @@ static void gen_continuation_enter(MacroAssembler* masm,
     __ jr(T4);
   }
 
-  CodeBuffer* cbuf = masm->code_section()->outer();
-  CompiledDirectCall::emit_to_interp_stub(*cbuf, mark);
+  CompiledDirectCall::emit_to_interp_stub(masm, mark);
 }
 
 static void gen_continuation_yield(MacroAssembler* masm,

@@ -995,6 +995,47 @@ void continuation_enter_cleanup(MacroAssembler* masm) {
 
   __ ld_d(AT, Address(SP, ContinuationEntry::parent_cont_fastpath_offset()));
   __ st_d(AT, Address(TREG, JavaThread::cont_fastpath_offset()));
+
+  if (CheckJNICalls) {
+    // Check if this is a virtual thread continuation
+    Label L_skip_vthread_code;
+    __ ld_wu(AT, Address(SP, ContinuationEntry::flags_offset()));
+    __ beqz(AT, L_skip_vthread_code);
+
+    // If the held monitor count is > 0 and this vthread is terminating then
+    // it failed to release a JNI monitor. So we issue the same log message
+    // that JavaThread::exit does.
+    __ ld_d(AT, Address(TREG, JavaThread::jni_monitor_count_offset()));
+    __ beqz(AT, L_skip_vthread_code);
+
+    // Save return value potentially containing the exception oop in callee-saved TSR
+    __ move(TSR, A0);
+    __ call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::log_jni_monitor_still_held));
+    // Restore potential return value
+    __ move(A0, TSR);
+
+    // For vthreads we have to explicitly zero the JNI monitor count of the carrier
+    // on termination. The held count is implicitly zeroed below when we restore from
+    // the parent held count (which has to be zero).
+    __ st_d(R0, Address(TREG, JavaThread::jni_monitor_count_offset()));
+
+    __ bind(L_skip_vthread_code);
+  }
+#ifdef ASSERT
+  else {
+    // Check if this is a virtual thread continuation
+    Label L_skip_vthread_code;
+    __ ld_wu(AT, Address(SP, ContinuationEntry::flags_offset()));
+    __ beqz(AT, L_skip_vthread_code);
+
+    // See comment just above. If not checking JNI calls the JNI count is only
+    // needed for assertion checking.
+    __ st_d(R0, Address(TREG, JavaThread::jni_monitor_count_offset()));
+
+    __ bind(L_skip_vthread_code);
+  }
+#endif
+
   __ ld_d(AT, Address(SP, ContinuationEntry::parent_held_monitor_count_offset()));
   __ st_d(AT, Address(TREG, JavaThread::held_monitor_count_offset()));
 

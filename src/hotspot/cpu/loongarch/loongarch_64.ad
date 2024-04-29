@@ -1404,20 +1404,29 @@ static int vec_spill_helper(CodeBuffer *cbuf, bool do_size, bool is_load,
   int size = 0;
   if (cbuf) {
     MacroAssembler _masm(cbuf);
-    int offset = __ offset();
     if (is_load) {
       switch (ireg) {
         case Op_VecS:
-          __ fld_s(as_FloatRegister(Matcher::_regEncode[reg]), SP, stack_offset);
+          __ fld_s(as_FloatRegister(Matcher::_regEncode[reg]), Address(SP, stack_offset));
           break;
         case Op_VecD:
-          __ fld_d(as_FloatRegister(Matcher::_regEncode[reg]), SP, stack_offset);
+          __ fld_d(as_FloatRegister(Matcher::_regEncode[reg]), Address(SP, stack_offset));
           break;
         case Op_VecX:
-          __ vld(as_FloatRegister(Matcher::_regEncode[reg]), SP, stack_offset);
+          if (Assembler::is_simm(stack_offset, 12)) {
+            __ vld(as_FloatRegister(Matcher::_regEncode[reg]), SP, stack_offset);
+          } else {
+            __ li(AT, stack_offset);
+            __ vldx(as_FloatRegister(Matcher::_regEncode[reg]), SP, AT);
+          }
           break;
         case Op_VecY:
-          __ xvld(as_FloatRegister(Matcher::_regEncode[reg]), SP, stack_offset);
+          if (Assembler::is_simm(stack_offset, 12)) {
+            __ xvld(as_FloatRegister(Matcher::_regEncode[reg]), SP, stack_offset);
+          } else {
+            __ li(AT, stack_offset);
+            __ xvldx(as_FloatRegister(Matcher::_regEncode[reg]), SP, AT);
+          }
           break;
         default:
           ShouldNotReachHere();
@@ -1425,16 +1434,26 @@ static int vec_spill_helper(CodeBuffer *cbuf, bool do_size, bool is_load,
     } else { // store
       switch (ireg) {
         case Op_VecS:
-          __ fst_s(as_FloatRegister(Matcher::_regEncode[reg]), SP, stack_offset);
+          __ fst_s(as_FloatRegister(Matcher::_regEncode[reg]), Address(SP, stack_offset));
           break;
         case Op_VecD:
-          __ fst_d(as_FloatRegister(Matcher::_regEncode[reg]), SP, stack_offset);
+          __ fst_d(as_FloatRegister(Matcher::_regEncode[reg]), Address(SP, stack_offset));
           break;
         case Op_VecX:
-          __ vst(as_FloatRegister(Matcher::_regEncode[reg]), SP, stack_offset);
+          if (Assembler::is_simm(stack_offset, 12)) {
+            __ vst(as_FloatRegister(Matcher::_regEncode[reg]), SP, stack_offset);
+          } else {
+            __ li(AT, stack_offset);
+            __ vstx(as_FloatRegister(Matcher::_regEncode[reg]), SP, AT);
+          }
           break;
         case Op_VecY:
-          __ xvst(as_FloatRegister(Matcher::_regEncode[reg]), SP, stack_offset);
+          if (Assembler::is_simm(stack_offset, 12)) {
+            __ xvst(as_FloatRegister(Matcher::_regEncode[reg]), SP, stack_offset);
+          } else {
+            __ li(AT, stack_offset);
+            __ xvstx(as_FloatRegister(Matcher::_regEncode[reg]), SP, AT);
+          }
           break;
         default:
           ShouldNotReachHere();

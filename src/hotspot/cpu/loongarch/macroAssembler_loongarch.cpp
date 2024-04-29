@@ -3370,12 +3370,16 @@ void MacroAssembler::membar(Membar_mask_bits hint){
   address prev = pc() - NativeInstruction::sync_instruction_size;
   address last = code()->last_insn();
   if (last != nullptr && ((NativeInstruction*)last)->is_sync() && prev == last) {
-    code()->set_last_insn(nullptr);
     NativeMembar *membar = (NativeMembar*)prev;
+#ifndef PRODUCT
+    char buf[50];
+    snprintf(buf, sizeof(buf), "merged membar 0x%x 0x%x => 0x%x",
+      (Ordering | membar->get_hint()), (Ordering | (~hint & 0xF)), (Ordering | (membar->get_hint() & (~hint & 0xF))));
+    block_comment(buf);
+#endif
     // merged membar
     // e.g. LoadLoad and LoadLoad|LoadStore to LoadLoad|LoadStore
     membar->set_hint(membar->get_hint() & (~hint & 0xF));
-    block_comment("merged membar");
   } else {
     code()->set_last_insn(pc());
     Assembler::membar(hint);

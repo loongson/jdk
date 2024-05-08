@@ -3644,7 +3644,7 @@ void TemplateTable::_new() {
 
   // get instance_size in InstanceKlass (scaled to a count of bytes)
   __ ld_w(T0, T3, in_bytes(Klass::layout_helper_offset()) );
-  // test to see if it has a finalizer or is malformed in some way
+  // test to see if is malformed in some way
   __ test_bit(AT, T0, exact_log2(Klass::_lh_instance_slow_path_bit));
   __ bnez(AT, slow_case);
 

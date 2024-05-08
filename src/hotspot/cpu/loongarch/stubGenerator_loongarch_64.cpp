@@ -563,7 +563,7 @@ class StubGenerator: public StubCodeGenerator {
     BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
 
     {
-      UnsafeCopyMemoryMark ucmm(this, true, true);
+      UnsafeMemoryAccessMark umam(this, true, true);
       Label loop, le32, le16, le8, lt8;
 
       __ bind(entry);
@@ -666,7 +666,7 @@ class StubGenerator: public StubCodeGenerator {
     BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
 
     {
-      UnsafeCopyMemoryMark ucmm(this, true, true);
+      UnsafeMemoryAccessMark umam(this, true, true);
       Label loop, le64, le32, le16, lt16;
 
       __ bind(entry);
@@ -759,7 +759,7 @@ class StubGenerator: public StubCodeGenerator {
     BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
 
     {
-      UnsafeCopyMemoryMark ucmm(this, true, true);
+      UnsafeMemoryAccessMark umam(this, true, true);
       Label loop, le128, le64, le32, lt32;
 
       __ bind(entry);
@@ -849,7 +849,7 @@ class StubGenerator: public StubCodeGenerator {
     BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
 
     {
-      UnsafeCopyMemoryMark ucmm(this, true, true);
+      UnsafeMemoryAccessMark umam(this, true, true);
       Label loop, le32, le16, le8, lt8;
 
       __ bind(entry);
@@ -949,7 +949,7 @@ class StubGenerator: public StubCodeGenerator {
     BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
 
     {
-      UnsafeCopyMemoryMark ucmm(this, true, true);
+      UnsafeMemoryAccessMark umam(this, true, true);
       Label loop, le64, le32, le16, lt16;
 
       __ bind(entry);
@@ -1039,7 +1039,7 @@ class StubGenerator: public StubCodeGenerator {
     BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
 
     {
-      UnsafeCopyMemoryMark ucmm(this, true, true);
+      UnsafeMemoryAccessMark umam(this, true, true);
       Label loop, le128, le64, le32, lt32;
 
       __ bind(entry);
@@ -2095,7 +2095,7 @@ class StubGenerator: public StubCodeGenerator {
     __ jr(RA);
 
     {
-      UnsafeCopyMemoryMark ucmm(this, true, true);
+      UnsafeMemoryAccessMark umam(this, true, true);
       // 1:
       __ bind(L1);
       bs->copy_load_at(_masm, decorators, type, 8, T8, Address(A0, 0), gct1);
@@ -5786,8 +5786,8 @@ static const int64_t right_3_bits = right_n_bits(3);
                                  SharedRuntime::throw_delayed_StackOverflowError));
 
     // Initialize table for copy memory (arraycopy) check.
-    if (UnsafeCopyMemory::_table == nullptr) {
-      UnsafeCopyMemory::create_table(8 + 4 ZGC_ONLY(+ (UseZGC && ZGenerational ? 14 : 0))); // 8 for copyMemory; 4 for setMemory
+    if (UnsafeMemoryAccess::_table == nullptr) {
+      UnsafeMemoryAccess::create_table(8 + 4 ZGC_ONLY(+ (UseZGC && ZGenerational ? 14 : 0))); // 8 for copyMemory; 4 for setMemory
     }
 
     if (UseCRC32Intrinsics) {

@@ -288,6 +288,8 @@ void InterpreterMacroAssembler::load_field_entry(Register cache, Register index,
   ld_d(cache, Address(cache, ConstantPoolCache::field_entries_offset()));
   addi_d(cache, cache, Array<ResolvedIndyEntry>::base_offset_in_bytes());
   add_d(cache, cache, index);
+  // Prevents stale data from being read after the bytecode is patched to the fast bytecode
+  membar(MacroAssembler::LoadLoad);
 }
 
 void InterpreterMacroAssembler::load_method_entry(Register cache, Register index, int bcp_offset) {

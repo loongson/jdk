@@ -592,6 +592,10 @@ reg_class no_CR_reg %{
   return _NO_CR_REG_mask;
 %}
 
+reg_class no_FP_reg %{
+  return _NO_FP_REG_mask;
+%}
+
 reg_class p_has_s6_reg %{
   return _PTR_HAS_S6_REG_mask;
 %}
@@ -799,6 +803,7 @@ extern RegMask _ANY_REG32_mask;
 extern RegMask _ANY_REG_mask;
 extern RegMask _PTR_REG_mask;
 extern RegMask _NO_CR_REG_mask;
+extern RegMask _NO_FP_REG_mask;
 extern RegMask _PTR_HAS_S6_REG_mask;
 
 class CallStubImpl {
@@ -878,6 +883,7 @@ RegMask _ANY_REG32_mask;
 RegMask _ANY_REG_mask;
 RegMask _PTR_REG_mask;
 RegMask _NO_CR_REG_mask;
+RegMask _NO_FP_REG_mask;
 RegMask _PTR_HAS_S6_REG_mask;
 
 void reg_mask_init() {
@@ -909,6 +915,9 @@ void reg_mask_init() {
 
   _NO_CR_REG_mask = _PTR_REG_mask;
   _NO_CR_REG_mask.SUBTRACT(_T0_LONG_REG_mask);
+
+  _NO_FP_REG_mask = _PTR_REG_mask;
+  _NO_FP_REG_mask.Remove(OptoReg::as_OptoReg(r22->as_VMReg()));
 
   _PTR_HAS_S6_REG_mask.OR(_S6_LONG_REG_mask);
 }
@@ -3276,6 +3285,17 @@ operand no_CR_mRegP() %{
   interface(REG_INTER);
 %}
 
+// This operand is not allowed to use FP even if
+// FP is not used to hold the frame pointer.
+operand no_FP_mRegP() %{
+  constraint(ALLOC_IN_RC(no_FP_reg));
+  match(RegP);
+  match(mRegP);
+
+  format %{  %}
+  interface(REG_INTER);
+%}
+
 operand p_has_s6_mRegP() %{
   constraint(ALLOC_IN_RC(p_has_s6_reg));
   match(RegP);
@@ -4729,7 +4749,9 @@ instruct loadConNKlass(mRegN dst, immNKlass src) %{
 // Also known as an 'interprocedural jump'.
 // Target of jump will eventually return to caller.
 // TailJump below removes the return address.
-instruct TailCalljmpInd(mRegP jump_target, s3_RegP method_ptr) %{
+// Don't use FP for 'jump_target' because a MachEpilogNode has already been
+// emitted just above the TailCall which has reset FP to the caller state.
+instruct TailCalljmpInd(no_FP_mRegP jump_target, s3_RegP method_ptr) %{
   match(TailCall jump_target method_ptr);
 
   format %{ "JMP    $jump_target \t# @TailCalljmpInd" %}
@@ -10559,7 +10581,7 @@ instruct Ret() %{
 // "restore" before this instruction (in Epilogue), we need to materialize it
 // in %i0.
 //FIXME
-instruct tailjmpInd(mRegP jump_target, a0_RegP ex_oop, mA1RegI exception_pc) %{
+instruct tailjmpInd(no_FP_mRegP jump_target, a0_RegP ex_oop, mA1RegI exception_pc) %{
   match( TailJump jump_target ex_oop );
   ins_cost(200);
   format %{ "Jmp     $jump_target  ; ex_oop = $ex_oop #@tailjmpInd" %}

@@ -3044,13 +3044,13 @@ void TemplateTable::fast_storefield(TosState state) {
 
   // access constant pool cache
   __ load_field_entry(T3, T2);
+
+  // Must prevent reordering of the following cp cache loads with bytecode load
+  __ membar(__ LoadLoad);
   __ push(T0);
   // T2: field offset, T0: TOS, T1: flags
   load_resolved_field_entry(T3, T3, T0, T2, T1);
   __ pop(T0);
-
-  // Must prevent reordering of the following cp cache loads with bytecode load
-  __ membar(__ LoadLoad);
 
   Label Done;
   {

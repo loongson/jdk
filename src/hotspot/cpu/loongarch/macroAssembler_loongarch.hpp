@@ -479,7 +479,8 @@ class MacroAssembler: public Assembler {
   void call(address entry, RelocationHolder& rh);
   void call_long(address entry);
 
-  address trampoline_call(AddressLiteral entry, CodeBuffer *cbuf = nullptr);
+  // Return: the call PC or null if CodeCache is full.
+  address trampoline_call(AddressLiteral entry);
 
   static const unsigned long branch_range = NOT_DEBUG(128 * M) DEBUG_ONLY(2 * M);
 

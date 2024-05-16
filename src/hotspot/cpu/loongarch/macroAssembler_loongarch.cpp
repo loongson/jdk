@@ -164,7 +164,7 @@ void MacroAssembler::patchable_call(address target, address call_site) {
 
 // Maybe emit a call via a trampoline. If the code cache is small
 // trampolines won't be emitted.
-address MacroAssembler::trampoline_call(AddressLiteral entry, CodeBuffer* cbuf) {
+address MacroAssembler::trampoline_call(AddressLiteral entry) {
   assert(entry.rspec().type() == relocInfo::runtime_call_type ||
          entry.rspec().type() == relocInfo::opt_virtual_call_type ||
          entry.rspec().type() == relocInfo::static_call_type ||
@@ -184,13 +184,12 @@ address MacroAssembler::trampoline_call(AddressLiteral entry, CodeBuffer* cbuf) 
     target = pc();
   }
 
-  if (cbuf != nullptr) { cbuf->set_insts_mark(); }
+  address call_pc = pc();
   relocate(entry.rspec());
   bl(target);
 
-  // just need to return a non-null address
   postcond(pc() != badAddress);
-  return pc();
+  return call_pc;
 }
 
 // Emit a trampoline stub for a call to a target which is too far away.
@@ -3370,12 +3369,16 @@ void MacroAssembler::membar(Membar_mask_bits hint){
   address prev = pc() - NativeInstruction::sync_instruction_size;
   address last = code()->last_insn();
   if (last != nullptr && ((NativeInstruction*)last)->is_sync() && prev == last) {
-    code()->set_last_insn(nullptr);
     NativeMembar *membar = (NativeMembar*)prev;
+#ifndef PRODUCT
+    char buf[50];
+    snprintf(buf, sizeof(buf), "merged membar 0x%x 0x%x => 0x%x",
+      (Ordering | membar->get_hint()), (Ordering | (~hint & 0xF)), (Ordering | (membar->get_hint() & (~hint & 0xF))));
+    block_comment(buf);
+#endif
     // merged membar
     // e.g. LoadLoad and LoadLoad|LoadStore to LoadLoad|LoadStore
     membar->set_hint(membar->get_hint() & (~hint & 0xF));
-    block_comment("merged membar");
   } else {
     code()->set_last_insn(pc());
     Assembler::membar(hint);

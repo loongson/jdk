@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,10 +25,10 @@
 
 #include "precompiled.hpp"
 #include "asm/macroAssembler.hpp"
+#include "code/compiledIC.hpp"
 #include "code/vtableStubs.hpp"
 #include "interp_masm_loongarch.hpp"
 #include "memory/resourceArea.hpp"
-#include "oops/compiledICHolder.hpp"
 #include "oops/klass.inline.hpp"
 #include "oops/klassVtable.hpp"
 #include "runtime/sharedRuntime.hpp"
@@ -193,14 +193,14 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
   }
 #endif // PRODUCT
 
-  const Register holder_klass_reg   = T1; // declaring interface klass (DECC)
+  const Register holder_klass_reg   = T1; // declaring interface klass (DEFC)
   const Register resolved_klass_reg = Rmethod; // resolved interface klass (REFC)
-  const Register icholder_reg = T1;
+  const Register icdata_reg = T1;
 
   Label L_no_such_interface;
 
-  __ ld_d(resolved_klass_reg, Address(icholder_reg, CompiledICHolder::holder_klass_offset()));
-  __ ld_d(holder_klass_reg,   Address(icholder_reg, CompiledICHolder::holder_metadata_offset()));
+  __ ld_d(resolved_klass_reg, Address(icdata_reg, CompiledICData::itable_refc_klass_offset()));
+  __ ld_d(holder_klass_reg,   Address(icdata_reg, CompiledICData::itable_defc_klass_offset()));
 
   // get receiver klass (also an implicit null-check)
   address npe_addr = __ pc();

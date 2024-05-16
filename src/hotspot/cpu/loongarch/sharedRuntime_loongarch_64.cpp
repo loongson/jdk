@@ -28,13 +28,11 @@
 #include "asm/macroAssembler.inline.hpp"
 #include "code/compiledIC.hpp"
 #include "code/debugInfoRec.hpp"
-#include "code/icBuffer.hpp"
 #include "code/nativeInst.hpp"
 #include "code/vtableStubs.hpp"
 #include "compiler/oopMap.hpp"
 #include "gc/shared/barrierSetAssembler.hpp"
 #include "interpreter/interpreter.hpp"
-#include "oops/compiledICHolder.hpp"
 #include "oops/klass.inline.hpp"
 #include "oops/method.inline.hpp"
 #include "prims/methodHandles.hpp"
@@ -692,25 +690,18 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
   Label skip_fixup;
   {
     __ block_comment("c2i_unverified_entry {");
-    Register holder = IC_Klass;
+    Register data = IC_Klass;
     Register receiver = T0;
     Register temp = T8;
     address ic_miss = SharedRuntime::get_ic_miss_stub();
 
-    Label missed;
-
-    //add for compressedoops
-    __ load_klass(temp, receiver);
-
-    __ ld_d(AT, Address(holder, CompiledICHolder::holder_klass_offset()));
-    __ ld_d(Rmethod, Address(holder, CompiledICHolder::holder_metadata_offset()));
-    __ bne(AT, temp, missed);
     // Method might have been compiled since the call site was patched to
     // interpreted if that is the case treat it as a miss so we can get
     // the call site corrected.
+    __ ic_check(1 /* end_alignment */);
+    __ ld_d(Rmethod, Address(data, CompiledICData::speculated_method_offset()));
     __ ld_d(AT, Address(Rmethod, Method::code_offset()));
     __ beq(AT, R0, skip_fixup);
-    __ bind(missed);
 
     __ jmp(ic_miss, relocInfo::runtime_call_type);
     __ block_comment("} c2i_unverified_entry");
@@ -1072,7 +1063,7 @@ static void gen_continuation_enter(MacroAssembler* masm,
     __ b(exit);
 
     CodeBuffer* cbuf = masm->code_section()->outer();
-    CompiledStaticCall::emit_to_interp_stub(*cbuf, mark);
+    CompiledDirectCall::emit_to_interp_stub(*cbuf, mark);
   }
 
   // compiled entry
@@ -1137,7 +1128,7 @@ static void gen_continuation_enter(MacroAssembler* masm,
   }
 
   CodeBuffer* cbuf = masm->code_section()->outer();
-  CompiledStaticCall::emit_to_interp_stub(*cbuf, mark);
+  CompiledDirectCall::emit_to_interp_stub(*cbuf, mark);
 }
 
 static void gen_continuation_yield(MacroAssembler* masm,
@@ -1324,6 +1315,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
                                               in_ByteSize(-1),
                                               oop_maps,
                                               exception_offset);
+    if (nm == nullptr) return nm;
     if (method->is_continuation_enter_intrinsic()) {
       ContinuationEntry::set_enter_code(nm, interpreted_entry_offset);
     } else if (method->is_continuation_yield_intrinsic()) {
@@ -1484,24 +1476,17 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
 
   // First thing make an ic check to see if we should even be here
-  address ic_miss = SharedRuntime::get_ic_miss_stub();
 
   // We are free to use all registers as temps without saving them and
   // restoring them except fp. fp is the only callee save register
   // as far as the interpreter and the compiler(s) are concerned.
 
-  const Register ic_reg = IC_Klass;
   const Register receiver = T0;
 
-  Label hit;
   Label exception_pending;
 
   __ verify_oop(receiver);
-  //add for compressedoops
-  __ load_klass(T4, receiver);
-  __ beq(T4, ic_reg, hit);
-  __ jmp(ic_miss, relocInfo::runtime_call_type);
-  __ bind(hit);
+  __ ic_check(8 /* end_alignment */);
 
   int vep_offset = ((intptr_t)__ pc()) - start;
 

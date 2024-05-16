@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,6 @@
 #include "precompiled.hpp"
 #include "asm/macroAssembler.inline.hpp"
 #include "code/compiledIC.hpp"
-#include "code/icBuffer.hpp"
 #include "code/nmethod.hpp"
 #include "logging/log.hpp"
 #include "memory/resourceArea.hpp"
@@ -36,7 +35,7 @@
 // ----------------------------------------------------------------------------
 
 #define __ _masm.
-address CompiledStaticCall::emit_to_interp_stub(CodeBuffer &cbuf, address mark) {
+address CompiledDirectCall::emit_to_interp_stub(CodeBuffer &cbuf, address mark) {
   precond(cbuf.stubs()->start() != badAddress);
   precond(cbuf.stubs()->end() != badAddress);
 
@@ -48,7 +47,7 @@ address CompiledStaticCall::emit_to_interp_stub(CodeBuffer &cbuf, address mark) 
   // That's why we must use the macroassembler to generate a stub.
   MacroAssembler _masm(&cbuf);
 
-  address base = __ start_a_stub(CompiledStaticCall::to_interp_stub_size());
+  address base = __ start_a_stub(CompiledDirectCall::to_interp_stub_size());
   if (base == nullptr)  return nullptr;  // CodeBuffer::expand failed
   // static stub relocation stores the instruction address of the call
 
@@ -64,29 +63,22 @@ address CompiledStaticCall::emit_to_interp_stub(CodeBuffer &cbuf, address mark) 
 }
 #undef __
 
-int CompiledStaticCall::to_interp_stub_size() {
+int CompiledDirectCall::to_interp_stub_size() {
   return NativeInstruction::nop_instruction_size + NativeMovConstReg::instruction_size + NativeGeneralJump::instruction_size;
 }
 
-int CompiledStaticCall::to_trampoline_stub_size() {
+int CompiledDirectCall::to_trampoline_stub_size() {
   return  NativeInstruction::nop_instruction_size + NativeCallTrampolineStub::instruction_size;
 }
 
 // Relocation entries for call stub, compiled java to interpreter.
-int CompiledStaticCall::reloc_to_interp_stub() {
+int CompiledDirectCall::reloc_to_interp_stub() {
   return 16;
 }
 
-void CompiledDirectStaticCall::set_to_interpreted(const methodHandle& callee, address entry) {
+void CompiledDirectCall::set_to_interpreted(const methodHandle& callee, address entry) {
   address stub = find_stub();
   guarantee(stub != nullptr, "stub not found");
-
-  {
-    ResourceMark rm;
-    log_trace(inlinecache)("CompiledDirectStaticCall@" INTPTR_FORMAT ": set_to_interpreted %s",
-                  p2i(instruction_address()),
-                  callee->name_and_sig_as_C_string());
-  }
 
   // Creation also verifies the object.
   NativeMovConstReg* method_holder = nativeMovConstReg_at(stub + NativeInstruction::nop_instruction_size);
@@ -101,7 +93,7 @@ void CompiledDirectStaticCall::set_to_interpreted(const methodHandle& callee, ad
   set_destination_mt_safe(stub);
 }
 
-void CompiledDirectStaticCall::set_stub_to_clean(static_stub_Relocation* static_stub) {
+void CompiledDirectCall::set_stub_to_clean(static_stub_Relocation* static_stub) {
   assert (CompiledIC_lock->is_locked() || SafepointSynchronize::is_at_safepoint(), "mt unsafe call");
   // Reset stub.
   address stub = static_stub->addr();
@@ -117,7 +109,7 @@ void CompiledDirectStaticCall::set_stub_to_clean(static_stub_Relocation* static_
 // Non-product mode code
 #ifndef PRODUCT
 
-void CompiledDirectStaticCall::verify() {
+void CompiledDirectCall::verify() {
   // Verify call.
   _call->verify();
   if (os::is_MP()) {

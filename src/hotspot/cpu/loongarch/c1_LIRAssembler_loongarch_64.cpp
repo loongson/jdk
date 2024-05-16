@@ -251,35 +251,7 @@ void LIR_Assembler::osr_entry() {
 
 // inline cache check; done before the frame is built.
 int LIR_Assembler::check_icache() {
-  Register receiver = FrameMap::receiver_opr->as_register();
-  Register ic_klass = IC_Klass;
-  int start_offset = __ offset();
-  Label dont;
-
-  __ verify_oop(receiver);
-
-  // explicit null check not needed since load from [klass_offset] causes a trap
-  // check against inline cache
-  assert(!MacroAssembler::needs_explicit_null_check(oopDesc::klass_offset_in_bytes()),
-         "must add explicit null check");
-
-  __ load_klass(SCR2, receiver);
-  __ beq(SCR2, ic_klass, dont);
-
-  // if icache check fails, then jump to runtime routine
-  // Note: RECEIVER must still contain the receiver!
-  __ jmp(SharedRuntime::get_ic_miss_stub(), relocInfo::runtime_call_type);
-
-  // We align the verified entry point unless the method body
-  // (including its inline cache check) will fit in a single 64-byte
-  // icache line.
-  if (!method()->is_accessor() || __ offset() - start_offset > 4 * 4) {
-    // force alignment after the cache check.
-    __ align(CodeEntryAlignment);
-  }
-
-  __ bind(dont);
-  return start_offset;
+  return __ ic_check(CodeEntryAlignment);
 }
 
 void LIR_Assembler::clinit_barrier(ciMethod* method) {
@@ -2334,7 +2306,7 @@ void LIR_Assembler::emit_static_call_stub() {
   // This is recognized as unresolved by relocs/nativeInst/ic code
   __ patchable_jump(__ pc());
 
-  assert(__ offset() - start + CompiledStaticCall::to_trampoline_stub_size() <= call_stub_size(),
+  assert(__ offset() - start + CompiledDirectCall::to_trampoline_stub_size() <= call_stub_size(),
          "stub too big");
   __ end_a_stub();
 }

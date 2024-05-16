@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, Red Hat, Inc. All rights reserved.
- * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -244,8 +244,12 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Method* entry,
   __ mov_metadata(Rmethod, entry);
   __ st_d(Rmethod, TREG, in_bytes(JavaThread::callee_target_offset())); // just in case callee is deoptimized
 
+  __ push_cont_fastpath(TREG);
+
   __ ld_d(T4, Rmethod, in_bytes(Method::from_compiled_offset()));
   __ jalr(T4);
+
+  __ pop_cont_fastpath(TREG);
 
     // return value shuffle
   if (!needs_return_buffer) {

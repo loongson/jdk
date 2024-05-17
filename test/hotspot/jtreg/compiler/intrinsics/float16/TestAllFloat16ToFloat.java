@@ -32,7 +32,7 @@
  * @bug 8302976
  * @summary Verify conversion between float and the binary16 format
  * @requires (vm.cpu.features ~= ".*avx512vl.*" | vm.cpu.features ~= ".*f16c.*") | os.arch == "aarch64"
- *           | (os.arch == "riscv64" & vm.cpu.features ~= ".*zfh,.*") | os.arch == "loongarch64"
+ *           | (os.arch == "riscv64" & vm.cpu.features ~= ".*zfh.*") | os.arch == "loongarch64"
  * @requires vm.compiler1.enabled & vm.compiler2.enabled
  * @requires vm.compMode != "Xcomp"
  * @comment default run:

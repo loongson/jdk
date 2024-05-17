@@ -2732,15 +2732,6 @@ operand immI() %{
   interface(CONST_INTER);
 %}
 
-operand immIU1() %{
-  predicate((0 <= n->get_int()) && (n->get_int() <= 1));
-  match(ConI);
-
-  op_cost(5);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
 operand immIU2() %{
   predicate((0 <= n->get_int()) && (n->get_int() <= 3));
   match(ConI);
@@ -2844,33 +2835,6 @@ operand immI_0() %{
 
 operand immI_1() %{
   predicate(n->get_int() == 1);
-  match(ConI);
-
-  op_cost(0);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
-operand immI_2() %{
-  predicate(n->get_int() == 2);
-  match(ConI);
-
-  op_cost(0);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
-operand immI_4() %{
-  predicate(n->get_int() == 4);
-  match(ConI);
-
-  op_cost(0);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
-operand immI_8() %{
-  predicate(n->get_int() == 8);
   match(ConI);
 
   op_cost(0);
@@ -3058,17 +3022,6 @@ operand immL12() %{
   interface(CONST_INTER);
 %}
 
-// Long Immediate 32-bit signed
-operand immL32()
-%{
-  predicate(n->get_long() == (int)n->get_long());
-  match(ConL);
-
-  op_cost(15);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
 // Long Immediate zero
 operand immL_0() %{
   predicate(n->get_long() == 0L);
@@ -3118,26 +3071,6 @@ operand immL_nonneg_mask() %{
 
 operand immL_zeroins_mask() %{
   predicate(Assembler::is_zeroins_mask(n->get_long()));
-  match(ConL);
-
-  op_cost(0);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
-operand immL_gt_7()
-%{
-  predicate(n->get_long() > 7);
-  match(ConL);
-
-  op_cost(0);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
-operand immL_gt_15()
-%{
-  predicate(n->get_long() > 15);
   match(ConL);
 
   op_cost(0);
@@ -3268,79 +3201,6 @@ operand mRegI() %{
   interface(REG_INTER);
 %}
 
-operand mS0RegI() %{
-  constraint(ALLOC_IN_RC(s0_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{ "S0" %}
-  interface(REG_INTER);
-%}
-
-operand mS1RegI() %{
-  constraint(ALLOC_IN_RC(s1_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{ "S1" %}
-  interface(REG_INTER);
-%}
-
-operand mS3RegI() %{
-  constraint(ALLOC_IN_RC(s3_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{ "S3" %}
-  interface(REG_INTER);
-%}
-
-operand mS4RegI() %{
-  constraint(ALLOC_IN_RC(s4_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{ "S4" %}
-  interface(REG_INTER);
-%}
-
-operand mS5RegI() %{
-  constraint(ALLOC_IN_RC(s5_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{ "S5" %}
-  interface(REG_INTER);
-%}
-
-operand mS6RegI() %{
-  constraint(ALLOC_IN_RC(s6_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{ "S6" %}
-  interface(REG_INTER);
-%}
-
-operand mS7RegI() %{
-  constraint(ALLOC_IN_RC(s7_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{ "S7" %}
-  interface(REG_INTER);
-%}
-
-
-operand mT0RegI() %{
-  constraint(ALLOC_IN_RC(t0_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{ "T0" %}
-  interface(REG_INTER);
-%}
-
 operand mT1RegI() %{
   constraint(ALLOC_IN_RC(t1_reg));
   match(RegI);
@@ -3359,30 +3219,12 @@ operand mT2RegI() %{
   interface(REG_INTER);
 %}
 
-operand mT3RegI() %{
-  constraint(ALLOC_IN_RC(t3_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{ "T3" %}
-  interface(REG_INTER);
-%}
-
 operand mT8RegI() %{
   constraint(ALLOC_IN_RC(t8_reg));
   match(RegI);
   match(mRegI);
 
   format %{ "T8" %}
-  interface(REG_INTER);
-%}
-
-operand mT4RegI() %{
-  constraint(ALLOC_IN_RC(t4_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{ "T4" %}
   interface(REG_INTER);
 %}
 
@@ -3410,24 +3252,6 @@ operand mA2RegI() %{
   match(mRegI);
 
   format %{ "A2" %}
-  interface(REG_INTER);
-%}
-
-operand mA3RegI() %{
-  constraint(ALLOC_IN_RC(a3_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{ "A3" %}
-  interface(REG_INTER);
-%}
-
-operand mA4RegI() %{
-  constraint(ALLOC_IN_RC(a4_reg));
-  match(RegI);
-  match(mRegI);
-
-  format %{ "A4" %}
   interface(REG_INTER);
 %}
 
@@ -3466,186 +3290,6 @@ operand mRegN() %{
   interface(REG_INTER);
 %}
 
-operand t0_RegN() %{
-  constraint(ALLOC_IN_RC(t0_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand t1_RegN() %{
-  constraint(ALLOC_IN_RC(t1_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand t3_RegN() %{
-  constraint(ALLOC_IN_RC(t3_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand t8_RegN() %{
-  constraint(ALLOC_IN_RC(t8_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a0_RegN() %{
-  constraint(ALLOC_IN_RC(a0_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a1_RegN() %{
-  constraint(ALLOC_IN_RC(a1_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a2_RegN() %{
-  constraint(ALLOC_IN_RC(a2_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a3_RegN() %{
-  constraint(ALLOC_IN_RC(a3_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a4_RegN() %{
-  constraint(ALLOC_IN_RC(a4_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a5_RegN() %{
-  constraint(ALLOC_IN_RC(a5_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a6_RegN() %{
-  constraint(ALLOC_IN_RC(a6_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a7_RegN() %{
-  constraint(ALLOC_IN_RC(a7_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s0_RegN() %{
-  constraint(ALLOC_IN_RC(s0_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s1_RegN() %{
-  constraint(ALLOC_IN_RC(s1_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s2_RegN() %{
-  constraint(ALLOC_IN_RC(s2_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s3_RegN() %{
-  constraint(ALLOC_IN_RC(s3_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s4_RegN() %{
-  constraint(ALLOC_IN_RC(s4_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s5_RegN() %{
-  constraint(ALLOC_IN_RC(s5_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s6_RegN() %{
-  constraint(ALLOC_IN_RC(s6_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s7_RegN() %{
-  constraint(ALLOC_IN_RC(s7_reg));
-  match(RegN);
-  match(mRegN);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
 // Pointer Register
 operand mRegP() %{
   constraint(ALLOC_IN_RC(p_reg));
@@ -3675,49 +3319,9 @@ operand p_has_s6_mRegP() %{
   interface(REG_INTER);
 %}
 
-operand s1_RegP()
-%{
-  constraint(ALLOC_IN_RC(s1_long_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
 operand s3_RegP()
 %{
   constraint(ALLOC_IN_RC(s3_long_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s4_RegP()
-%{
-  constraint(ALLOC_IN_RC(s4_long_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s5_RegP()
-%{
-  constraint(ALLOC_IN_RC(s5_long_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s6_RegP()
-%{
-  constraint(ALLOC_IN_RC(s6_long_reg));
   match(RegP);
   match(mRegP);
 
@@ -3731,65 +3335,6 @@ operand javaThread_RegP(mRegP reg)
   constraint(ALLOC_IN_RC(s6_long_reg)); // S6 denotes TREG (java_thread)
   match(reg);
   op_cost(0);
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s7_RegP()
-%{
-  constraint(ALLOC_IN_RC(s7_long_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand t0_RegP()
-%{
-  constraint(ALLOC_IN_RC(t0_long_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand t1_RegP()
-%{
-  constraint(ALLOC_IN_RC(t1_long_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand t2_RegP()
-%{
-  constraint(ALLOC_IN_RC(t2_long_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand t3_RegP()
-%{
-  constraint(ALLOC_IN_RC(t3_long_reg));
-  match(RegP);
-  match(mRegP);
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand t8_RegP()
-%{
-  constraint(ALLOC_IN_RC(t8_long_reg));
-  match(RegP);
-  match(mRegP);
-
   format %{ %}
   interface(REG_INTER);
 %}
@@ -3817,16 +3362,6 @@ operand a1_RegP()
 operand a2_RegP()
 %{
   constraint(ALLOC_IN_RC(a2_long_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a3_RegP()
-%{
-  constraint(ALLOC_IN_RC(a3_long_reg));
   match(RegP);
   match(mRegP);
 
@@ -3865,36 +3400,6 @@ operand a6_RegP()
   interface(REG_INTER);
 %}
 
-operand a7_RegP()
-%{
-  constraint(ALLOC_IN_RC(a7_long_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand v0_RegP()
-%{
-  constraint(ALLOC_IN_RC(v0_long_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand v1_RegP()
-%{
-  constraint(ALLOC_IN_RC(v1_long_reg));
-  match(RegP);
-  match(mRegP);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
 operand mRegL() %{
   constraint(ALLOC_IN_RC(long_reg));
   match(RegL);
@@ -3917,33 +3422,6 @@ operand mRegL2I(mRegL reg) %{
   interface(REG_INTER);
 %}
 
-operand v0RegL() %{
-  constraint(ALLOC_IN_RC(v0_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand v1RegL() %{
-  constraint(ALLOC_IN_RC(v1_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a0RegL() %{
-  constraint(ALLOC_IN_RC(a0_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ "A0" %}
-  interface(REG_INTER);
-%}
-
 operand a1RegL() %{
   constraint(ALLOC_IN_RC(a1_long_reg));
   match(RegL);
@@ -3962,24 +3440,6 @@ operand a2RegL() %{
   interface(REG_INTER);
 %}
 
-operand a3RegL() %{
-  constraint(ALLOC_IN_RC(a3_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand t0RegL() %{
-  constraint(ALLOC_IN_RC(t0_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
 operand t1RegL() %{
   constraint(ALLOC_IN_RC(t1_long_reg));
   match(RegL);
@@ -3991,105 +3451,6 @@ operand t1RegL() %{
 
 operand t2RegL() %{
   constraint(ALLOC_IN_RC(t2_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand t3RegL() %{
-  constraint(ALLOC_IN_RC(t3_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand t8RegL() %{
-  constraint(ALLOC_IN_RC(t8_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a4RegL() %{
-  constraint(ALLOC_IN_RC(a4_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a5RegL() %{
-  constraint(ALLOC_IN_RC(a5_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a6RegL() %{
-  constraint(ALLOC_IN_RC(a6_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand a7RegL() %{
-  constraint(ALLOC_IN_RC(a7_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s0RegL() %{
-  constraint(ALLOC_IN_RC(s0_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s1RegL() %{
-  constraint(ALLOC_IN_RC(s1_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s3RegL() %{
-  constraint(ALLOC_IN_RC(s3_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s4RegL() %{
-  constraint(ALLOC_IN_RC(s4_long_reg));
-  match(RegL);
-  match(mRegL);
-
-  format %{ %}
-  interface(REG_INTER);
-%}
-
-operand s7RegL() %{
-  constraint(ALLOC_IN_RC(s7_long_reg));
   match(RegL);
   match(mRegL);
 
@@ -11666,6 +11027,7 @@ instruct storeSSD(stackSlotD dst, regD src)
 %}
 
 instruct cmpFastLock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2) %{
+  predicate(LockingMode != LM_LIGHTWEIGHT);
   match(Set cr (FastLock object box));
   effect(TEMP tmp1, TEMP tmp2);
 
@@ -11679,6 +11041,7 @@ instruct cmpFastLock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRe
 %}
 
 instruct cmpFastUnlock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2) %{
+  predicate(LockingMode != LM_LIGHTWEIGHT);
   match(Set cr (FastUnlock object box));
   effect(TEMP tmp1, TEMP tmp2);
 
@@ -11686,6 +11049,34 @@ instruct cmpFastUnlock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_m
 
   ins_encode %{
     __ fast_unlock_c2($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register);
+  %}
+
+  ins_pipe( pipe_slow );
+%}
+
+instruct cmpFastLockLightweight(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2, no_CR_mRegP tmp3) %{
+  predicate(LockingMode == LM_LIGHTWEIGHT);
+  match(Set cr (FastLock object box));
+  effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
+
+  format %{ "FASTLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3 #@ cmpFastLockLightweight" %}
+
+  ins_encode %{
+    __ fast_lock_lightweight($object$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register, $tmp3$$Register);
+  %}
+
+  ins_pipe( pipe_slow );
+%}
+
+instruct cmpFastUnlockLightweight(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2, no_CR_mRegP tmp3) %{
+  predicate(LockingMode == LM_LIGHTWEIGHT);
+  match(Set cr (FastUnlock object box));
+  effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
+
+  format %{ "FASTUNLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3 #@ cmpFastUnlockLightweight" %}
+
+  ins_encode %{
+    __ fast_unlock_lightweight($object$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register, $tmp3$$Register);
   %}
 
   ins_pipe( pipe_slow );

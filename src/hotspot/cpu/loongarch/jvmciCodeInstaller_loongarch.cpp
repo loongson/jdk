@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -92,7 +92,7 @@ void CodeInstaller::pd_patch_MetaspaceConstant(int pc_offset, HotSpotCompiledCod
 void CodeInstaller::pd_patch_DataSectionReference(int pc_offset, int data_offset, JVMCI_TRAPS) {
   address pc = _instructions->start() + pc_offset;
   NativeInstruction* inst = nativeInstruction_at(pc);
-  if (inst->is_pcaddu12i_add()) {
+  if (inst->is_pcaddi()) {
     address dest = _constants->start() + data_offset;
     _instructions->relocate(pc, section_word_Relocation::spec((address) dest, CodeBuffer::SECT_CONSTS));
     JVMCI_event_3("relocating at " PTR_FORMAT " (+%d) with destination at %d", p2i(pc), pc_offset, data_offset);

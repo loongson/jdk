@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,6 +47,7 @@ import jdk.vm.ci.meta.VMConstant;
 public class LoongArch64TestAssembler extends TestAssembler {
 
     private static final Register scratchRegister = LoongArch64.SCR1;
+    private static final Register scratchRegister2 = LoongArch64.SCR2;
     private static final Register doubleScratch = LoongArch64.f23;
     private static final RegisterArray nativeGeneralParameterRegisters = new RegisterArray(LoongArch64.a0,
                                                                       LoongArch64.a1, LoongArch64.a2,
@@ -60,6 +61,22 @@ public class LoongArch64TestAssembler extends TestAssembler {
                                                                       LoongArch64.f7);
     private static int currentGeneral = 0;
     private static int currentFloat = 0;
+
+    public enum ConditionFlag {
+        EQ(0b010110),
+        NE(0b010111),
+        LT(0b011000),
+        GE(0b011001),
+        LTU(0b011010),
+        GEU(0b011011);
+
+        public final int encoding;
+
+        ConditionFlag(int encoding) {
+            this.encoding = encoding;
+        }
+    }
+
     public LoongArch64TestAssembler(CodeCacheProvider codeCache, TestHotSpotVMConfig config) {
         super(codeCache, config,
               16 /* initialFrameSize */, 16 /* stackAlignment */,
@@ -80,6 +97,13 @@ public class LoongArch64TestAssembler extends TestAssembler {
 
     private void emitNop() {
         code.emitInt(0x3400000);
+    }
+
+    private void emitPcaddi(Register rd, int si20) {
+        // pcaddi
+        code.emitInt((0b0001100 << 25)
+                     | ((low(si20, 20) >> 2) << 5)
+                     | rd.encoding);
     }
 
     private void emitPcaddu12i(Register rj, int si20) {
@@ -242,6 +266,16 @@ public class LoongArch64TestAssembler extends TestAssembler {
                      | rd.encoding);
     }
 
+    protected void emitBranch(Register rj, Register rd, ConditionFlag condition, int offs) {
+        // B.cond
+        check(isSignedNbit(18, offs) && (offs & 0b11) == 0,
+              "0x%x must be a 18-bit signed number and 4-byte aligned", offs);
+        code.emitInt((condition.encoding << 26)
+                     | (low16(offs >> 2) << 10)
+                     | (rj.encoding << 5)
+                     | rd.encoding);
+    }
+
     @Override
     public void emitGrowStack(int size) {
         assert size % 16 == 0;
@@ -268,7 +302,19 @@ public class LoongArch64TestAssembler extends TestAssembler {
         emitStoreRegister(LoongArch64.fp, LoongArch64Kind.QWORD, LoongArch64.sp, 16);
         emitGrowStack(-16);
         emitMove(LoongArch64.fp, LoongArch64.sp);
+        emitNMethodEntryBarrier();
         setDeoptRescueSlot(newStackSlot(LoongArch64Kind.QWORD));
+    }
+
+    private void emitNMethodEntryBarrier() {
+        recordMark(config.MARKID_ENTRY_BARRIER_PATCH);
+        DataSectionReference ref = emitDataItem(0);
+        emitLoadPointer(scratchRegister, LoongArch64Kind.UDWORD, ref);
+        code.emitInt(0x38720014); // dbar 0x14 loadload|loadstore
+        Register thread = LoongArch64.s6;
+        emitLoadPointer(scratchRegister2, LoongArch64Kind.UDWORD, thread, config.threadDisarmedOffset);
+        emitBranch(scratchRegister, scratchRegister2, ConditionFlag.EQ, 4*4);      // jump over slow path, runtime call
+        emitCall(config.nmethodEntryBarrier);
     }
 
     @Override
@@ -365,8 +411,11 @@ public class LoongArch64TestAssembler extends TestAssembler {
 
     @Override
     public Register emitLoadPointer(Register b, int offset) {
-        Register ret = newRegister();
-        emitLoadRegister(ret, LoongArch64Kind.QWORD, b, offset);
+        return emitLoadPointer(newRegister(), LoongArch64Kind.QWORD, b, offset);
+    }
+
+    public Register emitLoadPointer(Register ret, LoongArch64Kind kind, Register b, int offset) {
+        emitLoadRegister(ret, kind, b, offset);
         return ret;
     }
 
@@ -375,20 +424,21 @@ public class LoongArch64TestAssembler extends TestAssembler {
         recordDataPatchInCode(ref);
 
         Register ret = newRegister();
-        emitPcaddu12i(ret, 0xdead >> 12);
-        emitAdd(ret, ret, 0xdead & 0xfff);
+        emitPcaddi(ret, 0xdead);
         emitLoadRegister(ret, LoongArch64Kind.UDWORD, ret, 0);
         return ret;
     }
 
     @Override
     public Register emitLoadPointer(DataSectionReference ref) {
+        return emitLoadPointer(newRegister(), LoongArch64Kind.QWORD, ref);
+    }
+
+    public Register emitLoadPointer(Register ret, LoongArch64Kind kind, DataSectionReference ref) {
         recordDataPatchInCode(ref);
 
-        Register ret = newRegister();
-        emitPcaddu12i(ret, 0xdead >> 12);
-        emitAdd(ret, ret, 0xdead & 0xfff);
-        emitLoadRegister(ret, LoongArch64Kind.QWORD, ret, 0);
+        emitPcaddi(ret, 0xdead);
+        emitLoadRegister(ret, kind, ret, 0);
         return ret;
     }
 
@@ -398,8 +448,7 @@ public class LoongArch64TestAssembler extends TestAssembler {
         data.emitDouble(c);
 
         recordDataPatchInCode(ref);
-        emitPcaddu12i(scratchRegister, 0xdead >> 12);
-        emitAdd(scratchRegister, scratchRegister, 0xdead & 0xfff);
+        emitPcaddi(scratchRegister, 0xdead);
         emitLoadRegister(reg, LoongArch64Kind.DOUBLE, scratchRegister, 0);
         return reg;
     }
@@ -410,8 +459,7 @@ public class LoongArch64TestAssembler extends TestAssembler {
         data.emitFloat(c);
 
         recordDataPatchInCode(ref);
-        emitPcaddu12i(scratchRegister, 0xdead >> 12);
-        emitAdd(scratchRegister, scratchRegister, 0xdead & 0xfff);
+        emitPcaddi(scratchRegister, 0xdead);
         emitLoadRegister(reg, LoongArch64Kind.SINGLE, scratchRegister, 0);
         return reg;
     }

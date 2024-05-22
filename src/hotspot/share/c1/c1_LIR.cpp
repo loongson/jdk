@@ -23,8 +23,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2022, These
- * modifications are Copyright (c) 2022, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2024, These
+ * modifications are Copyright (c) 2022, 2024, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -359,7 +359,7 @@ LIR_OpArrayCopy::LIR_OpArrayCopy(LIR_Opr src, LIR_Opr src_pos, LIR_Opr dst, LIR_
   , _tmp(tmp)
   , _expected_type(expected_type)
   , _flags(flags) {
-#if defined(X86) || defined(AARCH64)
+#if defined(X86) || defined(AARCH64) || defined(LOONGARCH64)
   if (expected_type != nullptr && flags == 0) {
     _stub = nullptr;
   } else {

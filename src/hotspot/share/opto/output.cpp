@@ -23,8 +23,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2022. These
- * modifications are Copyright (c) 2019, 2022, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2024. These
+ * modifications are Copyright (c) 2019, 2024, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -1705,17 +1705,17 @@ void PhaseOutput::fill_buffer(C2_MacroAssembler* masm, uint* blk_starts) {
       n->emit(masm, C->regalloc());
       current_offset = masm->offset();
 #if defined(LOONGARCH)
-      if (!n->is_Proj() && (cb->insts()->end() != badAddress)) {
+      if (!n->is_Proj() && (masm->code()->insts()->end() != badAddress)) {
         // For LOONGARCH, the first instruction of the previous node (usually a instruction sequence) sometime
         // is not the instruction which access memory. adjust is needed. previous_offset points to the
-        // instruction which access memory. Instruction size is 4. cb->insts_size() and
-        // cb->insts()->end() are the location of current instruction.
+        // instruction which access memory. Instruction size is 4. masm->code()->insts_size() and
+        // masm->code()->insts()->end() are the location of current instruction.
         int adjust = 4;
-        NativeInstruction* inst = (NativeInstruction*) (cb->insts()->end() - 4);
+        NativeInstruction* inst = (NativeInstruction*) (masm->code()->insts()->end() - 4);
         if (inst->is_sync()) {
           // a sync may be the last instruction, see store_B_immI_enc_sync
           adjust += 4;
-          inst = (NativeInstruction*) (cb->insts()->end() - 8);
+          inst = (NativeInstruction*) (masm->code()->insts()->end() - 8);
         }
         previous_offset = current_offset - adjust;
       }

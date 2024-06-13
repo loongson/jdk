@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2000, 2012, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -466,14 +466,14 @@ typedef AbstractRegSet<FloatRegister> FloatRegSet;
 
 template <>
 inline Register AbstractRegSet<Register>::first() {
-  uint32_t first = _bitset & -_bitset;
-  return first ? as_Register(exact_log2(first)) : noreg;
+  if (_bitset == 0) { return noreg; }
+  return as_Register(count_trailing_zeros(_bitset));
 }
 
 template <>
 inline FloatRegister AbstractRegSet<FloatRegister>::first() {
-  uint32_t first = _bitset & -_bitset;
-  return first ? as_FloatRegister(exact_log2(first)) : fnoreg;
+  if (_bitset == 0) { return fnoreg; }
+  return as_FloatRegister(count_trailing_zeros(_bitset));
 }
 
 #endif //CPU_LOONGARCH_REGISTER_LOONGARCH_HPP

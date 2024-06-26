@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1028,87 +1028,6 @@ void ZBarrierSetAssembler::generate_c1_store_barrier_runtime_stub(StubAssembler*
 
 #ifdef COMPILER2
 
-OptoReg::Name ZBarrierSetAssembler::refine_register(const Node* node, OptoReg::Name opto_reg) {
-  if (!OptoReg::is_reg(opto_reg)) {
-    return OptoReg::Bad;
-  }
-
-  const VMReg vm_reg = OptoReg::as_VMReg(opto_reg);
-  if (vm_reg->is_FloatRegister()) {
-    return opto_reg & ~1;
-  }
-
-  return opto_reg;
-}
-
-#undef __
-#define __ _masm->
-
-class ZSaveLiveRegisters {
-private:
-  MacroAssembler* const _masm;
-  RegSet                _gp_regs;
-  FloatRegSet           _fp_regs;
-  FloatRegSet           _lsx_vp_regs;
-  FloatRegSet           _lasx_vp_regs;
-
-public:
-  void initialize(ZBarrierStubC2* stub) {
-    // Record registers that needs to be saved/restored
-    RegMaskIterator rmi(stub->live());
-    while (rmi.has_next()) {
-      const OptoReg::Name opto_reg = rmi.next();
-      if (OptoReg::is_reg(opto_reg)) {
-        const VMReg vm_reg = OptoReg::as_VMReg(opto_reg);
-        if (vm_reg->is_Register()) {
-          _gp_regs += RegSet::of(vm_reg->as_Register());
-        } else if (vm_reg->is_FloatRegister()) {
-          if (UseLASX && vm_reg->next(7))
-            _lasx_vp_regs += FloatRegSet::of(vm_reg->as_FloatRegister());
-          else if (UseLSX && vm_reg->next(3))
-            _lsx_vp_regs += FloatRegSet::of(vm_reg->as_FloatRegister());
-          else
-            _fp_regs += FloatRegSet::of(vm_reg->as_FloatRegister());
-        } else {
-          fatal("Unknown register type");
-        }
-      }
-    }
-
-    // Remove C-ABI SOE registers, scratch regs and _ref register that will be updated
-    if (stub->result() != noreg) {
-      _gp_regs -= RegSet::range(S0, S7) + RegSet::of(SP, SCR1, SCR2, stub->result());
-    } else {
-      _gp_regs -= RegSet::range(S0, S7) + RegSet::of(SP, SCR1, SCR2);
-    }
-  }
-
-  ZSaveLiveRegisters(MacroAssembler* masm, ZBarrierStubC2* stub) :
-      _masm(masm),
-      _gp_regs(),
-      _fp_regs(),
-      _lsx_vp_regs(),
-      _lasx_vp_regs() {
-
-    // Figure out what registers to save/restore
-    initialize(stub);
-
-    // Save registers
-    __ push(_gp_regs);
-    __ push_fpu(_fp_regs);
-    __ push_vp(_lsx_vp_regs  /* UseLSX  */);
-    __ push_vp(_lasx_vp_regs /* UseLASX */);
-  }
-
-  ~ZSaveLiveRegisters() {
-    // Restore registers
-    __ pop_vp(_lasx_vp_regs /* UseLASX */);
-    __ pop_vp(_lsx_vp_regs  /* UseLSX  */);
-    __ pop_fpu(_fp_regs);
-    __ pop(_gp_regs);
-  }
-};
-
 #undef __
 #define __ _masm->
 
@@ -1177,7 +1096,7 @@ void ZBarrierSetAssembler::generate_c2_load_barrier_stub(MacroAssembler* masm, Z
   }
 
   {
-    ZSaveLiveRegisters save_live_registers(masm, stub);
+    SaveLiveRegisters save_live_registers(masm, stub);
     ZSetupArguments setup_arguments(masm, stub);
     __ MacroAssembler::call_VM_leaf_base(stub->slow_path(), 2);
   }
@@ -1207,7 +1126,7 @@ void ZBarrierSetAssembler::generate_c2_store_barrier_stub(MacroAssembler* masm, 
   __ bind(slow);
 
   {
-    ZSaveLiveRegisters save_live_registers(masm, stub);
+    SaveLiveRegisters save_live_registers(masm, stub);
     __ lea(A0, stub->ref_addr());
 
     if (stub->is_native()) {

@@ -2275,7 +2275,9 @@ void TemplateTable::load_resolved_field_entry(Register obj,
   __ ld_bu(flags, Address(cache, in_bytes(ResolvedFieldEntry::flags_offset())));
 
   // TOS state
-  __ ld_bu(tos_state, Address(cache, in_bytes(ResolvedFieldEntry::type_offset())));
+  if (tos_state != noreg) {
+    __ ld_bu(tos_state, Address(cache, in_bytes(ResolvedFieldEntry::type_offset())));
+  }
 
   // Klass overwrite register
   if (is_static) {
@@ -3044,13 +3046,8 @@ void TemplateTable::fast_storefield(TosState state) {
 
   // access constant pool cache
   __ load_field_entry(T3, T2);
-
-  // Must prevent reordering of the following cp cache loads with bytecode load
-  __ membar(__ LoadLoad);
-  __ push(T0);
-  // T2: field offset, T0: TOS, T1: flags
-  load_resolved_field_entry(T3, T3, T0, T2, T1);
-  __ pop(T0);
+  // T2: field offset, T3: field holder, T1: flags
+  load_resolved_field_entry(T3, T3, noreg, T2, T1);
 
   Label Done;
   {
@@ -3142,9 +3139,6 @@ void TemplateTable::fast_accessfield(TosState state) {
 
   // access constant pool cache
   __ load_field_entry(T3, T2);
-
-  // Must prevent reordering of the following cp cache loads with bytecode load
-  __ membar(__ LoadLoad);
 
   // replace index with field offset from cache entry
   __ load_sized_value(T2, Address(T3, in_bytes(ResolvedFieldEntry::field_offset_offset())), sizeof(int), true /*is_signed*/);

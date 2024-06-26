@@ -3279,6 +3279,7 @@ operand mRegP() %{
   constraint(ALLOC_IN_RC(p_reg));
   match(RegP);
   match(a0_RegP);
+  match(a5_RegP);
   match(javaThread_RegP);
 
   format %{  %}
@@ -11200,9 +11201,40 @@ instruct partialSubtypeCheck( mRegP result, mRegP sub, mRegP super, mRegI tmp2, 
   ins_pipe( pipe_slow );
 %}
 
+instruct partialSubtypeCheckConstSuper(a4_RegP sub, a0_RegP super_reg, immP super_con, a5_RegP result,
+                                       a1_RegP tmpA1, a2_RegP tmpA2, a3_RegP tmpA3, a6_RegP tmpA6)
+%{
+  predicate(UseSecondarySupersTable);
+  match(Set result (PartialSubtypeCheck sub (Binary super_reg super_con)));
+  effect(TEMP tmpA1, TEMP tmpA2, TEMP tmpA3, TEMP tmpA6);
+
+  ins_cost(700);  // smaller than the next version
+  format %{ "partialSubtypeCheck $result, $sub, $super_reg, $super_con" %}
+
+  ins_encode %{
+    bool success = false;
+    u1 super_klass_slot = ((Klass*)$super_con$$constant)->hash_slot();
+    if (InlineSecondarySupersTest) {
+      success = __ lookup_secondary_supers_table($sub$$Register, $super_reg$$Register, $result$$Register,
+                                                 $tmpA1$$Register, $tmpA2$$Register, $tmpA3$$Register,
+                                                 $tmpA6$$Register, super_klass_slot);
+    } else {
+      address call = __ trampoline_call(RuntimeAddress(StubRoutines::lookup_secondary_supers_table_stub(super_klass_slot)));
+      success = (call != nullptr);
+    }
+    if (!success) {
+      ciEnv::current()->record_failure("CodeCache is full");
+      return;
+    }
+  %}
+
+  ins_pipe( pipe_slow );
+%}
+
 instruct partialSubtypeCheckVsZero_long( mRegP sub, mRegP super, mRegP tmp1, mRegP tmp2, immP_0 zero, cmpOpEqNe cmp, label lbl) %{
   match(If cmp (CmpP (PartialSubtypeCheck sub super) zero));
   effect(USE lbl, TEMP tmp1, TEMP tmp2);
+  ins_cost(1100);  // slightly larger than the next version
   format %{ "partialSubtypeCheckVsZero_long b$cmp (sub=$sub, super=$super) R0, $lbl using $tmp1,$tmp2 as TEMP" %}
 
   ins_encode %{
@@ -11224,6 +11256,7 @@ instruct partialSubtypeCheckVsZero_long( mRegP sub, mRegP super, mRegP tmp1, mRe
 instruct partialSubtypeCheckVsZero_short( mRegP sub, mRegP super, mRegP tmp1, mRegP tmp2, immP_0 zero, cmpOpEqNe cmp, label lbl) %{
   match(If cmp (CmpP (PartialSubtypeCheck sub super) zero));
   effect(USE lbl, TEMP tmp1, TEMP tmp2);
+  ins_cost(1100);  // slightly larger than the next version
   format %{ "partialSubtypeCheckVsZero_short b$cmp (sub=$sub, super=$super) R0, $lbl using $tmp1,$tmp2 as TEMP" %}
 
   ins_encode %{

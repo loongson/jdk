@@ -387,6 +387,32 @@ class MacroAssembler: public Assembler {
                            Register temp_reg,
                            Label& L_success);
 
+  // As above, but with a constant super_klass.
+  // The result is in Register result, not the condition codes.
+  bool lookup_secondary_supers_table(Register r_sub_klass,
+                                     Register r_super_klass,
+                                     Register result,
+                                     Register tmp1,
+                                     Register tmp2,
+                                     Register tmp3,
+                                     Register tmp4,
+                                     u1 super_klass_slot,
+                                     bool stub_is_near = false);
+
+  void verify_secondary_supers_table(Register r_sub_klass,
+                                     Register r_super_klass,
+                                     Register result,
+                                     Register tmp1,
+                                     Register tmp2,
+                                     Register tmp3);
+
+  void lookup_secondary_supers_table_slow_path(Register r_super_klass,
+                                               Register r_array_base,
+                                               Register r_array_index,
+                                               Register r_bitmap,
+                                               Register result,
+                                               Register tmp1);
+
   void clinit_barrier(Register klass,
                       Register scratch,
                       Label* L_fast_path = nullptr,
@@ -774,6 +800,8 @@ private:
   void generate_kernel_cos(FloatRegister x, address dcos_coef);
   void generate__ieee754_rem_pio2(address npio2_hw, address two_over_pi, address pio2);
   void generate__kernel_rem_pio2(address two_over_pi, address pio2);
+
+  void repne_scan(Register addr, Register value, Register count, Register tmp);
 };
 
 /**

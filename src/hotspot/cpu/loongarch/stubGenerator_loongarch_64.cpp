@@ -5015,6 +5015,49 @@ static const int64_t right_3_bits = right_n_bits(3);
     return start;
   }
 
+  address generate_lookup_secondary_supers_table_stub(u1 super_klass_index) {
+    StubCodeMark mark(this, "StubRoutines", "lookup_secondary_supers_table");
+
+    address start = __ pc();
+    const Register
+      r_super_klass  = A0,
+      r_array_base   = A1,
+      r_array_length = A2,
+      r_array_index  = A3,
+      r_sub_klass    = A4,
+      result         = A5,
+      r_bitmap       = A6;
+
+    Label L_success;
+    __ enter();
+    __ lookup_secondary_supers_table(r_sub_klass, r_super_klass, result,
+                                     r_array_base, r_array_length, r_array_index,
+                                     r_bitmap, super_klass_index, /*stub_is_near*/true);
+    __ leave();
+    __ jr(RA);
+
+    return start;
+  }
+
+  // Slow path implementation for UseSecondarySupersTable.
+  address generate_lookup_secondary_supers_table_slow_path_stub() {
+    StubCodeMark mark(this, "StubRoutines", "lookup_secondary_supers_table_slow_path");
+
+    address start = __ pc();
+    const Register
+      r_super_klass  = A0,        // argument
+      r_array_base   = A1,        // argument
+      temp1          = A2,        // tmp
+      r_array_index  = A3,        // argument
+      result         = A5,        // argument
+      r_bitmap       = A6;        // argument
+
+    __ lookup_secondary_supers_table_slow_path(r_super_klass, r_array_base, r_array_index, r_bitmap, result, temp1);
+    __ jr(RA);
+
+    return start;
+  }
+
 #endif // COMPILER2
 
 #if INCLUDE_JFR
@@ -5860,6 +5903,18 @@ static const int64_t right_3_bits = right_n_bits(3);
     if (bs_nm != nullptr) {
       StubRoutines::_method_entry_barrier = generate_method_entry_barrier();
     }
+
+#ifdef COMPILER2
+    if (UseSecondarySupersTable) {
+      StubRoutines::_lookup_secondary_supers_table_slow_path_stub = generate_lookup_secondary_supers_table_slow_path_stub();
+      if (!InlineSecondarySupersTest) {
+        for (int slot = 0; slot < Klass::SECONDARY_SUPERS_TABLE_SIZE; slot++) {
+          StubRoutines::_lookup_secondary_supers_table_stubs[slot]
+            = generate_lookup_secondary_supers_table_stub(slot);
+        }
+      }
+    }
+#endif // COMPILER2
 
     StubRoutines::_upcall_stub_exception_handler = generate_upcall_stub_exception_handler();
   }

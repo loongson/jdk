@@ -75,6 +75,7 @@ class NativeInstruction {
   // Helper func for jvmci
   bool is_lu12iw_lu32id() const;
   bool is_pcaddu12i_add() const;
+  bool is_pcaddi() const;
 
   // LoongArch has no instruction to generate a illegal instruction exception?
   // But `break  11` is not illegal instruction for LoongArch.

@@ -66,6 +66,10 @@ bool NativeInstruction::is_lu12iw_lu32id() const {
          Assembler::high(int_at(4), 7)   == Assembler::lu32i_d_op;
 }
 
+bool NativeInstruction::is_pcaddi() const {
+  return Assembler::high(int_at(0), 7) == Assembler::pcaddi_op;
+}
+
 bool NativeInstruction::is_pcaddu12i_add() const {
   return Assembler::high(int_at(0), 7) == Assembler::pcaddu12i_op &&
          Assembler::high(int_at(4), 10)   == Assembler::addi_d_op;

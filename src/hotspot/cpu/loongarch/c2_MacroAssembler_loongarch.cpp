@@ -1129,213 +1129,125 @@ void C2_MacroAssembler::stringL_indexof_char(Register str1, Register cnt1,
 }
 
 // Compare strings, used for char[] and byte[].
-void C2_MacroAssembler::string_compare(Register str1, Register str2,
-                                    Register cnt1, Register cnt2, Register result,
-                                    int ae, Register tmp1, Register tmp2,
-                                    FloatRegister vtmp1, FloatRegister vtmp2) {
-  Label L, Loop, LoopEnd, HaveResult, Done, Loop_Start,
-        V_L, V_Loop, V_Result, V_Start;
-
-  bool isLL = ae == StrIntrinsicNode::LL;
-  bool isLU = ae == StrIntrinsicNode::LU;
-  bool isUL = ae == StrIntrinsicNode::UL;
-  bool isUU = ae == StrIntrinsicNode::UU;
-
-  bool str1_isL = isLL || isLU;
-  bool str2_isL = isLL || isUL;
-
-  int charsInWord = isLL ? wordSize : wordSize/2;
-  int charsInFloatRegister = (UseLASX && (isLL||isUU))?(isLL? 32 : 16):(isLL? 16 : 8);
-
-  if (!str1_isL) srli_w(cnt1, cnt1, 1);
-  if (!str2_isL) srli_w(cnt2, cnt2, 1);
+void C2_MacroAssembler::string_compareL(Register str1, Register str2,
+                                        Register cnt1, Register cnt2,
+                                        Register result,
+                                        Register tmp1, Register tmp2,
+                                        FloatRegister vtmp1,
+                                        FloatRegister vtmp2) {
+  Label L, Loop, LoopEnd, HaveResult, Done, XV_Start, V_Start;
 
   // compute the difference of lengths (in result)
-  sub_d(result, cnt1, cnt2); // result holds the difference of two lengths
+  sub_d(result, cnt1, cnt2);
 
   // compute the shorter length (in cnt1)
-  bge(cnt2, cnt1, V_Start);
+  bge(cnt2, cnt1, XV_Start);
   move(cnt1, cnt2);
+  bind(XV_Start);
 
-  bind(V_Start);
+  // tiny string
+  li(AT, wordSize);
+  blt(cnt1, AT, LoopEnd);
+
+  if (UseLSX) {
+    slli_d(tmp1, AT, 1); // less than 16
+    blt(cnt1, tmp1, Loop);
+  }
+
   // it is hard to apply the xvilvl to flate 16 bytes into 32 bytes,
   // so we employ the LASX only for the LL or UU StrIntrinsicNode.
-  if (UseLASX && (isLL || isUU)) {
-    ori(AT, R0, charsInFloatRegister);
-    addi_d(tmp1, R0, 16);
-    xvinsgr2vr_d(fscratch, R0, 0);
+  if (UseLASX) {
+    Label XV_L, XV_Loop, XV_Result;
+
+    slli_d(tmp2, tmp1, 1); // less than 32
+    blt(cnt1, tmp2, V_Start);
+
+    li(tmp1, 16);
+    xvxor_v(fscratch, fscratch, fscratch);
     xvinsgr2vr_d(fscratch, tmp1, 2);
+
+    bind(XV_Loop);
+    xvld(vtmp1, str1, 0);
+    xvld(vtmp2, str2, 0);
+    xvxor_v(vtmp1, vtmp1, vtmp2);
+    xvseteqz_v(FCC0, vtmp1);
+    bceqz(FCC0, XV_L);
+
+    addi_d(cnt1, cnt1, -32);
+    addi_d(str1, str1, 32);
+    addi_d(str2, str2, 32);
+    bge(cnt1, tmp2, XV_Loop);
+
+    // deal with the last loop
+    beqz(cnt1, Done);
+    addi_d(cnt1, cnt1, -32);
+    add_d(str1, str1, cnt1);
+    xvld(vtmp1, str1, 0);
+    add_d(str2, str2, cnt1);
+    xvld(vtmp2, str2, 0);
+    xvxor_v(vtmp1, vtmp1, vtmp2);
+    xvseteqz_v(FCC0, vtmp1);
+    bcnez(FCC0, Done);
+
+    bind(XV_L);
+    xvxor_v(vtmp2, vtmp2, vtmp2);
+    xvabsd_b(vtmp1, vtmp1, vtmp2);
+    xvneg_b(vtmp1, vtmp1);
+    xvfrstp_b(vtmp2, vtmp1, fscratch);
+    xvpickve2gr_du(tmp1, vtmp2, 0);
+    addi_d(cnt2, R0, 16);
+    bne(tmp1, cnt2, XV_Result);
+
+    xvpickve2gr_du(tmp1, vtmp2, 2);
+    addi_d(tmp1, tmp1, 16);
+
+    // the index value was stored in tmp1
+    bind(XV_Result);
+    ldx_bu(result, str1, tmp1);
+    ldx_bu(tmp2, str2, tmp1);
+    sub_d(result, result, tmp2);
+    b(Done);
+  }
+
+  bind(V_Start);
+  if (UseLSX) {
+    Label V_L, V_Loop, V_Result;
+
     bind(V_Loop);
-    blt(cnt1, AT, Loop_Start);
-    if (isLL) {
-      xvld(vtmp1, str1, 0);
-      xvld(vtmp2, str2, 0);
-      xvxor_v(vtmp1, vtmp1, vtmp2);
-      xvseteqz_v(FCC0, vtmp1);
-      bceqz(FCC0, V_L);
+    vld(vtmp1, str1, 0);
+    vld(vtmp2, str2, 0);
+    vxor_v(vtmp1, vtmp1, vtmp2);
+    vseteqz_v(FCC0, vtmp1);
+    bceqz(FCC0, V_L);
 
-      addi_d(str1, str1, 32);
-      addi_d(str2, str2, 32);
-      addi_d(cnt1, cnt1, -charsInFloatRegister);
-      b(V_Loop);
+    addi_d(cnt1, cnt1, -16);
+    addi_d(str1, str1, 16);
+    addi_d(str2, str2, 16);
+    bge(cnt1, tmp1, V_Loop);
 
-      bind(V_L);
-      xvxor_v(vtmp2, vtmp2, vtmp2);
-      xvabsd_b(vtmp1, vtmp1, vtmp2);
-      xvneg_b(vtmp1, vtmp1);
-      xvfrstp_b(vtmp2, vtmp1, fscratch);
-      xvpickve2gr_du(tmp1, vtmp2, 0);
-      addi_d(cnt2, R0, 16);
-      bne(tmp1, cnt2, V_Result);
+    // deal with the last loop
+    beqz(cnt1, Done);
+    addi_d(cnt1, cnt1, -16);
+    add_d(str1, str1, cnt1);
+    vld(vtmp1, str1, 0);
+    add_d(str2, str2, cnt1);
+    vld(vtmp2, str2, 0);
+    vxor_v(vtmp1, vtmp1, vtmp2);
+    vseteqz_v(FCC0, vtmp1);
+    bcnez(FCC0, Done);
 
-      xvpickve2gr_du(tmp1, vtmp2, 2);
-      addi_d(tmp1, tmp1, 16);
+    bind(V_L);
+    vxor_v(vtmp2, vtmp2, vtmp2);
+    vabsd_b(vtmp1, vtmp1, vtmp2);
+    vneg_b(vtmp1, vtmp1);
+    vfrstpi_b(vtmp2, vtmp1, 0);
+    vpickve2gr_bu(tmp1, vtmp2, 0);
 
-      // the index value was stored in tmp1
-      bind(V_Result);
-      ldx_bu(result, str1, tmp1);
-      ldx_bu(tmp2, str2, tmp1);
-      sub_d(result, result, tmp2);
-      b(Done);
-    } else if (isUU) {
-      xvld(vtmp1, str1, 0);
-      xvld(vtmp2, str2, 0);
-      xvxor_v(vtmp1, vtmp1, vtmp2);
-      xvseteqz_v(FCC0, vtmp1);
-      bceqz(FCC0, V_L);
-
-      addi_d(str1, str1, 32);
-      addi_d(str2, str2, 32);
-      addi_d(cnt1, cnt1, -charsInFloatRegister);
-      b(V_Loop);
-
-      bind(V_L);
-      xvxor_v(vtmp2, vtmp2, vtmp2);
-      xvabsd_h(vtmp1, vtmp1, vtmp2);
-      xvneg_h(vtmp1, vtmp1);
-      xvfrstp_h(vtmp2, vtmp1, fscratch);
-      xvpickve2gr_du(tmp1, vtmp2, 0);
-      addi_d(cnt2, R0, 8);
-      bne(tmp1, cnt2, V_Result);
-
-      xvpickve2gr_du(tmp1, vtmp2, 2);
-      addi_d(tmp1, tmp1, 8);
-
-      // the index value was stored in tmp1
-      bind(V_Result);
-      slli_d(tmp1, tmp1, 1);
-      ldx_hu(result, str1, tmp1);
-      ldx_hu(tmp2, str2, tmp1);
-      sub_d(result, result, tmp2);
-      b(Done);
-    }
-  } else if (UseLSX) {
-    ori(AT, R0, charsInFloatRegister);
-    vxor_v(fscratch, fscratch, fscratch);
-    bind(V_Loop);
-    blt(cnt1, AT, Loop_Start);
-    if (isLL) {
-      vld(vtmp1, str1, 0);
-      vld(vtmp2, str2, 0);
-      vxor_v(vtmp1, vtmp1, vtmp2);
-      vseteqz_v(FCC0, vtmp1);
-      bceqz(FCC0, V_L);
-
-      addi_d(str1, str1, 16);
-      addi_d(str2, str2, 16);
-      addi_d(cnt1, cnt1, -charsInFloatRegister);
-      b(V_Loop);
-
-      bind(V_L);
-      vxor_v(vtmp2, vtmp2, vtmp2);
-      vabsd_b(vtmp1, vtmp1, vtmp2);
-      vneg_b(vtmp1, vtmp1);
-      vfrstpi_b(vtmp2, vtmp1, 0);
-      vpickve2gr_bu(tmp1, vtmp2, 0);
-
-      // the index value was stored in tmp1
-      ldx_bu(result, str1, tmp1);
-      ldx_bu(tmp2, str2, tmp1);
-      sub_d(result, result, tmp2);
-      b(Done);
-    } else if (isLU) {
-      vld(vtmp1, str1, 0);
-      vld(vtmp2, str2, 0);
-      vilvl_b(vtmp1, fscratch, vtmp1);
-      vxor_v(vtmp1, vtmp1, vtmp2);
-      vseteqz_v(FCC0, vtmp1);
-      bceqz(FCC0, V_L);
-
-      addi_d(str1, str1, 8);
-      addi_d(str2, str2, 16);
-      addi_d(cnt1, cnt1, -charsInFloatRegister);
-      b(V_Loop);
-
-      bind(V_L);
-      vxor_v(vtmp2, vtmp2, vtmp2);
-      vabsd_h(vtmp1, vtmp1, vtmp2);
-      vneg_h(vtmp1, vtmp1);
-      vfrstpi_h(vtmp2, vtmp1, 0);
-      vpickve2gr_bu(tmp1, vtmp2, 0);
-
-      // the index value was stored in tmp1
-      ldx_bu(result, str1, tmp1);
-      slli_d(tmp1, tmp1, 1);
-      ldx_hu(tmp2, str2, tmp1);
-      sub_d(result, result, tmp2);
-      b(Done);
-    } else if (isUL) {
-      vld(vtmp1, str1, 0);
-      vld(vtmp2, str2, 0);
-      vilvl_b(vtmp2, fscratch, vtmp2);
-      vxor_v(vtmp1, vtmp1, vtmp2);
-      vseteqz_v(FCC0, vtmp1);
-      bceqz(FCC0, V_L);
-
-      addi_d(str1, str1, 16);
-      addi_d(str2, str2, 8);
-      addi_d(cnt1, cnt1, -charsInFloatRegister);
-      b(V_Loop);
-
-      bind(V_L);
-      vxor_v(vtmp2, vtmp2, vtmp2);
-      vabsd_h(vtmp1, vtmp1, vtmp2);
-      vneg_h(vtmp1, vtmp1);
-      vfrstpi_h(vtmp2, vtmp1, 0);
-      vpickve2gr_bu(tmp1, vtmp2, 0);
-
-      // the index value was stored in tmp1
-      ldx_bu(tmp2, str2, tmp1);
-      slli_d(tmp1, tmp1, 1);
-      ldx_hu(result, str1, tmp1);
-      sub_d(result, result, tmp2);
-      b(Done);
-    } else if (isUU) {
-      vld(vtmp1, str1, 0);
-      vld(vtmp2, str2, 0);
-      vxor_v(vtmp1, vtmp1, vtmp2);
-      vseteqz_v(FCC0, vtmp1);
-      bceqz(FCC0, V_L);
-
-      addi_d(str1, str1, 16);
-      addi_d(str2, str2, 16);
-      addi_d(cnt1, cnt1, -charsInFloatRegister);
-      b(V_Loop);
-
-      bind(V_L);
-      vxor_v(vtmp2, vtmp2, vtmp2);
-      vabsd_h(vtmp1, vtmp1, vtmp2);
-      vneg_h(vtmp1, vtmp1);
-      vfrstpi_h(vtmp2, vtmp1, 0);
-      vpickve2gr_bu(tmp1, vtmp2, 0);
-
-      // the index value was stored in tmp1
-      slli_d(tmp1, tmp1, 1);
-      ldx_hu(result, str1, tmp1);
-      ldx_hu(tmp2, str2, tmp1);
-      sub_d(result, result, tmp2);
-      b(Done);
-    }
+    // the index value was stored in tmp1
+    ldx_bu(result, str1, tmp1);
+    ldx_bu(tmp2, str2, tmp1);
+    sub_d(result, result, tmp2);
+    b(Done);
   }
 
   // Now the shorter length is in cnt1 and cnt2 can be used as a tmp register
@@ -1352,118 +1264,424 @@ void C2_MacroAssembler::string_compare(Register str1, Register str2,
   //  Fetch 0 to 7 bits of tmp1 and tmp2, subtract to get the result.
   //  Other types are similar to isLL.
 
-  bind(Loop_Start);
-  ori(AT, R0, charsInWord);
   bind(Loop);
-  blt(cnt1, AT, LoopEnd);
-  if (isLL) {
-    ld_d(tmp1, str1, 0);
-    ld_d(tmp2, str2, 0);
-    beq(tmp1, tmp2, L);
-    xorr(cnt2, tmp1, tmp2);
-    ctz_d(cnt2, cnt2);
-    andi(cnt2, cnt2, 0x38);
-    srl_d(tmp1, tmp1, cnt2);
-    srl_d(tmp2, tmp2, cnt2);
-    bstrpick_d(tmp1, tmp1, 7, 0);
-    bstrpick_d(tmp2, tmp2, 7, 0);
-    sub_d(result, tmp1, tmp2);
-    b(Done);
-    bind(L);
-    addi_d(str1, str1, 8);
-    addi_d(str2, str2, 8);
-    addi_d(cnt1, cnt1, -charsInWord);
-    b(Loop);
-  } else if (isLU) {
-    ld_wu(cnt2, str1, 0);
-    andr(tmp1, R0, R0);
-    bstrins_d(tmp1, cnt2, 7, 0);
-    srli_d(cnt2, cnt2, 8);
-    bstrins_d(tmp1, cnt2, 23, 16);
-    srli_d(cnt2, cnt2, 8);
-    bstrins_d(tmp1, cnt2, 39, 32);
-    srli_d(cnt2, cnt2, 8);
-    bstrins_d(tmp1, cnt2, 55, 48);
-    ld_d(tmp2, str2, 0);
-    beq(tmp1, tmp2, L);
-    xorr(cnt2, tmp1, tmp2);
-    ctz_d(cnt2, cnt2);
-    andi(cnt2, cnt2, 0x30);
-    srl_d(tmp1, tmp1, cnt2);
-    srl_d(tmp2, tmp2, cnt2);
-    bstrpick_d(tmp1, tmp1, 15, 0);
-    bstrpick_d(tmp2, tmp2, 15, 0);
-    sub_d(result, tmp1, tmp2);
-    b(Done);
-    bind(L);
-    addi_d(str1, str1, 4);
-    addi_d(str2, str2, 8);
-    addi_d(cnt1, cnt1, -charsInWord);
-    b(Loop);
-  } else if (isUL) {
-    ld_wu(cnt2, str2, 0);
-    andr(tmp2, R0, R0);
-    bstrins_d(tmp2, cnt2, 7, 0);
-    srli_d(cnt2, cnt2, 8);
-    bstrins_d(tmp2, cnt2, 23, 16);
-    srli_d(cnt2, cnt2, 8);
-    bstrins_d(tmp2, cnt2, 39, 32);
-    srli_d(cnt2, cnt2, 8);
-    bstrins_d(tmp2, cnt2, 55, 48);
-    ld_d(tmp1, str1, 0);
-    beq(tmp1, tmp2, L);
-    xorr(cnt2, tmp1, tmp2);
-    ctz_d(cnt2, cnt2);
-    andi(cnt2, cnt2, 0x30);
-    srl_d(tmp1, tmp1, cnt2);
-    srl_d(tmp2, tmp2, cnt2);
-    bstrpick_d(tmp1, tmp1, 15, 0);
-    bstrpick_d(tmp2, tmp2, 15, 0);
-    sub_d(result, tmp1, tmp2);
-    b(Done);
-    bind(L);
-    addi_d(str1, str1, 8);
-    addi_d(str2, str2, 4);
-    addi_d(cnt1, cnt1, -charsInWord);
-    b(Loop);
-  } else { // isUU
-    ld_d(tmp1, str1, 0);
-    ld_d(tmp2, str2, 0);
-    beq(tmp1, tmp2, L);
-    xorr(cnt2, tmp1, tmp2);
-    ctz_d(cnt2, cnt2);
-    andi(cnt2, cnt2, 0x30);
-    srl_d(tmp1, tmp1, cnt2);
-    srl_d(tmp2, tmp2, cnt2);
-    bstrpick_d(tmp1, tmp1, 15, 0);
-    bstrpick_d(tmp2, tmp2, 15, 0);
-    sub_d(result, tmp1, tmp2);
-    b(Done);
-    bind(L);
-    addi_d(str1, str1, 8);
-    addi_d(str2, str2, 8);
-    addi_d(cnt1, cnt1, -charsInWord);
-    b(Loop);
-  }
+  ld_d(tmp1, str1, 0);
+  ld_d(tmp2, str2, 0);
+  beq(tmp1, tmp2, L);
+  xorr(cnt2, tmp1, tmp2);
+  ctz_d(cnt2, cnt2);
+  andi(cnt2, cnt2, 0x38);
+  srl_d(tmp1, tmp1, cnt2);
+  srl_d(tmp2, tmp2, cnt2);
+  bstrpick_d(tmp1, tmp1, 7, 0);
+  bstrpick_d(tmp2, tmp2, 7, 0);
+  sub_d(result, tmp1, tmp2);
+  b(Done);
 
-  bind(LoopEnd);
-  beqz(cnt1, Done);
-  if (str1_isL) {
-    ld_bu(tmp1, str1, 0);
-  } else {
-    ld_hu(tmp1, str1, 0);
-  }
+  bind(L);
+  addi_d(cnt1, cnt1, -8);
+  addi_d(str1, str1, 8);
+  addi_d(str2, str2, 8);
+  bge(cnt1, AT, Loop);
 
   // compare current character
-  if (str2_isL) {
-    ld_bu(tmp2, str2, 0);
-  } else {
-    ld_hu(tmp2, str2, 0);
-  }
+  bind(LoopEnd);
+  beqz(cnt1, Done);
+  ld_bu(tmp1, str1, 0);
+  ld_bu(tmp2, str2, 0);
   bne(tmp1, tmp2, HaveResult);
-  addi_d(str1, str1, str1_isL ? 1 : 2);
-  addi_d(str2, str2, str2_isL ? 1 : 2);
   addi_d(cnt1, cnt1, -1);
+  addi_d(str1, str1, 1);
+  addi_d(str2, str2, 1);
+  b(LoopEnd);
+
+  bind(HaveResult);
+  sub_d(result, tmp1, tmp2);
+
+  bind(Done);
+}
+
+void C2_MacroAssembler::string_compareU(Register str1, Register str2,
+                                        Register cnt1, Register cnt2,
+                                        Register result,
+                                        Register tmp1, Register tmp2,
+                                        FloatRegister vtmp1,
+                                        FloatRegister vtmp2) {
+  Label L, Loop, LoopEnd, HaveResult, Done, XV_Start, V_Start;
+
+  // compute the difference of lengths (in result)
+  srai_w(cnt1, cnt1, 1);
+  srai_w(cnt2, cnt2, 1);
+  sub_d(result, cnt1, cnt2);
+
+  // compute the shorter length (in cnt1)
+  bge(cnt2, cnt1, XV_Start);
+  move(cnt1, cnt2);
+  bind(XV_Start);
+
+  // tiny string
+  li(AT, wordSize/2);
+  blt(cnt1, AT, LoopEnd);
+
+  if (UseLSX) {
+    slli_d(tmp1, AT, 1); // less than 8
+    blt(cnt1, tmp1, Loop);
+  }
+
+  // it is hard to apply the xvilvl to flate 16 bytes into 32 bytes,
+  // so we employ the LASX only for the LL or UU StrIntrinsicNode.
+  if (UseLASX) {
+    Label XV_L, XV_Loop, XV_Result;
+
+    slli_d(tmp2, tmp1, 1); // less than 16
+    blt(cnt1, tmp2, V_Start);
+
+    li(tmp1, 16);
+    xvxor_v(fscratch, fscratch, fscratch);
+    xvinsgr2vr_d(fscratch, tmp1, 2);
+
+    bind(XV_Loop);
+    xvld(vtmp1, str1, 0);
+    xvld(vtmp2, str2, 0);
+    xvxor_v(vtmp1, vtmp1, vtmp2);
+    xvseteqz_v(FCC0, vtmp1);
+    bceqz(FCC0, XV_L);
+
+    addi_d(cnt1, cnt1, -16);
+    addi_d(str1, str1, 32);
+    addi_d(str2, str2, 32);
+    bge(cnt1, tmp2, XV_Loop);
+
+    // deal with the last loop
+    beqz(cnt1, Done);
+    addi_d(cnt1, cnt1, -16);
+    alsl_d(str1, cnt1, str1, 0);
+    xvld(vtmp1, str1, 0);
+    alsl_d(str2, cnt1, str2, 0);
+    xvld(vtmp2, str2, 0);
+    xvxor_v(vtmp1, vtmp1, vtmp2);
+    xvseteqz_v(FCC0, vtmp1);
+    bcnez(FCC0, Done);
+
+    bind(XV_L);
+    xvxor_v(vtmp2, vtmp2, vtmp2);
+    xvabsd_h(vtmp1, vtmp1, vtmp2);
+    xvneg_h(vtmp1, vtmp1);
+    xvfrstp_h(vtmp2, vtmp1, fscratch);
+    xvpickve2gr_du(tmp1, vtmp2, 0);
+    addi_d(cnt2, R0, 8);
+    bne(tmp1, cnt2, XV_Result);
+
+    xvpickve2gr_du(tmp1, vtmp2, 2);
+    addi_d(tmp1, tmp1, 8);
+
+    // the index value was stored in tmp1
+    bind(XV_Result);
+    slli_d(tmp1, tmp1, 1);
+    ldx_hu(result, str1, tmp1);
+    ldx_hu(tmp2, str2, tmp1);
+    sub_d(result, result, tmp2);
+    b(Done);
+  }
+
+  bind(V_Start);
+  if (UseLSX) {
+    Label V_L, V_Loop, V_Result;
+
+    bind(V_Loop);
+    vld(vtmp1, str1, 0);
+    vld(vtmp2, str2, 0);
+    vxor_v(vtmp1, vtmp1, vtmp2);
+    vseteqz_v(FCC0, vtmp1);
+    bceqz(FCC0, V_L);
+
+    addi_d(cnt1, cnt1, -8);
+    addi_d(str1, str1, 16);
+    addi_d(str2, str2, 16);
+    bge(cnt1, tmp1, V_Loop);
+
+    // deal with the last loop
+    beqz(cnt1, Done);
+    addi_d(cnt1, cnt1, -8);
+    alsl_d(str1, cnt1, str1, 0);
+    vld(vtmp1, str1, 0);
+    alsl_d(str2, cnt1, str2, 0);
+    vld(vtmp2, str2, 0);
+    vxor_v(vtmp1, vtmp1, vtmp2);
+    vseteqz_v(FCC0, vtmp1);
+    bcnez(FCC0, Done);
+
+    bind(V_L);
+    vxor_v(vtmp2, vtmp2, vtmp2);
+    vabsd_h(vtmp1, vtmp1, vtmp2);
+    vneg_h(vtmp1, vtmp1);
+    vfrstpi_h(vtmp2, vtmp1, 0);
+    vpickve2gr_bu(tmp1, vtmp2, 0);
+
+    // the index value was stored in tmp1
+    slli_d(tmp1, tmp1, 1);
+    ldx_hu(result, str1, tmp1);
+    ldx_hu(tmp2, str2, tmp1);
+    sub_d(result, result, tmp2);
+    b(Done);
+  }
+
+  bind(Loop);
+  ld_d(tmp1, str1, 0);
+  ld_d(tmp2, str2, 0);
+  beq(tmp1, tmp2, L);
+  xorr(cnt2, tmp1, tmp2);
+  ctz_d(cnt2, cnt2);
+  andi(cnt2, cnt2, 0x30);
+  srl_d(tmp1, tmp1, cnt2);
+  srl_d(tmp2, tmp2, cnt2);
+  bstrpick_d(tmp1, tmp1, 15, 0);
+  bstrpick_d(tmp2, tmp2, 15, 0);
+  sub_d(result, tmp1, tmp2);
+  b(Done);
+
+  bind(L);
+  addi_d(cnt1, cnt1, -4);
+  addi_d(str1, str1, 8);
+  addi_d(str2, str2, 8);
+  bge(cnt1, AT, Loop);
+
+  // compare current character
+  bind(LoopEnd);
+  beqz(cnt1, Done);
+  ld_hu(tmp1, str1, 0);
+  ld_hu(tmp2, str2, 0);
+  bne(tmp1, tmp2, HaveResult);
+  addi_d(cnt1, cnt1, -1);
+  addi_d(str1, str1, 2);
+  addi_d(str2, str2, 2);
+  b(LoopEnd);
+
+  bind(HaveResult);
+  sub_d(result, tmp1, tmp2);
+
+  bind(Done);
+}
+
+void C2_MacroAssembler::string_compareLU(Register str1, Register str2,
+                                         Register cnt1, Register cnt2,
+                                         Register result,
+                                         Register tmp1, Register tmp2,
+                                         FloatRegister vtmp1,
+                                         FloatRegister vtmp2) {
+  Label L, Loop, LoopEnd, HaveResult, Done, V_Start;
+
+
+  // compute the difference of lengths (in result)
+  srai_w(cnt2, cnt2, 1);
+  sub_d(result, cnt1, cnt2);
+
+  // compute the shorter length (in cnt1)
+  bge(cnt2, cnt1, V_Start);
+  move(cnt1, cnt2);
+  bind(V_Start);
+
+  // tiny string
+  li(AT, wordSize/2);
+  blt(cnt1, AT, LoopEnd);
+
+  if (UseLSX) {
+    slli_d(tmp1, AT, 1); // less than 8
+    blt(cnt1, tmp1, Loop);
+
+    Label V_L, V_Loop, V_Result;
+
+    vxor_v(fscratch, fscratch, fscratch);
+
+    bind(V_Loop);
+    vld(vtmp1, str1, 0);
+    vld(vtmp2, str2, 0);
+    vilvl_b(vtmp1, fscratch, vtmp1);
+    vxor_v(vtmp1, vtmp1, vtmp2);
+    vseteqz_v(FCC0, vtmp1);
+    bceqz(FCC0, V_L);
+
+    addi_d(cnt1, cnt1, -8);
+    addi_d(str1, str1, 8);
+    addi_d(str2, str2, 16);
+    bge(cnt1, tmp1, V_Loop);
+
+    // deal with the last loop
+    beqz(cnt1, Done);
+    addi_d(cnt1, cnt1, -8);
+    add_d(str1, str1, cnt1);
+    vld(vtmp1, str1, 0);
+    alsl_d(str2, cnt1, str2, 0);
+    vld(vtmp2, str2, 0);
+    vilvl_b(vtmp1, fscratch, vtmp1);
+    vxor_v(vtmp1, vtmp1, vtmp2);
+    vseteqz_v(FCC0, vtmp1);
+    bcnez(FCC0, Done);
+
+    bind(V_L);
+    vxor_v(vtmp2, vtmp2, vtmp2);
+    vabsd_h(vtmp1, vtmp1, vtmp2);
+    vneg_h(vtmp1, vtmp1);
+    vfrstpi_h(vtmp2, vtmp1, 0);
+    vpickve2gr_bu(tmp1, vtmp2, 0);
+
+    // the index value was stored in tmp1
+    ldx_bu(result, str1, tmp1);
+    slli_d(tmp1, tmp1, 1);
+    ldx_hu(tmp2, str2, tmp1);
+    sub_d(result, result, tmp2);
+    b(Done);
+  }
+
+  bind(Loop);
+  ld_wu(cnt2, str1, 0);
+  andr(tmp1, R0, R0);
+  bstrins_d(tmp1, cnt2, 7, 0);
+  srli_d(cnt2, cnt2, 8);
+  bstrins_d(tmp1, cnt2, 23, 16);
+  srli_d(cnt2, cnt2, 8);
+  bstrins_d(tmp1, cnt2, 39, 32);
+  srli_d(cnt2, cnt2, 8);
+  bstrins_d(tmp1, cnt2, 55, 48);
+  ld_d(tmp2, str2, 0);
+  beq(tmp1, tmp2, L);
+  xorr(cnt2, tmp1, tmp2);
+  ctz_d(cnt2, cnt2);
+  andi(cnt2, cnt2, 0x30);
+  srl_d(tmp1, tmp1, cnt2);
+  srl_d(tmp2, tmp2, cnt2);
+  bstrpick_d(tmp1, tmp1, 15, 0);
+  bstrpick_d(tmp2, tmp2, 15, 0);
+  sub_d(result, tmp1, tmp2);
+  b(Done);
+  bind(L);
+  addi_d(cnt1, cnt1, -4);
+  addi_d(str1, str1, 4);
+  addi_d(str2, str2, 8);
+  bge(cnt1, AT, Loop);
+
+  // compare current character
+  bind(LoopEnd);
+  beqz(cnt1, Done);
+  ld_bu(tmp1, str1, 0);
+  ld_hu(tmp2, str2, 0);
+  bne(tmp1, tmp2, HaveResult);
+  addi_d(cnt1, cnt1, -1);
+  addi_d(str1, str1, 1);
+  addi_d(str2, str2, 2);
+  b(LoopEnd);
+
+  bind(HaveResult);
+  sub_d(result, tmp1, tmp2);
+
+  bind(Done);
+}
+
+void C2_MacroAssembler::string_compareUL(Register str1, Register str2,
+                                         Register cnt1, Register cnt2,
+                                         Register result,
+                                         Register tmp1, Register tmp2,
+                                         FloatRegister vtmp1,
+                                         FloatRegister vtmp2) {
+  Label L, Loop, LoopEnd, HaveResult, Done, V_Start;
+
+  // compute the difference of lengths (in result)
+  srai_w(cnt1, cnt1, 1);
+  sub_d(result, cnt1, cnt2);
+
+  // compute the shorter length (in cnt1)
+  bge(cnt2, cnt1, V_Start);
+  move(cnt1, cnt2);
+  bind(V_Start);
+
+  // tiny string
+  li(AT, wordSize/2);
+  blt(cnt1, AT, LoopEnd);
+
+  if (UseLSX) {
+    slli_d(tmp1, AT, 1); // less than 8
+    blt(cnt1, tmp1, Loop);
+
+    Label V_L, V_Loop, V_Result;
+
+    vxor_v(fscratch, fscratch, fscratch);
+
+    bind(V_Loop);
+    vld(vtmp2, str2, 0);
+    vld(vtmp1, str1, 0);
+    vilvl_b(vtmp2, fscratch, vtmp2);
+    vxor_v(vtmp1, vtmp1, vtmp2);
+    vseteqz_v(FCC0, vtmp1);
+    bceqz(FCC0, V_L);
+
+    addi_d(cnt1, cnt1, -8);
+    addi_d(str1, str1, 16);
+    addi_d(str2, str2, 8);
+    bge(cnt1, tmp1, V_Loop);
+
+    // deal with the last loop
+    beqz(cnt1, Done);
+    addi_d(cnt1, cnt1, -8);
+    add_d(str2, str2, cnt1);
+    vld(vtmp2, str2, 0);
+    alsl_d(str1, cnt1, str1, 0);
+    vld(vtmp1, str1, 0);
+    vilvl_b(vtmp2, fscratch, vtmp2);
+    vxor_v(vtmp1, vtmp1, vtmp2);
+    vseteqz_v(FCC0, vtmp1);
+    bcnez(FCC0, Done);
+
+    bind(V_L);
+    vxor_v(vtmp2, vtmp2, vtmp2);
+    vabsd_h(vtmp1, vtmp1, vtmp2);
+    vneg_h(vtmp1, vtmp1);
+    vfrstpi_h(vtmp2, vtmp1, 0);
+    vpickve2gr_bu(tmp1, vtmp2, 0);
+
+    // the index value was stored in tmp1
+    ldx_bu(tmp2, str2, tmp1);
+    slli_d(tmp1, tmp1, 1);
+    ldx_hu(result, str1, tmp1);
+    sub_d(result, result, tmp2);
+    b(Done);
+  }
+
+  bind(Loop);
+  ld_wu(cnt2, str2, 0);
+  andr(tmp2, R0, R0);
+  bstrins_d(tmp2, cnt2, 7, 0);
+  srli_d(cnt2, cnt2, 8);
+  bstrins_d(tmp2, cnt2, 23, 16);
+  srli_d(cnt2, cnt2, 8);
+  bstrins_d(tmp2, cnt2, 39, 32);
+  srli_d(cnt2, cnt2, 8);
+  bstrins_d(tmp2, cnt2, 55, 48);
+  ld_d(tmp1, str1, 0);
+  beq(tmp1, tmp2, L);
+  xorr(cnt2, tmp1, tmp2);
+  ctz_d(cnt2, cnt2);
+  andi(cnt2, cnt2, 0x30);
+  srl_d(tmp1, tmp1, cnt2);
+  srl_d(tmp2, tmp2, cnt2);
+  bstrpick_d(tmp1, tmp1, 15, 0);
+  bstrpick_d(tmp2, tmp2, 15, 0);
+  sub_d(result, tmp1, tmp2);
+  b(Done);
+  bind(L);
+  addi_d(cnt1, cnt1, -4);
+  addi_d(str1, str1, 8);
+  addi_d(str2, str2, 4);
+  bge(cnt1, AT, Loop);
+
+  // compare current character
+  bind(LoopEnd);
+  beqz(cnt1, Done);
+  ld_hu(tmp1, str1, 0);
+  ld_bu(tmp2, str2, 0);
+  bne(tmp1, tmp2, HaveResult);
+  addi_d(cnt1, cnt1, -1);
+  addi_d(str1, str1, 2);
+  addi_d(str2, str2, 1);
   b(LoopEnd);
 
   bind(HaveResult);

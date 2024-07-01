@@ -44,10 +44,26 @@ public:
                                Register tmp1, Register tmp2, Register tmp3);
 
   // Compare strings.
-  void string_compare(Register str1, Register str2,
-                      Register cnt1, Register cnt2, Register result,
-                      int ae, Register tmp1, Register tmp2,
-                      FloatRegister vtmp1, FloatRegister vtmp2);
+  void string_compareL(Register str1, Register str2,
+                       Register cnt1, Register cnt2,
+                       Register result,
+                       Register tmp1, Register tmp2,
+                       FloatRegister vtmp1, FloatRegister vtmp2);
+  void string_compareU(Register str1, Register str2,
+                       Register cnt1, Register cnt2,
+                       Register result,
+                       Register tmp1, Register tmp2,
+                       FloatRegister vtmp1, FloatRegister vtmp2);
+  void string_compareLU(Register str1, Register str2,
+                        Register cnt1, Register cnt2,
+                        Register result,
+                        Register tmp1, Register tmp2,
+                        FloatRegister vtmp1, FloatRegister vtmp2);
+  void string_compareUL(Register str1, Register str2,
+                        Register cnt1, Register cnt2,
+                        Register result,
+                        Register tmp1, Register tmp2,
+                        FloatRegister vtmp1, FloatRegister vtmp2);
 
   // Find index of char in Latin-1 string
   void stringL_indexof_char(Register str1, Register cnt1,

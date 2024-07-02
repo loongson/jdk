@@ -23,8 +23,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2023. These
- * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2024. These
+ * modifications are Copyright (c) 2023, 2024, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -115,7 +115,7 @@ public class TestChaCha20 {
             }
         } else if (Platform.isLoongArch64()) {
             // LoongArch64 intrinsics require the lsx instructions
-            if (containsFuzzy(cpuFeatures, "lsx", false)) {
+            if (containsFuzzy(cpuFeatures, "lsx")) {
                 System.out.println("Setting up LSX worker");
                 configs.add(new ArrayList());
             }

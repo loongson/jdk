@@ -3685,8 +3685,7 @@ void TemplateTable::_new() {
     __ store_klass_gap(FSR, R0);
     __ store_klass(FSR, T3);
 
-    {
-      SkipIfEqual skip_if(_masm, &DTraceAllocProbes, 0);
+    if (DTraceAllocProbes) {
       // Trigger dtrace event for fastpath
       __ push(atos);
       __ call_VM_leaf(CAST_FROM_FN_PTR(address, static_cast<int (*)(oopDesc*)>(SharedRuntime::dtrace_object_alloc)), FSR);

@@ -48,7 +48,7 @@ void ShenandoahBarrierSetAssembler::arraycopy_prologue(MacroAssembler* masm, Dec
                                                        Register src, Register dst, Register count, RegSet saved_regs) {
   if (is_oop) {
     bool dest_uninitialized = (decorators & IS_DEST_UNINITIALIZED) != 0;
-    if ((ShenandoahSATBBarrier && !dest_uninitialized) || ShenandoahIUBarrier || ShenandoahLoadRefBarrier) {
+    if ((ShenandoahSATBBarrier && !dest_uninitialized) || ShenandoahLoadRefBarrier) {
       Label done;
 
       // Avoid calling runtime if count == 0
@@ -311,14 +311,6 @@ void ShenandoahBarrierSetAssembler::load_reference_barrier(MacroAssembler* masm,
   __ leave();
 }
 
-void ShenandoahBarrierSetAssembler::iu_barrier(MacroAssembler* masm, Register dst, Register tmp) {
-  if (ShenandoahIUBarrier) {
-    __ push_call_clobbered_registers();
-    satb_write_barrier_pre(masm, noreg, dst, TREG, tmp, SCR1, true, false);
-    __ pop_call_clobbered_registers();
-  }
-}
-
 //
 // Arguments:
 //
@@ -409,7 +401,6 @@ void ShenandoahBarrierSetAssembler::store_at(MacroAssembler* masm, DecoratorSet 
   if (val == noreg) {
     BarrierSetAssembler::store_at(masm, decorators, type, Address(tmp3, 0), noreg, noreg, noreg, noreg);
   } else {
-    iu_barrier(masm, val, tmp1);
     BarrierSetAssembler::store_at(masm, decorators, type, Address(tmp3, 0), val, noreg, noreg, noreg);
   }
 }

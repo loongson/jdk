@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018, 2021, Red Hat, Inc. All rights reserved.
- * Copyright (c) 2022, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -61,9 +61,6 @@ private:
   void load_reference_barrier(MacroAssembler* masm, Register dst, Address load_addr, DecoratorSet decorators);
 
 public:
-
-  void iu_barrier(MacroAssembler* masm, Register dst, Register tmp);
-
   virtual NMethodPatchingType nmethod_patching_type() { return NMethodPatchingType::conc_data_patch; }
 
 #ifdef COMPILER1

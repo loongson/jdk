@@ -20,6 +20,13 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
+/*
+ * This file has been modified by Loongson Technology in 2024. These
+ * modifications are Copyright (c) 2024, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 package jdk.vm.ci.code;
 
 import java.nio.ByteOrder;
@@ -129,11 +136,12 @@ public abstract class Architecture {
     /// Gets the name of this architecture. The value returned for
     /// each architecture is shown in the table below.
     ///
-    /// | Name      | Receiver type               |
-    /// |-----------|-----------------------------|
-    /// | "aarch64" | [jdk.vm.ci.aarch64.AArch64] |
-    /// | "AMD64"   | [jdk.vm.ci.amd64.AMD64]     |
-    /// | "riscv64" | [jdk.vm.ci.riscv64.RISCV64] |
+    /// | Name          | Receiver type                       |
+    /// |---------------|-------------------------------------|
+    /// | "aarch64"     | [jdk.vm.ci.aarch64.AArch64]         |
+    /// | "AMD64"       | [jdk.vm.ci.amd64.AMD64]             |
+    /// | "riscv64"     | [jdk.vm.ci.riscv64.RISCV64]         |
+    /// | "loongarch64" | [jdk.vm.ci.loongarch64.LoongArch64] |
     public String getName() {
         return name;
     }

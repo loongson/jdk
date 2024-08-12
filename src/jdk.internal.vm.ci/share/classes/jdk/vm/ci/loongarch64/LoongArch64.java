@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,6 +36,8 @@ import jdk.vm.ci.meta.PlatformKind;
 
 /**
  * Represents the LoongArch64 architecture.
+ *
+ * The value returned by {@code Architecture#getName} for an instance of this class is {@code "loongarch64"}.
  */
 public class LoongArch64 extends Architecture {
 

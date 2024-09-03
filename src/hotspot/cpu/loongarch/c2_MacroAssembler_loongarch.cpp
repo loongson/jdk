@@ -343,6 +343,7 @@ void C2_MacroAssembler::fast_unlock_lightweight(Register obj, Register flag, Reg
 
   move(flag, R0);
   { // Lightweight unlock
+    Label push_and_slow;
 
     // Check if obj is top of lock-stack.
     ld_wu(tmp2_top, Address(TREG, JavaThread::lock_stack_top_offset()));
@@ -366,7 +367,11 @@ void C2_MacroAssembler::fast_unlock_lightweight(Register obj, Register flag, Reg
 
     // Check header for monitor (0b10).
     test_bit(tmp3_t, tmp1_mark, exact_log2(markWord::monitor_value));
-    bnez(tmp3_t, inflated);
+    if (!UseObjectMonitorTable) {
+      bnez(tmp3_t, inflated);
+    } else {
+      bnez(tmp3_t, push_and_slow);
+    }
 
     // Try to unlock. Transition lock bits 0b00 => 0b01
     assert(oopDesc::mark_offset_in_bytes() == 0, "required to avoid lea");
@@ -374,6 +379,7 @@ void C2_MacroAssembler::fast_unlock_lightweight(Register obj, Register flag, Reg
     cmpxchg(Address(obj, 0), tmp1_mark, tmp3_t, flag, false, false /* acquire */);
     bnez(flag, unlocked);
 
+    bind(push_and_slow);
     // Compare and exchange failed.
     // Restore lock-stack and handle the unlock in runtime.
     DEBUG_ONLY(stx_d(obj, TREG, tmp2_top);)

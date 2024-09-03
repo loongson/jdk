@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2023, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,7 +42,8 @@
  * @requires os.arch=="loongarch64"
  *
  * @run driver TestNewObjectWithFinal c1
- * @run driver TestNewObjectWithFinal c2
+ * @run driver TestNewObjectWithFinal c2StoreStore
+ * @run driver TestNewObjectWithFinal c2Release
  */
 
 import java.util.ArrayList;
@@ -60,8 +61,12 @@ public class TestNewObjectWithFinal {
         command.add("-XX:+UnlockDiagnosticVMOptions");
         command.add("-XX:+PrintAssembly");
 
-        if (compiler.equals("c2")) {
+        if (compiler.equals("c2StoreStore")) {
             command.add("-XX:-TieredCompilation");
+        } else if (compiler.equals("c2Release")) {
+            command.add("-XX:-TieredCompilation");
+            command.add("-XX:+UnlockDiagnosticVMOptions");
+            command.add("-XX:-UseStoreStoreForCtor");
         } else if (compiler.equals("c1")) {
             command.add("-XX:TieredStopAtLevel=1");
         } else {
@@ -79,8 +84,10 @@ public class TestNewObjectWithFinal {
 
         if (compiler.equals("c1")) {
             checkMembarStoreStore(analyzer);
-        } else if (compiler.equals("c2")) {
-            checkMembarRelease(analyzer);
+        } else if (compiler.equals("c2StoreStore")) {
+            checkMembarC2(analyzer, MEMBARType.StoreStore);
+        } else if (compiler.equals("c2Release")) {
+            checkMembarC2(analyzer, MEMBARType.Release);
         }
     }
 
@@ -121,7 +128,7 @@ public class TestNewObjectWithFinal {
     // 0x000000ffed0be5a4:   dbar	0x12                        ;*synchronization entry
     //                                                           ; - TestNewObjectWithFinal$Launcher::<init>@-1 (line 227)
     //
-    private static void checkMembarRelease(OutputAnalyzer output) {
+    private static void checkMembarC2(OutputAnalyzer output, String membarType) {
         Iterator<String> iter = output.asLines().listIterator();
 
         String match = skipTo(iter, "'test' '()LTestNewObjectWithFinal$Launcher");
@@ -146,14 +153,22 @@ public class TestNewObjectWithFinal {
 
         while (instrReverseIter.hasPrevious()) {
             String inst = instrReverseIter.previous();
-            if (inst.endsWith(MEMBARType.Release + MEMBARType.DBARINSCODE) || inst.contains(MEMBARType.DBARSTR + MEMBARType.Release)) {
+            if (inst.endsWith(membarType + MEMBARType.DBARINSCODE) || inst.contains(MEMBARType.DBARSTR + membarType)) {
                 foundMembarInst = true;
                 break;
             }
         }
 
         if (foundMembarInst == false) {
-            throw new RuntimeException("No founed MembarRelease instruction (0x" + MEMBARType.Release + ")!\n");
+            String membarStr;
+            if (membarType.equals(MEMBARType.StoreStore)) {
+                membarStr = "MembarStoreStore";
+            } else if (membarType.equals(MEMBARType.Release)) {
+                membarStr = "MembarRelease";
+            } else {
+                membarStr = "Membar";
+            }
+            throw new RuntimeException("No founed " + membarStr + " instruction (0x" + membarType + ")!\n");
         }
     }
 

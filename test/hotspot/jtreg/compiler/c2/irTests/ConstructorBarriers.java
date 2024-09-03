@@ -26,11 +26,17 @@ package compiler.c2.irTests;
 import compiler.lib.ir_framework.*;
 
 /*
+ * This file has been modified by Loongson Technology in 2024, These
+ * modifications are Copyright (c) 2024, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
+/*
  * @test
  * @bug 8300148
  * @summary Test barriers emitted in constructors
  * @library /test/lib /
- * @requires os.arch=="aarch64" | os.arch=="riscv64" | os.arch=="x86_64" | os.arch=="amd64"
+ * @requires os.arch=="aarch64" | os.arch=="riscv64" | os.arch=="x86_64" | os.arch=="amd64" | os.arch=="loongarch64"
  * @run main compiler.c2.irTests.ConstructorBarriers
  */
 public class ConstructorBarriers {

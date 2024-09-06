@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2024. These
+ * modifications are Copyright (c) 2024, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_RUNTIME_BASICLOCK_INLINE_HPP
 #define SHARE_RUNTIME_BASICLOCK_INLINE_HPP
 
@@ -39,7 +45,7 @@ inline void BasicLock::set_displaced_header(markWord header) {
 
 inline ObjectMonitor* BasicLock::object_monitor_cache() const {
   assert(UseObjectMonitorTable, "must be");
-#if defined(X86) || defined(AARCH64) || defined(RISCV64)
+#if defined(X86) || defined(AARCH64) || defined(RISCV64) || defined(LOONGARCH64)
   return reinterpret_cast<ObjectMonitor*>(get_metadata());
 #else
   // Other platforms do not make use of the cache yet,

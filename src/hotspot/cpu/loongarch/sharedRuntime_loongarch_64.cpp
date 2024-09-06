@@ -1787,7 +1787,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       assert(LockingMode == LM_LIGHTWEIGHT, "must be");
       // FIXME
       Register tmp = T1;
-      __ lightweight_lock(obj_reg, swap_reg, tmp, SCR1, slow_path_lock);
+      __ lightweight_lock(lock_reg, obj_reg, swap_reg, tmp, SCR1, slow_path_lock);
     }
 
     __ bind(count);

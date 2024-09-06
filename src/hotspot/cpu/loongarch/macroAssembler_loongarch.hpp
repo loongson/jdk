@@ -776,7 +776,7 @@ class MacroAssembler: public Assembler {
     }
   }
 
-  void lightweight_lock(Register obj, Register tmp1, Register tmp2, Register tmp3, Label& slow);
+  void lightweight_lock(Register basic_lock, Register obj, Register tmp1, Register tmp2, Register tmp3, Label& slow);
   void lightweight_unlock(Register obj, Register tmp1, Register tmp2, Register tmp3, Label& slow);
 
 #if INCLUDE_ZGC

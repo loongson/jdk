@@ -11109,7 +11109,7 @@ instruct cmpFastLockLightweight(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box
   format %{ "FASTLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3 #@ cmpFastLockLightweight" %}
 
   ins_encode %{
-    __ fast_lock_lightweight($object$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register, $tmp3$$Register);
+    __ fast_lock_lightweight($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register, $tmp3$$Register);
   %}
 
   ins_pipe( pipe_slow );
@@ -11123,7 +11123,7 @@ instruct cmpFastUnlockLightweight(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP b
   format %{ "FASTUNLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3 #@ cmpFastUnlockLightweight" %}
 
   ins_encode %{
-    __ fast_unlock_lightweight($object$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register, $tmp3$$Register);
+    __ fast_unlock_lightweight($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register, $tmp3$$Register);
   %}
 
   ins_pipe( pipe_slow );

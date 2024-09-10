@@ -339,9 +339,6 @@ class MacroAssembler: public Assembler {
     Register t2,                       // temp register
     Label&   slow_case                 // continuation point if fast allocation fails
   );
-  void incr_allocated_bytes(Register thread,
-                            Register var_size_in_bytes, int con_size_in_bytes,
-                            Register t1 = noreg);
   // interface method calling
   void lookup_interface_method(Register recv_klass,
                                Register intf_klass,

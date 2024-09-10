@@ -302,20 +302,6 @@ void BarrierSetAssembler::tlab_allocate(MacroAssembler* masm, Register obj,
   // verify_tlab();
 }
 
-void BarrierSetAssembler::incr_allocated_bytes(MacroAssembler* masm,
-                                               Register var_size_in_bytes,
-                                               int con_size_in_bytes,
-                                               Register t1) {
-  assert(t1->is_valid(), "need temp reg");
-
-  __ ld_d(t1, Address(TREG, JavaThread::allocated_bytes_offset()));
-  if (var_size_in_bytes->is_valid())
-    __ add_d(t1, t1, var_size_in_bytes);
-  else
-    __ addi_d(t1, t1, con_size_in_bytes);
-  __ st_d(t1, Address(TREG, JavaThread::allocated_bytes_offset()));
-}
-
 static volatile uint32_t _patching_epoch = 0;
 
 address BarrierSetAssembler::patching_epoch_addr() {

@@ -1132,23 +1132,6 @@ void MacroAssembler::tlab_allocate(Register obj,
   bs->tlab_allocate(this, obj, var_size_in_bytes, con_size_in_bytes, t1, t2, slow_case);
 }
 
-void MacroAssembler::incr_allocated_bytes(Register thread,
-                                          Register var_size_in_bytes,
-                                          int con_size_in_bytes,
-                                          Register t1) {
-  if (!thread->is_valid()) {
-    thread = TREG;
-  }
-
-  ld_d(AT, Address(thread, JavaThread::allocated_bytes_offset()));
-  if (var_size_in_bytes->is_valid()) {
-    add_d(AT, AT, var_size_in_bytes);
-  } else {
-    addi_d(AT, AT, con_size_in_bytes);
-  }
-  st_d(AT, Address(thread, JavaThread::allocated_bytes_offset()));
-}
-
 void MacroAssembler::li(Register rd, jlong value) {
   jlong hi12 = bitfield(value, 52, 12);
   jlong lo52 = bitfield(value,  0, 52);

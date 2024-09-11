@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018, 2021, Red Hat, Inc. All rights reserved.
- * Copyright (c) 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,8 +38,6 @@ void LIR_OpShenandoahCompareAndSwap::emit_code(LIR_Assembler* masm) {
   Register newval = _new_value->as_register();
   Register cmpval = _cmp_value->as_register();
   Register result = result_opr()->as_register();
-
-  ShenandoahBarrierSet::assembler()->iu_barrier(masm->masm(), newval, SCR2);
 
   if (UseCompressedOops) {
     Register tmp1 = _tmp1->as_register();
@@ -106,10 +104,6 @@ LIR_Opr ShenandoahBarrierSetC1::atomic_xchg_at_resolved(LIRAccess& access, LIRIt
   LIR_Opr result = gen->new_register(type);
   value.load_item();
   LIR_Opr value_opr = value.result();
-
-  if (access.is_oop()) {
-    value_opr = iu_barrier(access.gen(), value_opr, access.access_emit_info(), access.decorators());
-  }
 
   assert(type == T_INT || is_reference_type(type) LP64_ONLY( || type == T_LONG ), "unexpected type");
   LIR_Opr tmp = gen->new_register(T_INT);

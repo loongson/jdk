@@ -34,7 +34,7 @@
  *          and riscv64 (vector)
  * @requires vm.compiler2.enabled
  * @requires (os.simpleArch == "x64" & vm.cpu.features ~= ".*avx.*") | os.arch == "aarch64" |
- *           (os.arch == "riscv64" & vm.cpu.features ~= ".*v,.*") | os.arch == "loongarch64"
+ *           (os.arch == "riscv64" & vm.cpu.features ~= ".*rvv.*") | os.arch == "loongarch64"
  * @library /test/lib /
  * @run driver compiler.vectorization.TestSignumVector
  */

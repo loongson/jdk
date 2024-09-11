@@ -150,6 +150,8 @@ class NativeCall: public NativeInstruction {
   // We have only bl.
   bool is_bl() const;
 
+  static int byte_size() { return instruction_size; }
+
   address instruction_address() const { return addr_at(instruction_offset); }
 
   address next_instruction_address() const {

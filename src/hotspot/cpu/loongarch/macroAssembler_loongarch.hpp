@@ -28,7 +28,6 @@
 
 #include "asm/assembler.hpp"
 #include "code/vmreg.hpp"
-#include "runtime/rtmLocking.hpp"
 #include "utilities/macros.hpp"
 
 class OopMap;

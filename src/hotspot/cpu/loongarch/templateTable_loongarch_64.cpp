@@ -2123,9 +2123,9 @@ void TemplateTable::_return(TosState state) {
 
     __ ld_d(c_rarg1, aaddress(0));
     __ load_klass(LVP, c_rarg1);
-    __ ld_w(LVP, Address(LVP, Klass::access_flags_offset()));
+    __ ld_bu(LVP, Address(LVP, Klass::misc_flags_offset()));
     Label skip_register_finalizer;
-    __ test_bit(AT, LVP, exact_log2(JVM_ACC_HAS_FINALIZER));
+    __ test_bit(AT, LVP, exact_log2(KlassFlags::_misc_has_finalizer));
     __ beqz(AT, skip_register_finalizer);
 
     __ call_VM(noreg, CAST_FROM_FN_PTR(address,

@@ -770,8 +770,8 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         Label register_finalizer;
         Register t = A5;
         __ load_klass(t, A0);
-        __ ld_w(t, Address(t, Klass::access_flags_offset()));
-        __ test_bit(SCR1, t, exact_log2(JVM_ACC_HAS_FINALIZER));
+        __ ld_bu(t, Address(t, Klass::misc_flags_offset()));
+        __ test_bit(SCR1, t, exact_log2(KlassFlags::_misc_has_finalizer));
         __ bnez(SCR1, register_finalizer);
         __ jr(RA);
 

@@ -157,24 +157,22 @@ void CodeInstaller::pd_relocate_JavaMethod(CodeBuffer &cbuf, methodHandle& metho
   }
 }
 
-void CodeInstaller::pd_relocate_poll(address pc, jint mark, JVMCI_TRAPS) {
+bool CodeInstaller::pd_relocate(address pc, jint mark) {
   switch (mark) {
     case POLL_NEAR:
-      JVMCI_ERROR("unimplemented");
-      break;
+      // This is unhandled and will be reported by the caller
+      return false;
     case POLL_FAR:
       _instructions->relocate(pc, relocInfo::poll_type);
-      break;
+      return true;
     case POLL_RETURN_NEAR:
-      JVMCI_ERROR("unimplemented");
-      break;
+      // This is unhandled and will be reported by the caller
+      return false;
     case POLL_RETURN_FAR:
       _instructions->relocate(pc, relocInfo::poll_return_type);
-      break;
-    default:
-      JVMCI_ERROR("invalid mark value");
-      break;
+      return true;
   }
+  return false;
 }
 
 // convert JVMCI register indices (as used in oop maps) to HotSpot registers

@@ -892,7 +892,7 @@ void reg_mask_init() {
   _PTR_REG_mask = _ALL_REG_mask;
   _PTR_HAS_S6_REG_mask = _ALL_REG_mask;
 
-  if (UseCompressedOops && (CompressedOops::ptrs_base() != nullptr)) {
+  if (UseCompressedOops && (CompressedOops::base() != nullptr)) {
     _ANY_REG32_mask.Remove(OptoReg::as_OptoReg(r28->as_VMReg()));
     _ANY_REG_mask.SUBTRACT(_S5_LONG_REG_mask);
     _PTR_REG_mask.SUBTRACT(_S5_LONG_REG_mask);

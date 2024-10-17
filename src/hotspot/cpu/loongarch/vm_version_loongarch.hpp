@@ -302,6 +302,8 @@ public:
 
   constexpr static bool supports_recursive_lightweight_locking() { return true; }
 
+  constexpr static bool supports_secondary_supers_table() { return true; }
+
   // Check intrinsic support
   static bool is_intrinsic_supported(vmIntrinsicID id);
 

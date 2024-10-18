@@ -4783,6 +4783,18 @@ instruct TailCalljmpInd(no_FP_mRegP jump_target, s3_RegP method_ptr) %{
   ins_pipe( pipe_jump );
 %}
 
+// Forward exception.
+instruct ForwardExceptionjmp()
+%{
+  match(ForwardException);
+
+  format %{ "jmp forward_exception_stub" %}
+  ins_encode %{
+    __ jmp(StubRoutines::forward_exception_entry(), relocInfo::runtime_call_type);
+  %}
+  ins_pipe( pipe_jump );
+%}
+
 // Create exception oop: created by stack-crawling runtime code.
 // Created exception is now available to this handler, and is setup
 // just prior to jumping to this handler.  No code emitted.

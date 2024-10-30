@@ -217,8 +217,6 @@ StubFrame::~StubFrame() {
 
 #define __ sasm->
 
-const int float_regs_as_doubles_size_in_slots = pd_nof_fpu_regs_frame_map * 2;
-
 // Stack layout for saving/restoring  all the registers needed during a runtime
 // call (this includes deoptimization)
 // Note: note that users of this frame may well have arguments to some runtime
@@ -770,8 +768,8 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         Label register_finalizer;
         Register t = A5;
         __ load_klass(t, A0);
-        __ ld_w(t, Address(t, Klass::access_flags_offset()));
-        __ test_bit(SCR1, t, exact_log2(JVM_ACC_HAS_FINALIZER));
+        __ ld_bu(t, Address(t, Klass::misc_flags_offset()));
+        __ test_bit(SCR1, t, exact_log2(KlassFlags::_misc_has_finalizer));
         __ bnez(SCR1, register_finalizer);
         __ jr(RA);
 

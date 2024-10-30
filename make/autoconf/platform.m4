@@ -396,7 +396,7 @@ AC_DEFUN([PLATFORM_EXTRACT_TARGET_AND_BUILD],
 AC_DEFUN([PLATFORM_SETUP_TARGET_CPU_BITS],
 [
   AC_ARG_WITH(target-bits, [AS_HELP_STRING([--with-target-bits],
-       [build 32-bit or 64-bit binaries (for platforms that support it), e.g. --with-target-bits=32 @<:@guessed@:>@])])
+      [build 32-bit or 64-bit binaries (for platforms that support it), e.g. --with-target-bits=32 @<:@guessed@:>@])])
 
   # We have three types of compiles:
   # native  == normal compilation, target system == build system
@@ -680,7 +680,7 @@ AC_DEFUN_ONCE([PLATFORM_SETUP_OPENJDK_BUILD_AND_TARGET],
 AC_DEFUN([PLATFORM_CHECK_DEPRECATION],
 [
   AC_ARG_ENABLE(deprecated-ports, [AS_HELP_STRING([--enable-deprecated-ports@<:@=yes/no@:>@],
-       [Suppress the error when configuring for a deprecated port @<:@no@:>@])])
+      [Suppress the error when configuring for a deprecated port @<:@no@:>@])])
   if test "x$OPENJDK_TARGET_OS" = xwindows && test "x$OPENJDK_TARGET_CPU" = xx86; then
     if test "x$enable_deprecated_ports" = "xyes"; then
       AC_MSG_WARN([The Windows 32-bit x86 port is deprecated and may be removed in a future release.])
@@ -693,7 +693,7 @@ AC_DEFUN([PLATFORM_CHECK_DEPRECATION],
 
 AC_DEFUN_ONCE([PLATFORM_SETUP_OPENJDK_BUILD_OS_VERSION],
 [
-  ###############################################################################
+  ##############################################################################
 
   # Note that this is the build platform OS version!
 
@@ -708,7 +708,7 @@ AC_DEFUN_ONCE([PLATFORM_SETUP_OPENJDK_BUILD_OS_VERSION],
 
 AC_DEFUN_ONCE([PLATFORM_SETUP_OPENJDK_TARGET_BITS],
 [
-  ###############################################################################
+  ##############################################################################
   #
   # Now we check if libjvm.so will use 32 or 64 bit pointers for the C/C++ code.
   # (The JVM can use 32 or 64 bit Java pointers but that decision
@@ -754,7 +754,7 @@ AC_DEFUN_ONCE([PLATFORM_SETUP_OPENJDK_TARGET_BITS],
 
 AC_DEFUN_ONCE([PLATFORM_SETUP_OPENJDK_TARGET_ENDIANNESS],
 [
-  ###############################################################################
+  ##############################################################################
   #
   # Is the target little or big endian?
   #

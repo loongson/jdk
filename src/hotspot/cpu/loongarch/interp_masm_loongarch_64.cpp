@@ -782,7 +782,7 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
     }
 
     if (LockingMode == LM_LIGHTWEIGHT) {
-      lightweight_lock(scr_reg, tmp_reg, SCR1, SCR2, slow_case);
+      lightweight_lock(lock_reg, scr_reg, tmp_reg, SCR1, SCR2, slow_case);
       b(count);
     } else if (LockingMode == LM_LEGACY) {
       // Load (object->mark() | 1) into tmp_reg

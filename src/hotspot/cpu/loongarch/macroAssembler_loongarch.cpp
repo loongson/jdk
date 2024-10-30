@@ -427,7 +427,7 @@ void MacroAssembler::reserved_stack_check() {
   // We have already removed our own frame.
   // throw_delayed_StackOverflowError will think that it's been
   // called by our caller.
-  li(AT, (long)StubRoutines::throw_delayed_StackOverflowError_entry());
+  li(AT, (long)SharedRuntime::throw_delayed_StackOverflowError_entry());
   jr(AT);
   should_not_reach_here();
 

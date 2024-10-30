@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -124,7 +124,7 @@ void MethodHandles::jump_from_method_handle(MacroAssembler* _masm, Register meth
   __ jr(T4);
 
   __ bind(L_no_such_method);
-  address wrong_method = StubRoutines::throw_AbstractMethodError_entry();
+  address wrong_method = SharedRuntime::throw_AbstractMethodError_entry();
   __ jmp(wrong_method, relocInfo::runtime_call_type);
 }
 
@@ -451,7 +451,7 @@ void MethodHandles::generate_method_handle_dispatch(MacroAssembler* _masm,
 
     if (iid == vmIntrinsics::_linkToInterface) {
       __ bind(L_incompatible_class_change_error);
-      address icce_entry= StubRoutines::throw_IncompatibleClassChangeError_entry();
+      address icce_entry= SharedRuntime::throw_IncompatibleClassChangeError_entry();
       __ jmp(icce_entry, relocInfo::runtime_call_type);
     }
   }

@@ -278,25 +278,30 @@ void C2_MacroAssembler::fast_lock_lightweight(Register obj, Register flag, Regis
   { // Handle inflated monitor.
     bind(inflated);
 
-    // mark contains the tagged ObjectMonitor*.
-    const Register tmp1_tagged_monitor = tmp1_mark;
-    const uintptr_t monitor_tag = markWord::monitor_value;
-    const Register tmp2_owner_addr = tmp2;
-    const Register tmp3_owner = tmp3;
+    if (!UseObjectMonitorTable) {
+      // mark contains the tagged ObjectMonitor*.
+      const Register tmp1_tagged_monitor = tmp1_mark;
+      const uintptr_t monitor_tag = markWord::monitor_value;
+      const Register tmp2_owner_addr = tmp2;
+      const Register tmp3_owner = tmp3;
 
-    // Compute owner address.
-    lea(tmp2_owner_addr, Address(tmp1_tagged_monitor, (in_bytes(ObjectMonitor::owner_offset()) - monitor_tag)));
+      // Compute owner address.
+      lea(tmp2_owner_addr, Address(tmp1_tagged_monitor, (in_bytes(ObjectMonitor::owner_offset()) - monitor_tag)));
 
-    move(tmp3_owner, R0);
-    // CAS owner (null => current thread).
-    cmpxchg(Address(tmp2_owner_addr, 0), tmp3_owner, TREG, flag, true, true /* acquire */);
-    bnez(flag, locked);
+      move(tmp3_owner, R0);
+      // CAS owner (null => current thread).
+      cmpxchg(Address(tmp2_owner_addr, 0), tmp3_owner, TREG, flag, true, true /* acquire */);
+      bnez(flag, locked);
 
-    // Check if recursive.
-    bne(tmp3_owner, TREG, slow_path);
+      // Check if recursive.
+      bne(tmp3_owner, TREG, slow_path);
 
-    // Recursive.
-    increment(Address(tmp1_tagged_monitor, in_bytes(ObjectMonitor::recursions_offset()) - monitor_tag), 1);
+      // Recursive.
+      increment(Address(tmp1_tagged_monitor, in_bytes(ObjectMonitor::recursions_offset()) - monitor_tag), 1);
+    } else {
+      // OMCache lookup not supported yet. Take the slowpath.
+      b(slow_path);
+    }
   }
 
   bind(locked);
@@ -338,6 +343,7 @@ void C2_MacroAssembler::fast_unlock_lightweight(Register obj, Register flag, Reg
 
   move(flag, R0);
   { // Lightweight unlock
+    Label push_and_slow;
 
     // Check if obj is top of lock-stack.
     ld_wu(tmp2_top, Address(TREG, JavaThread::lock_stack_top_offset()));
@@ -361,7 +367,11 @@ void C2_MacroAssembler::fast_unlock_lightweight(Register obj, Register flag, Reg
 
     // Check header for monitor (0b10).
     test_bit(tmp3_t, tmp1_mark, exact_log2(markWord::monitor_value));
-    bnez(tmp3_t, inflated);
+    if (!UseObjectMonitorTable) {
+      bnez(tmp3_t, inflated);
+    } else {
+      bnez(tmp3_t, push_and_slow);
+    }
 
     // Try to unlock. Transition lock bits 0b00 => 0b01
     assert(oopDesc::mark_offset_in_bytes() == 0, "required to avoid lea");
@@ -369,6 +379,7 @@ void C2_MacroAssembler::fast_unlock_lightweight(Register obj, Register flag, Reg
     cmpxchg(Address(obj, 0), tmp1_mark, tmp3_t, flag, false, false /* acquire */);
     bnez(flag, unlocked);
 
+    bind(push_and_slow);
     // Compare and exchange failed.
     // Restore lock-stack and handle the unlock in runtime.
     DEBUG_ONLY(stx_d(obj, TREG, tmp2_top);)
@@ -399,49 +410,54 @@ void C2_MacroAssembler::fast_unlock_lightweight(Register obj, Register flag, Reg
     bind(check_done);
 #endif
 
-    // mark contains the tagged ObjectMonitor*.
-    const Register tmp1_monitor = tmp1_mark;
-    const intptr_t monitor_tag = markWord::monitor_value;
+    if (!UseObjectMonitorTable) {
+      // mark contains the tagged ObjectMonitor*.
+      const Register tmp1_monitor = tmp1_mark;
+      const intptr_t monitor_tag = markWord::monitor_value;
 
-    // Untag the monitor.
-    addi_d(tmp1_monitor, tmp1_mark, -monitor_tag);
+      // Untag the monitor.
+      addi_d(tmp1_monitor, tmp1_mark, -monitor_tag);
 
-    const Register tmp2_recursions = tmp2;
-    Label not_recursive;
+      const Register tmp2_recursions = tmp2;
+      Label not_recursive;
 
-    // Check if recursive.
-    ld_d(tmp2_recursions, Address(tmp1_monitor, ObjectMonitor::recursions_offset()));
-    beqz(tmp2_recursions, not_recursive);
+      // Check if recursive.
+      ld_d(tmp2_recursions, Address(tmp1_monitor, ObjectMonitor::recursions_offset()));
+      beqz(tmp2_recursions, not_recursive);
 
-    // Recursive unlock.
-    addi_d(tmp2_recursions, tmp2_recursions, -1);
-    st_d(tmp2_recursions, Address(tmp1_monitor, ObjectMonitor::recursions_offset()));
-    b(unlocked);
+      // Recursive unlock.
+      addi_d(tmp2_recursions, tmp2_recursions, -1);
+      st_d(tmp2_recursions, Address(tmp1_monitor, ObjectMonitor::recursions_offset()));
+      b(unlocked);
 
-    bind(not_recursive);
+      bind(not_recursive);
 
-    Label release;
-    const Register tmp2_owner_addr = tmp2;
+      Label release;
+      const Register tmp2_owner_addr = tmp2;
 
-    // Compute owner address.
-    lea(tmp2_owner_addr, Address(tmp1_monitor, ObjectMonitor::owner_offset()));
+      // Compute owner address.
+      lea(tmp2_owner_addr, Address(tmp1_monitor, ObjectMonitor::owner_offset()));
 
-    // Check if the entry lists are empty.
-    ld_d(AT, Address(tmp1_monitor, ObjectMonitor::EntryList_offset()));
-    ld_d(tmp3_t, Address(tmp1_monitor, ObjectMonitor::cxq_offset()));
-    orr(AT, AT, tmp3_t);
-    beqz(AT, release);
+      // Check if the entry lists are empty.
+      ld_d(AT, Address(tmp1_monitor, ObjectMonitor::EntryList_offset()));
+      ld_d(tmp3_t, Address(tmp1_monitor, ObjectMonitor::cxq_offset()));
+      orr(AT, AT, tmp3_t);
+      beqz(AT, release);
 
-    // The owner may be anonymous and we removed the last obj entry in
-    // the lock-stack. This loses the information about the owner.
-    // Write the thread to the owner field so the runtime knows the owner.
-    st_d(TREG, Address(tmp2_owner_addr, 0));
-    b(slow_path);
+      // The owner may be anonymous and we removed the last obj entry in
+      // the lock-stack. This loses the information about the owner.
+      // Write the thread to the owner field so the runtime knows the owner.
+      st_d(TREG, Address(tmp2_owner_addr, 0));
+      b(slow_path);
 
-    bind(release);
-    // Set owner to null.
-    membar(Assembler::Membar_mask_bits(MacroAssembler::LoadStore | MacroAssembler::StoreStore));
-    st_d(R0, Address(tmp2_owner_addr));
+      bind(release);
+      // Set owner to null.
+      membar(Assembler::Membar_mask_bits(MacroAssembler::LoadStore | MacroAssembler::StoreStore));
+      st_d(R0, Address(tmp2_owner_addr));
+    } else {
+      // OMCache lookup not supported yet. Take the slowpath.
+      b(slow_path);
+    }
   }
 
   bind(unlocked);

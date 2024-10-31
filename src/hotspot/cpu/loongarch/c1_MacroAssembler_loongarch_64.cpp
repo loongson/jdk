@@ -245,7 +245,7 @@ void C1_MacroAssembler::initialize_object(Register obj, Register klass, Register
 
   if (CURRENT_ENV->dtrace_alloc_probes()) {
     assert(obj == A0, "must be");
-    call(Runtime1::entry_for(Runtime1::dtrace_object_alloc_id), relocInfo::runtime_call_type);
+    call(Runtime1::entry_for(C1StubId::dtrace_object_alloc_id), relocInfo::runtime_call_type);
   }
 
   verify_oop(obj);
@@ -286,7 +286,7 @@ void C1_MacroAssembler::allocate_array(Register obj, Register len, Register t1, 
 
   if (CURRENT_ENV->dtrace_alloc_probes()) {
     assert(obj == A0, "must be");
-    call(Runtime1::entry_for(Runtime1::dtrace_object_alloc_id), relocInfo::runtime_call_type);
+    call(Runtime1::entry_for(C1StubId::dtrace_object_alloc_id), relocInfo::runtime_call_type);
   }
 
   verify_oop(obj);

@@ -2155,7 +2155,8 @@ void SharedRuntime::generate_deopt_blob() {
     pad += 512; // Increase the buffer size when compiling for JVMCI
   }
 #endif
-  CodeBuffer     buffer ("deopt_blob", 2048+pad, 1024);
+  const char* name = SharedRuntime::stub_name(SharedStubId::deopt_id);
+  CodeBuffer buffer(name, 2048 + pad, 1024);
   MacroAssembler* masm  = new MacroAssembler( & buffer);
   int frame_size_in_words;
   OopMap* map = nullptr;
@@ -2501,7 +2502,8 @@ void SharedRuntime::generate_deopt_blob() {
 // This blob is jumped to (via a breakpoint and the signal handler) from a
 // safepoint in compiled code.
 
-SafepointBlob* SharedRuntime::generate_handler_blob(address call_ptr, int poll_type) {
+SafepointBlob* SharedRuntime::generate_handler_blob(SharedStubId id, address call_ptr) {
+  assert(is_polling_page_id(id), "expected a polling page stub id");
 
   // Account for thread arg in our frame
   const int additional_words = 0;
@@ -2515,12 +2517,13 @@ SafepointBlob* SharedRuntime::generate_handler_blob(address call_ptr, int poll_t
 
   // allocate space for the code
   // setup code generation tools
-  CodeBuffer  buffer ("handler_blob", 2048, 512);
+  const char* name = SharedRuntime::stub_name(id);
+  CodeBuffer buffer(name, 2048, 512);
   MacroAssembler* masm = new MacroAssembler( &buffer);
 
   address start   = __ pc();
-  bool cause_return = (poll_type == POLL_AT_RETURN);
-  RegisterSaver reg_save(poll_type == POLL_AT_VECTOR_LOOP /* save_vectors */);
+  bool cause_return = (id == SharedStubId::polling_page_return_handler_id);
+  RegisterSaver reg_save(id == SharedStubId::polling_page_vectors_safepoint_handler_id /* save_vectors */);
 
   map = reg_save.save_live_registers(masm, additional_words, &frame_size_in_words);
 
@@ -2616,12 +2619,14 @@ SafepointBlob* SharedRuntime::generate_handler_blob(address call_ptr, int poll_t
 // but since this is generic code we don't know what they are and the caller
 // must do any gc of the args.
 //
-RuntimeStub* SharedRuntime::generate_resolve_blob(address destination, const char* name) {
+RuntimeStub* SharedRuntime::generate_resolve_blob(SharedStubId id, address destination) {
   assert (StubRoutines::forward_exception_entry() != nullptr, "must be generated before");
+  assert(is_resolve_id(id), "expected a resolve stub id");
 
   // allocate space for the code
   ResourceMark rm;
 
+  const char* name = SharedRuntime::stub_name(id);
   CodeBuffer buffer(name, 1000, 512);
   MacroAssembler* masm  = new MacroAssembler(&buffer);
 
@@ -2702,7 +2707,11 @@ RuntimeStub* SharedRuntime::generate_resolve_blob(address destination, const cha
 // otherwise assume that stack unwinding will be initiated, so
 // caller saved registers were assumed volatile in the compiler.
 
-RuntimeStub* SharedRuntime::generate_throw_exception(const char* name, address runtime_entry) {
+RuntimeStub* SharedRuntime::generate_throw_exception(SharedStubId id, address runtime_entry) {
+  assert(is_throw_id(id), "expected a throw stub id");
+
+  const char* name = SharedRuntime::stub_name(id);
+
   // Information about frame layout at time of blocking runtime call.
   // Note that we only have to preserve callee-saved registers since
   // the compilers are responsible for supplying a continuation point
@@ -2798,7 +2807,10 @@ RuntimeStub* SharedRuntime::generate_jfr_write_checkpoint() {
     framesize // inclusive of return address
   };
 
-  CodeBuffer code("jfr_write_checkpoint", 1024, 64);
+  int insts_size = 1024;
+  int locs_size = 64;
+  const char* name = SharedRuntime::stub_name(SharedStubId::jfr_write_checkpoint_id);
+  CodeBuffer code(name, insts_size, locs_size);
   MacroAssembler* masm = new MacroAssembler(&code);
 
   address start = __ pc();
@@ -2824,7 +2836,7 @@ RuntimeStub* SharedRuntime::generate_jfr_write_checkpoint() {
   oop_maps->add_gc_map(frame_complete, map);
 
   RuntimeStub* stub =
-    RuntimeStub::new_runtime_stub(code.name(),
+    RuntimeStub::new_runtime_stub(name,
                                   &code,
                                   frame_complete,
                                   (framesize >> (LogBytesPerWord - LogBytesPerInt)),
@@ -2845,7 +2857,8 @@ RuntimeStub* SharedRuntime::generate_jfr_return_lease() {
 
   int insts_size = 1024;
   int locs_size = 64;
-  CodeBuffer code("jfr_return_lease", insts_size, locs_size);
+  const char* name = SharedRuntime::stub_name(SharedStubId::jfr_return_lease_id);
+  CodeBuffer code(name, insts_size, locs_size);
   OopMapSet* oop_maps = new OopMapSet();
   MacroAssembler* masm = new MacroAssembler(&code);
 
@@ -2867,7 +2880,7 @@ RuntimeStub* SharedRuntime::generate_jfr_return_lease() {
   oop_maps->add_gc_map(the_pc - start, map);
 
   RuntimeStub* stub = // codeBlob framesize is in words (not VMRegImpl::slot_size)
-    RuntimeStub::new_runtime_stub("jfr_return_lease", &code, frame_complete,
+    RuntimeStub::new_runtime_stub(name, &code, frame_complete,
                                   (framesize >> (LogBytesPerWord - LogBytesPerInt)),
                                   oop_maps, false);
   return stub;

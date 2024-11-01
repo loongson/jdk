@@ -2384,10 +2384,10 @@ void MacroAssembler::reinit_heapbase() {
       if (CompressedOops::base() == nullptr) {
         move(S5_heapbase, R0);
       } else {
-        li(S5_heapbase, (int64_t)CompressedOops::ptrs_base());
+        li(S5_heapbase, (int64_t)CompressedOops::base());
       }
     } else {
-      li(S5_heapbase, (intptr_t)CompressedOops::ptrs_base_addr());
+      li(S5_heapbase, (intptr_t)CompressedOops::base_addr());
       ld_d(S5_heapbase, S5_heapbase, 0);
     }
   }

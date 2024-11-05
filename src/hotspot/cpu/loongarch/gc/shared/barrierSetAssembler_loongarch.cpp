@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2018, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2018, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -482,7 +482,7 @@ void SaveLiveRegisters::initialize(BarrierStubC2* stub) {
   }
 
   // Remove C-ABI SOE registers and scratch regs
-  _gp_regs -= RegSet::range(S0, S7) + RegSet::of(SP, SCR1, SCR2);
+  _gp_regs -= RegSet::range(S0, S7) + RegSet::of(SP, SCR1);
 }
 
 SaveLiveRegisters::SaveLiveRegisters(MacroAssembler* masm, BarrierStubC2* stub)

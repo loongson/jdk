@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
-// Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
+// Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
 // DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 //
 // This code is free software; you can redistribute it and/or modify it
@@ -59,7 +59,8 @@ static void z_store_barrier(MacroAssembler* masm, const MachNode* node, Address 
     __ z_color(rnew_zpointer, rnew_zaddress, tmp);
   } else {
     bool is_native = (node->barrier_data() & ZBarrierNative) != 0;
-    ZStoreBarrierStubC2* const stub = ZStoreBarrierStubC2::create(node, ref_addr, rnew_zaddress, rnew_zpointer, is_native, is_atomic);
+    bool is_nokeepalive = (node->barrier_data() & ZBarrierNoKeepalive) != 0;
+    ZStoreBarrierStubC2* const stub = ZStoreBarrierStubC2::create(node, ref_addr, rnew_zaddress, rnew_zpointer, is_native, is_atomic, is_nokeepalive);
     ZBarrierSetAssembler* bs_asm = ZBarrierSet::assembler();
     bs_asm->store_barrier_fast(masm, ref_addr, rnew_zaddress, rnew_zpointer, tmp, true /* in_nmethod */, is_atomic, *stub->entry(), *stub->continuation());
   }

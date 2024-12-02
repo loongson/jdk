@@ -1144,10 +1144,6 @@ const RegMask* Matcher::predicate_reg_mask(void) {
   return nullptr;
 }
 
-const TypeVectMask* Matcher::predicate_reg_type(const Type* elemTy, int length) {
-  return nullptr;
-}
-
 int Matcher::scalable_vector_reg_size(const BasicType bt) {
   return -1;
 }

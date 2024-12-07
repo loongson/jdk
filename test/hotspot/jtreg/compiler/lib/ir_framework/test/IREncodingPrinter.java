@@ -21,6 +21,12 @@
  * questions.
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2025. These
+ * modifications are Copyright (c) 2025, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 package compiler.lib.ir_framework.test;
 
 import compiler.lib.ir_framework.IR;
@@ -70,6 +76,7 @@ public class IREncodingPrinter {
         "arm",
         "ppc",
         "riscv64",
+        "loongarch64",
         "s390",
         "x64",
         "x86",
@@ -110,7 +117,10 @@ public class IREncodingPrinter {
         // Riscv64
         "rvv",
         "zvbb",
-        "zvfh"
+        "zvfh",
+        // LoongArch
+        "lsx",
+        "lasx"
     ));
 
     public IREncodingPrinter() {
@@ -356,6 +366,8 @@ public class IREncodingPrinter {
             arch = "ppc";
         } else if (Platform.isRISCV64()) {
             arch = "riscv64";
+        } else if (Platform.isLoongArch64()) {
+            arch = "loongarch64";
         } else if (Platform.isS390x()) {
             arch = "s390";
         } else if (Platform.isX64()) {

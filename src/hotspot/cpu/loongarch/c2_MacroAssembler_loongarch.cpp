@@ -203,7 +203,7 @@ void C2_MacroAssembler::fast_unlock_c2(Register oop, Register box, Register flag
   // StoreLoad achieves this.
   membar(MacroAssembler::StoreLoad);
 
-  // Check if the entry lists are empty.
+  // Check if the entry lists are empty (EntryList first - by convention).
   ld_d(flag, Address(tmp, ObjectMonitor::EntryList_offset()));
   ld_d(disp_hdr, Address(tmp, ObjectMonitor::cxq_offset()));
   orr(AT, flag, disp_hdr);
@@ -514,7 +514,7 @@ void C2_MacroAssembler::fast_unlock_lightweight(Register obj, Register box, Regi
     // StoreLoad achieves this.
     membar(MacroAssembler::StoreLoad);
 
-    // Check if the entry lists are empty.
+    // Check if the entry lists are empty (EntryList first - by convention).
     ld_d(AT, Address(tmp1_monitor, ObjectMonitor::EntryList_offset()));
     ld_d(tmp3_t, Address(tmp1_monitor, ObjectMonitor::cxq_offset()));
     orr(AT, AT, tmp3_t);

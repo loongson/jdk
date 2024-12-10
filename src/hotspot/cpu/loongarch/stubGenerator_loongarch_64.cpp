@@ -568,7 +568,7 @@ class StubGenerator: public StubCodeGenerator {
 
       __ bind(entry);
 #if INCLUDE_ZGC
-      if (UseZGC && ZGenerational && is_reference_type(type)) {
+      if (UseZGC && is_reference_type(type)) {
         __ push(RegSet::of(gct1, gct2, gct3));
       }
 #endif
@@ -642,7 +642,7 @@ class StubGenerator: public StubCodeGenerator {
       bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 0), A6, gct1, gct2, gct3);
       bs->copy_store_at(_masm, decorators, type, 8, Address(A3, -8), A7, gct1, gct2, gct3);
 #if INCLUDE_ZGC
-      if (UseZGC && ZGenerational && is_reference_type(type)) {
+      if (UseZGC && is_reference_type(type)) {
         __ pop(RegSet::of(gct1, gct2, gct3));
       }
 #endif
@@ -854,7 +854,7 @@ class StubGenerator: public StubCodeGenerator {
 
       __ bind(entry);
 #if INCLUDE_ZGC
-      if (UseZGC && ZGenerational && is_reference_type(type)) {
+      if (UseZGC && is_reference_type(type)) {
         __ push(RegSet::of(gct1, gct2, gct3));
       }
 #endif
@@ -925,7 +925,7 @@ class StubGenerator: public StubCodeGenerator {
       bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 0),  A6, gct1, gct2, gct3);
       bs->copy_store_at(_masm, decorators, type, 8, Address(A3, -8), A7, gct1, gct2, gct3);
 #if INCLUDE_ZGC
-      if (UseZGC && ZGenerational && is_reference_type(type)) {
+      if (UseZGC && is_reference_type(type)) {
         __ pop(RegSet::of(gct1, gct2, gct3));
       }
 #endif
@@ -2105,7 +2105,7 @@ class StubGenerator: public StubCodeGenerator {
 
       // 2:
       __ bind(L2);
-      if (UseLSX && !ZGenerational) {
+      if (UseLSX && !UseZGC) {
         bs->copy_load_at(_masm, decorators, type, 16, F0, Address(A0, 0), gct1, gct2, gcvt1);
         bs->copy_store_at(_masm, decorators, type, 16, Address(A1, 0), F0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
         __ move(A0, R0);
@@ -2121,7 +2121,7 @@ class StubGenerator: public StubCodeGenerator {
 
       // 3:
       __ bind(L3);
-      if (UseLSX && !ZGenerational) {
+      if (UseLSX && !UseZGC) {
         bs->copy_load_at(_masm, decorators, type, 16, F0, Address(A0, 0), gct1, gct2, gcvt1);
         bs->copy_load_at(_masm, decorators, type, 8,  T8, Address(A0, 16), gct1);
         bs->copy_store_at(_masm, decorators, type, 16, Address(A1, 0), F0, gct1, gct2, gct3, gct4, gcvt1, gcvt2);
@@ -2762,7 +2762,7 @@ class StubGenerator: public StubCodeGenerator {
       generate_disjoint_large_copy_lasx(DECORATORS_NONE, T_LONG, disjoint_large_copy, "disjoint_large_copy_lasx");
       generate_conjoint_large_copy_lasx(DECORATORS_NONE, T_LONG, conjoint_large_copy, "conjoint_large_copy_lasx");
 #if INCLUDE_ZGC
-      if (UseZGC && ZGenerational) {
+      if (UseZGC) {
         generate_disjoint_large_copy_lasx(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT, T_OBJECT, disjoint_large_copy_oop, "disjoint_large_copy_oop_lasx");
         generate_conjoint_large_copy_lasx(IN_HEAP | IS_ARRAY, T_OBJECT, conjoint_large_copy_oop, "conjoint_large_copy_oop_lasx");
         generate_disjoint_large_copy_lasx(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT | IS_DEST_UNINITIALIZED, T_OBJECT, disjoint_large_copy_oop_uninit, "disjoint_large_copy_oop_uninit_lasx");
@@ -2775,7 +2775,7 @@ class StubGenerator: public StubCodeGenerator {
       generate_disjoint_large_copy_lsx(DECORATORS_NONE, T_LONG, disjoint_large_copy, "disjoint_large_copy_lsx");
       generate_conjoint_large_copy_lsx(DECORATORS_NONE, T_LONG, conjoint_large_copy, "conjoint_large_copy_lsx");
 #if INCLUDE_ZGC
-      if (UseZGC && ZGenerational) {
+      if (UseZGC) {
         generate_disjoint_large_copy_lsx(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT, T_OBJECT, disjoint_large_copy_oop, "disjoint_large_copy_oop_lsx");
         generate_conjoint_large_copy_lsx(IN_HEAP | IS_ARRAY, T_OBJECT, conjoint_large_copy_oop, "conjoint_large_copy_oop_lsx");
         generate_disjoint_large_copy_lsx(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT | IS_DEST_UNINITIALIZED, T_OBJECT, disjoint_large_copy_oop_uninit, "disjoint_large_copy_oop_uninit_lsx");
@@ -2788,7 +2788,7 @@ class StubGenerator: public StubCodeGenerator {
       generate_disjoint_large_copy(DECORATORS_NONE, T_LONG, disjoint_large_copy, "disjoint_large_copy_int");
       generate_conjoint_large_copy(DECORATORS_NONE, T_LONG, conjoint_large_copy, "conjoint_large_copy_int");
 #if INCLUDE_ZGC
-    if (UseZGC && ZGenerational) {
+    if (UseZGC) {
       generate_disjoint_large_copy(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT, T_OBJECT, disjoint_large_copy_oop, "disjoint_large_copy_oop");
       generate_conjoint_large_copy(IN_HEAP | IS_ARRAY, T_OBJECT, conjoint_large_copy_oop, "conjoint_large_copy_oop");
       generate_disjoint_large_copy(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT | IS_DEST_UNINITIALIZED, T_OBJECT, disjoint_large_copy_oop_uninit, "disjoint_large_copy_oop_uninit");
@@ -2801,7 +2801,7 @@ class StubGenerator: public StubCodeGenerator {
     generate_int_small_copy(int_small_copy, "jint_small_copy");
     generate_long_small_copy(DECORATORS_NONE, T_LONG, long_small_copy, "jlong_small_copy");
 #if INCLUDE_ZGC
-    if (UseZGC && ZGenerational) {
+    if (UseZGC) {
       generate_long_small_copy(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT, T_OBJECT, long_small_copy_oop, "jlong_small_copy_oop");
       generate_long_small_copy(IN_HEAP | IS_ARRAY | ARRAYCOPY_DISJOINT | IS_DEST_UNINITIALIZED, T_OBJECT, long_small_copy_oop_uninit, "jlong_small_copy_oop_uninit");
     }
@@ -2818,7 +2818,7 @@ class StubGenerator: public StubCodeGenerator {
                                                                                     "oop_arraycopy_uninit", int_oop_small_limit, true);
     } else {
 #if INCLUDE_ZGC
-      if (UseZGC && ZGenerational) {
+      if (UseZGC) {
         StubRoutines::_oop_disjoint_arraycopy        = generate_disjoint_long_oop_copy(false, true, long_small_copy_oop, disjoint_large_copy_oop,
                                                                                        "oop_disjoint_arraycopy", long_oop_small_limit);
         StubRoutines::_oop_disjoint_arraycopy_uninit = generate_disjoint_long_oop_copy(false, true, long_small_copy_oop_uninit, disjoint_large_copy_oop_uninit,
@@ -2895,7 +2895,7 @@ class StubGenerator: public StubCodeGenerator {
     StubRoutines::la::_arrayof_jlong_fill = generate_fill(T_LONG, true, "arrayof_jlong_fill");
 
 #if INCLUDE_ZGC
-    if (!(UseZGC && ZGenerational)) {
+    if (!UseZGC) {
 #endif
       Copy::_conjoint_words = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::jlong_arraycopy());
       Copy::_disjoint_words = reinterpret_cast<Copy::CopyHeapWord>(StubRoutines::jlong_disjoint_arraycopy());
@@ -5657,7 +5657,7 @@ static const int64_t right_3_bits = right_n_bits(3);
 
     // Initialize table for copy memory (arraycopy) check.
     if (UnsafeMemoryAccess::_table == nullptr) {
-      UnsafeMemoryAccess::create_table(8 + 4 ZGC_ONLY(+ (UseZGC && ZGenerational ? 14 : 0))); // 8 for copyMemory; 4 for setMemory
+      UnsafeMemoryAccess::create_table(8 + 4 ZGC_ONLY(+ (UseZGC ? 14 : 0))); // 8 for copyMemory; 4 for setMemory
     }
 
     if (UseCRC32Intrinsics) {

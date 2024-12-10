@@ -2914,10 +2914,6 @@ Address MacroAssembler::argument_address(RegisterOrConstant arg_slot,
   return Address(SP, scale_reg, scale_factor, offset);
 }
 
-SkipIfEqual::~SkipIfEqual() {
-  _masm->bind(_label);
-}
-
 void MacroAssembler::load_sized_value(Register dst, Address src, size_t size_in_bytes, bool is_signed, Register dst2) {
   switch (size_in_bytes) {
   case  8:  ld_d(dst, src); break;

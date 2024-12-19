@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -146,6 +146,8 @@ public:
   void reduce(FloatRegister dst, FloatRegister src, FloatRegister vsrc, FloatRegister tmp, BasicType type, int opcode, int vector_size);
 
   void vector_compare(FloatRegister dst, FloatRegister src1, FloatRegister src2, BasicType type, int cond, int vector_size);
+
+  void load_narrow_klass_compact_c2(Register dst, Register obj, int disp);
 
 private:
   // Return true if the phase output is in the scratch emit size mode.

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -3662,8 +3662,9 @@ void TemplateTable::_new() {
 
     // The object is initialized before the header.  If the object size is
     // zero, go directly to the header initialization.
-    __ li(AT, - sizeof(oopDesc));
-    __ add_d(T0, T0, AT);
+    int header_size = oopDesc::header_size() * HeapWordSize;
+    assert(is_aligned(header_size, BytesPerLong), "oop header size must be 8-byte-aligned");
+    __ addi_d(T0, T0, -header_size);
     __ beqz(T0, initialize_header);
 
     // initialize remaining object fields: T0 is a multiple of 2
@@ -3673,18 +3674,22 @@ void TemplateTable::_new() {
 
        __ bind(loop);
        __ addi_d(T1, T1, -oopSize);
-       __ st_d(R0, T1, sizeof(oopDesc));
+       __ st_d(R0, T1, header_size);
        __ bne(T1, FSR, loop); // dont clear header
     }
 
     // klass in T3,
     // initialize object header only.
     __ bind(initialize_header);
-    __ li(AT, (long)markWord::prototype().value());
-    __ st_d(AT, FSR, oopDesc::mark_offset_in_bytes());
-
-    __ store_klass_gap(FSR, R0);
-    __ store_klass(FSR, T3);
+    if (UseCompactObjectHeaders) {
+      __ ld_d(AT, Address(T3, Klass::prototype_header_offset()));
+      __ st_d(AT, Address(FSR, oopDesc::mark_offset_in_bytes()));
+    } else {
+      __ li(AT, (long)markWord::prototype().value());
+      __ st_d(AT, FSR, oopDesc::mark_offset_in_bytes());
+      __ store_klass_gap(FSR, R0);
+      __ store_klass(FSR, T3);
+    }
 
     if (DTraceAllocProbes) {
       // Trigger dtrace event for fastpath

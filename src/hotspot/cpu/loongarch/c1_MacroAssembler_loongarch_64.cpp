@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -152,15 +152,18 @@ void C1_MacroAssembler::try_allocate(Register obj, Register var_size_in_bytes,
 void C1_MacroAssembler::initialize_header(Register obj, Register klass, Register len,
                                           Register t1, Register t2) {
   assert_different_registers(obj, klass, len);
-  // This assumes that all prototype bits fit in an int32_t
-  li(t1, (int32_t)(intptr_t)markWord::prototype().value());
-  st_d(t1, Address(obj, oopDesc::mark_offset_in_bytes()));
-
-  if (UseCompressedClassPointers) { // Take care not to kill klass
-    encode_klass_not_null(t1, klass);
-    st_w(t1, Address(obj, oopDesc::klass_offset_in_bytes()));
+  if (UseCompactObjectHeaders) {
+    ld_d(t1, Address(klass, Klass::prototype_header_offset()));
+    st_d(t1, Address(obj, oopDesc::mark_offset_in_bytes()));
   } else {
-    st_d(klass, Address(obj, oopDesc::klass_offset_in_bytes()));
+    li(t1, checked_cast<int32_t>(markWord::prototype().value()));
+    st_d(t1, Address(obj, oopDesc::mark_offset_in_bytes()));
+    if (UseCompressedClassPointers) { // Take care not to kill klass
+      encode_klass_not_null(t1, klass);
+      st_w(t1, Address(obj, oopDesc::klass_offset_in_bytes()));
+    } else {
+      st_d(klass, Address(obj, oopDesc::klass_offset_in_bytes()));
+    }
   }
 
   if (len->is_valid()) {
@@ -171,7 +174,7 @@ void C1_MacroAssembler::initialize_header(Register obj, Register klass, Register
       // Clear gap/first 4 bytes following the length field.
       st_w(R0, Address(obj, base_offset));
     }
-  } else if (UseCompressedClassPointers) {
+  } else if (UseCompressedClassPointers && !UseCompactObjectHeaders) {
     store_klass_gap(obj, R0);
   }
 }

@@ -22,8 +22,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2023, These
- * modifications are Copyright (c) 2023 Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2023, 2025 Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -104,15 +104,8 @@ public class CompressedCPUSpecificClassSpaceReservation {
             output.shouldContain("reserve_between (range [0x0000100000000000-0xffffffffffffffff)");
         } else if (Platform.isLoongArch64()) {
             output.shouldContain(tryReserveForUnscaled); // unconditionally
-            if (CDS) {
-                output.shouldNotContain(tryReserveForZeroBased);
-                // bits 32..52
-                output.shouldContain("reserve_between (range [0x0000000100000000-0x0010000000000000)");
-            } else {
-                output.shouldContain(tryReserveForZeroBased);
-                // bits 32..52, but not lower than zero-based limit
-                output.shouldContain("reserve_between (range [0x0000000800000000-0x0010000000000000)");
-            }
+            // bits 32..52
+            output.shouldContain("reserve_between (range [0x0000000100000000-0x0010000000000000)");
             // bits 52..64
             output.shouldContain("reserve_between (range [0x0010000000000000-0xffffffffffffffff)");
         } else if (Platform.isS390x()) {

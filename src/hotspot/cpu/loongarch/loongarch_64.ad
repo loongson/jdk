@@ -4276,6 +4276,7 @@ instruct loadKlass(mRegP dst, memory mem) %{
 // Load narrow Klass Pointer
 instruct loadNKlass(mRegN dst, memory mem)
 %{
+  predicate(!UseCompactObjectHeaders);
   match(Set dst (LoadNKlass mem));
 
   ins_cost(125);
@@ -4291,7 +4292,7 @@ instruct loadNKlass(mRegN dst, memory mem)
 instruct loadN2PKlass(mRegP dst, memory mem)
 %{
   match(Set dst (DecodeNKlass (LoadNKlass mem)));
-  predicate(CompressedKlassPointers::base() == nullptr && CompressedKlassPointers::shift() == 0);
+  predicate(CompressedKlassPointers::base() == nullptr && CompressedKlassPointers::shift() == 0 && !UseCompactObjectHeaders);
 
   ins_cost(125);
   format %{ "ld_wu    $dst, $mem\t# compressed klass ptr @ loadN2PKlass" %}
@@ -4301,6 +4302,20 @@ instruct loadN2PKlass(mRegP dst, memory mem)
     __ loadstore_enc($dst$$Register, $mem$$base, $mem$$index, $mem$$scale, $mem$$disp, C2_MacroAssembler::LOAD_U_INT);
   %}
   ins_pipe( ialu_load );
+%}
+
+instruct loadNKlassCompactHeaders(mRegN dst, memory_loadRange mem)
+%{
+  predicate(UseCompactObjectHeaders);
+  match(Set dst (LoadNKlass mem));
+
+  ins_cost(125);
+  format %{ "load_narrow_klass_compact  $dst, $mem\t# compressed class ptr" %}
+  ins_encode %{
+    assert($mem$$index$$Register == noreg, "must not have indexed address");
+    __ load_narrow_klass_compact_c2($dst$$Register, $mem$$base$$Register, $mem$$disp);
+  %}
+  ins_pipe(pipe_slow);
 %}
 
 // Load Constant

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -454,23 +454,6 @@ void os::print_context(outputStream *st, const void *context) {
   st->print(", S7=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.__gregs[30]);
   st->print(", S8=" INTPTR_FORMAT, (intptr_t)uc->uc_mcontext.__gregs[31]);
   st->cr();
-  st->cr();
-}
-
-void os::print_tos_pc(outputStream *st, const void *context) {
-  if (context == nullptr) return;
-
-  const ucontext_t* uc = (const ucontext_t*)context;
-
-  address sp = (address)os::Linux::ucontext_get_sp(uc);
-  print_tos(st, sp);
-  st->cr();
-
-  // Note: it may be unsafe to inspect memory near pc. For example, pc may
-  // point to garbage if entry point in an nmethod is corrupted. Leave
-  // this at the end, and hope for the best.
-  address pc = os::fetch_frame_from_context(uc).pc();
-  print_instructions(st, pc);
   st->cr();
 }
 

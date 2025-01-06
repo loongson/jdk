@@ -75,6 +75,11 @@ bool NativeInstruction::is_pcaddu12i_add() const {
          Assembler::high(int_at(4), 10)   == Assembler::addi_d_op;
 }
 
+bool NativeInstruction::is_jalr() const {
+  return Assembler::high(int_at(0), 6) == Assembler::jirl_op &&
+         Assembler::low(int_at(0), 5)  == RA->encoding();
+}
+
 bool NativeCall::is_bl() const {
   return Assembler::high(int_at(0), 6) == Assembler::bl_op;
 }

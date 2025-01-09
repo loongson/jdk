@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, Red Hat, Inc. All rights reserved.
- * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,7 @@
 
 #include "precompiled.hpp"
 #include "asm/macroAssembler.hpp"
+#include "classfile/javaClasses.hpp"
 #include "logging/logStream.hpp"
 #include "memory/resourceArea.hpp"
 #include "prims/upcallLinker.hpp"
@@ -116,7 +117,7 @@ static void restore_callee_saved_registers(MacroAssembler* _masm, const ABIDescr
 static const int upcall_stub_code_base_size = 2048;
 static const int upcall_stub_size_per_arg = 16;
 
-address UpcallLinker::make_upcall_stub(jobject receiver, Method* entry,
+address UpcallLinker::make_upcall_stub(jobject receiver, Symbol* signature,
                                        BasicType* out_sig_bt, int total_out_args,
                                        BasicType ret_type,
                                        jobject jabi, jobject jconv,
@@ -222,7 +223,6 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Method* entry,
 
   __ block_comment("{ on_entry");
   __ lea(c_rarg0, Address(SP, frame_data_offset));
-  __ li(c_rarg1, (intptr_t)receiver);
   __ call(CAST_FROM_FN_PTR(address, UpcallLinker::on_entry), relocInfo::runtime_call_type);
   __ move(TREG, V0);
   __ reinit_heapbase();
@@ -237,12 +237,10 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Method* entry,
   arg_shuffle.generate(_masm, as_VMStorage(shuffle_reg), abi._shadow_space_bytes, 0);
   __ block_comment("} argument shuffle");
 
-  __ block_comment("{ receiver ");
-  __ get_vm_result(j_rarg0, TREG);
-  __ block_comment("} receiver ");
-
-  __ mov_metadata(Rmethod, entry);
-  __ st_d(Rmethod, TREG, in_bytes(JavaThread::callee_target_offset())); // just in case callee is deoptimized
+  __ block_comment("{ load target ");
+  __ li(j_rarg0, (intptr_t)receiver);
+  __ call(StubRoutines::upcall_stub_load_target(), relocInfo::runtime_call_type); // puts target Method* in rmethod
+  __ block_comment("} load target ");
 
   __ push_cont_fastpath(TREG);
 
@@ -316,7 +314,7 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Method* entry,
 
 #ifndef PRODUCT
   stringStream ss;
-  ss.print("upcall_stub_%s", entry->signature()->as_C_string());
+  ss.print("upcall_stub_%s", signature->as_C_string());
   const char* name = _masm->code_string(ss.as_string());
 #else // PRODUCT
   const char* name = "upcall_stub";

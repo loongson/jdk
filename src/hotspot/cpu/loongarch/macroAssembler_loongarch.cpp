@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2017, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2017, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2866,6 +2866,7 @@ void MacroAssembler::clinit_barrier(Register klass, Register scratch, Label* L_f
 
   // Fast path check: class is fully initialized
   ld_b(scratch, Address(klass, InstanceKlass::init_state_offset()));
+  membar(Membar_mask_bits(LoadLoad | LoadStore));
   addi_d(scratch, scratch, -InstanceKlass::fully_initialized);
   beqz(scratch, *L_fast_path);
 

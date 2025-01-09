@@ -35,6 +35,7 @@
 #include "c1/c1_ValueType.hpp"
 #include "oops/method.hpp"
 #include "utilities/globalDefinitions.hpp"
+#include "utilities/macros.hpp"
 
 class BlockBegin;
 class BlockList;
@@ -1128,7 +1129,7 @@ class LIR_Op: public CompilationResourceObj {
   }
 #endif
 
-  virtual const char * name() const PRODUCT_RETURN0;
+  virtual const char * name() const PRODUCT_RETURN_NULL;
   virtual void visit(LIR_OpVisitState* state);
 
   int id()             const                  { return _id;     }
@@ -1406,7 +1407,7 @@ class LIR_Op1: public LIR_Op {
   virtual bool is_patching() { return _patch != lir_patch_none; }
   virtual void emit_code(LIR_Assembler* masm);
   virtual LIR_Op1* as_Op1() { return this; }
-  virtual const char * name() const PRODUCT_RETURN0;
+  virtual const char * name() const PRODUCT_RETURN_NULL;
 
   void set_in_opr(LIR_Opr opr) { _opr = opr; }
 

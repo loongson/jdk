@@ -1144,10 +1144,6 @@ const RegMask* Matcher::predicate_reg_mask(void) {
   return nullptr;
 }
 
-const TypeVectMask* Matcher::predicate_reg_type(const Type* elemTy, int length) {
-  return nullptr;
-}
-
 int Matcher::scalable_vector_reg_size(const BasicType bt) {
   return -1;
 }
@@ -11134,18 +11130,6 @@ instruct cmpFastUnlockLightweight(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP b
   %}
 
   ins_pipe( pipe_slow );
-%}
-
-// Store card-mark Immediate 0
-instruct storeImmCM(memory mem, immI_0 zero) %{
-  match(Set mem (StoreCM mem zero));
-
-  ins_cost(150);
-  format %{ "st_b $mem, zero\t! card-mark imm0" %}
-  ins_encode %{
-    __ loadstore_enc(R0, $mem$$base, $mem$$index, $mem$$scale, $mem$$disp, C2_MacroAssembler::STORE_BYTE);
-  %}
-  ins_pipe( pipe_serial );
 %}
 
 // Die now

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1135,6 +1135,8 @@ void ZBarrierSetAssembler::generate_c2_store_barrier_stub(MacroAssembler* masm, 
       __ MacroAssembler::call_VM_leaf_base(ZBarrierSetRuntime::store_barrier_on_native_oop_field_without_healing_addr(), 1);
     } else if (stub->is_atomic()) {
       __ MacroAssembler::call_VM_leaf_base(ZBarrierSetRuntime::store_barrier_on_oop_field_with_healing_addr(), 1);
+    } else if (stub->is_nokeepalive()) {
+      __ MacroAssembler::call_VM_leaf_base(ZBarrierSetRuntime::no_keepalive_store_barrier_on_oop_field_without_healing_addr(), 1);
     } else {
       __ MacroAssembler::call_VM_leaf_base(ZBarrierSetRuntime::store_barrier_on_oop_field_without_healing_addr(), 1);
     }

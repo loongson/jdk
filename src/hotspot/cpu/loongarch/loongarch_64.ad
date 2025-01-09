@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
-// Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
+// Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
 // DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 //
 // This code is free software; you can redistribute it and/or modify it
@@ -1170,7 +1170,9 @@ uint Matcher::vector_ideal_reg(int size) {
 
 // Should the matcher clone input 'm' of node 'n'?
 bool Matcher::pd_clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
-  if (is_vshift_con_pattern(n, m)) { // ShiftV src (ShiftCntV con)
+  if (is_vshift_con_pattern(n, m) || // ShiftV src (ShiftCntV con)
+      is_encode_and_store_pattern(n, m)
+      ) {
     mstack.push(m, Visit);           // m = ShiftCntV
     return true;
   }
@@ -4217,31 +4219,32 @@ instruct storeL_immL_0_volatile(indirect mem, immL_0 zero) %{
 // Load Compressed Pointer
 instruct loadN(mRegN dst, memory mem)
 %{
-   match(Set dst (LoadN mem));
+  predicate(n->as_Load()->barrier_data() == 0);
+  match(Set dst (LoadN mem));
 
-   ins_cost(125);
-   format %{ "ld_wu    $dst, $mem\t# compressed ptr @ loadN" %}
-   ins_encode %{
-     relocInfo::relocType disp_reloc = $mem->disp_reloc();
-     assert(disp_reloc == relocInfo::none, "cannot have disp");
-     __ loadstore_enc($dst$$Register, $mem$$base, $mem$$index, $mem$$scale, $mem$$disp, C2_MacroAssembler::LOAD_U_INT);
-   %}
-   ins_pipe( ialu_load );
+  ins_cost(125);
+  format %{ "ld_wu    $dst, $mem\t# compressed ptr @ loadN" %}
+  ins_encode %{
+    relocInfo::relocType disp_reloc = $mem->disp_reloc();
+    assert(disp_reloc == relocInfo::none, "cannot have disp");
+    __ loadstore_enc($dst$$Register, $mem$$base, $mem$$index, $mem$$scale, $mem$$disp, C2_MacroAssembler::LOAD_U_INT);
+  %}
+  ins_pipe( ialu_load );
 %}
 
 instruct loadN2P(mRegP dst, memory mem)
 %{
-   match(Set dst (DecodeN (LoadN mem)));
-   predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0);
+  predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0 && n->in(1)->as_Load()->barrier_data() == 0);
+  match(Set dst (DecodeN (LoadN mem)));
 
-   ins_cost(125);
-   format %{ "ld_wu    $dst, $mem\t# @ loadN2P" %}
-   ins_encode %{
-     relocInfo::relocType disp_reloc = $mem->disp_reloc();
-     assert(disp_reloc == relocInfo::none, "cannot have disp");
-     __ loadstore_enc($dst$$Register, $mem$$base, $mem$$index, $mem$$scale, $mem$$disp, C2_MacroAssembler::LOAD_U_INT);
-   %}
-   ins_pipe( ialu_load );
+  ins_cost(125);
+  format %{ "ld_wu    $dst, $mem\t# @ loadN2P" %}
+  ins_encode %{
+    relocInfo::relocType disp_reloc = $mem->disp_reloc();
+    assert(disp_reloc == relocInfo::none, "cannot have disp");
+    __ loadstore_enc($dst$$Register, $mem$$base, $mem$$index, $mem$$scale, $mem$$disp, C2_MacroAssembler::LOAD_U_INT);
+  %}
+  ins_pipe( ialu_load );
 %}
 
 // Load Pointer
@@ -4343,8 +4346,8 @@ instruct loadRange(mRegI dst, memory_loadRange mem) %{
 
 
 instruct storeP(memory mem, mRegP src ) %{
+  predicate(!needs_releasing_store(n) && n->as_Store()->barrier_data() == 0);
   match(Set mem (StoreP mem src));
-  predicate(!needs_releasing_store(n));
 
   ins_cost(125);
   format %{ "st_d    $src, $mem #@storeP" %}
@@ -4355,6 +4358,7 @@ instruct storeP(memory mem, mRegP src ) %{
 %}
 
 instruct storeP_volatile(indirect mem, mRegP src ) %{
+  predicate(n->as_Store()->barrier_data() == 0);
   match(Set mem (StoreP mem src));
 
   ins_cost(130);
@@ -4367,8 +4371,8 @@ instruct storeP_volatile(indirect mem, mRegP src ) %{
 
 // Store null Pointer, mark word, or other simple pointer constant.
 instruct storeImmP_immP_0(memory mem, immP_0 zero) %{
+  predicate(!needs_releasing_store(n) && n->as_Store()->barrier_data() == 0);
   match(Set mem (StoreP mem zero));
-  predicate(!needs_releasing_store(n));
 
   ins_cost(125);
   format %{ "mov    $mem, $zero #@storeImmP_0" %}
@@ -4379,6 +4383,7 @@ instruct storeImmP_immP_0(memory mem, immP_0 zero) %{
 %}
 
 instruct storeImmP_immP_0_volatile(indirect mem, immP_0 zero) %{
+  predicate(n->as_Store()->barrier_data() == 0);
   match(Set mem (StoreP mem zero));
 
   ins_cost(130);
@@ -4392,8 +4397,8 @@ instruct storeImmP_immP_0_volatile(indirect mem, immP_0 zero) %{
 // Store Compressed Pointer
 instruct storeN(memory mem, mRegN src)
 %{
+  predicate(!needs_releasing_store(n) && n->as_Store()->barrier_data() == 0);
   match(Set mem (StoreN mem src));
-  predicate(!needs_releasing_store(n));
 
   ins_cost(125);
   format %{ "st_w    $mem, $src\t# compressed ptr @ storeN" %}
@@ -4405,6 +4410,7 @@ instruct storeN(memory mem, mRegN src)
 
 instruct storeN_volatile(indirect mem, mRegN src)
 %{
+  predicate(n->as_Store()->barrier_data() == 0);
   match(Set mem (StoreN mem src));
 
   ins_cost(130);
@@ -4417,8 +4423,8 @@ instruct storeN_volatile(indirect mem, mRegN src)
 
 instruct storeP2N(memory mem, mRegP src)
 %{
+  predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0 && !needs_releasing_store(n) && n->as_Store()->barrier_data() == 0);
   match(Set mem (StoreN mem (EncodeP src)));
-  predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0 && !needs_releasing_store(n));
 
   ins_cost(125);
   format %{ "st_w    $mem, $src\t# @ storeP2N" %}
@@ -4430,8 +4436,8 @@ instruct storeP2N(memory mem, mRegP src)
 
 instruct storeP2N_volatile(indirect mem, mRegP src)
 %{
+  predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0 && n->as_Store()->barrier_data() == 0);
   match(Set mem (StoreN mem (EncodeP src)));
-  predicate(CompressedOops::base() == nullptr && CompressedOops::shift() == 0);
 
   ins_cost(130);
   format %{ "amswap_db_w    R0, $src, $mem # @ storeP2N" %}
@@ -4494,8 +4500,8 @@ instruct storeP2NKlass_volatile(indirect mem, mRegP src)
 
 instruct storeImmN_immN_0(memory mem, immN_0 zero)
 %{
+  predicate(!needs_releasing_store(n) && n->as_Store()->barrier_data() == 0);
   match(Set mem (StoreN mem zero));
-  predicate(!needs_releasing_store(n));
 
   ins_cost(125);
   format %{ "storeN0    zero, $mem\t# compressed ptr" %}
@@ -4507,6 +4513,7 @@ instruct storeImmN_immN_0(memory mem, immN_0 zero)
 
 instruct storeImmN_immN_0_volatile(indirect mem, immN_0 zero)
 %{
+  predicate(n->as_Store()->barrier_data() == 0);
   match(Set mem (StoreN mem zero));
 
   ins_cost(130);
@@ -11355,9 +11362,9 @@ instruct compareAndSwapL(mRegI res, memory_exclusive mem_ptr, mRegL oldval, mReg
 %}
 
 instruct compareAndSwapP(mRegI res,  memory_exclusive mem_ptr, mRegP oldval, mRegP newval) %{
+  predicate(n->as_LoadStore()->barrier_data() == 0);
   match(Set res (CompareAndSwapP mem_ptr (Binary oldval newval)));
   effect(TEMP_DEF res);
-  predicate(n->as_LoadStore()->barrier_data() == 0);
   ins_cost(3 * MEMORY_REF_COST);
   format %{ "CMPXCHG $newval, [$mem_ptr], $oldval @ compareAndSwapP" %}
   ins_encode %{
@@ -11372,6 +11379,7 @@ instruct compareAndSwapP(mRegI res,  memory_exclusive mem_ptr, mRegP oldval, mRe
 %}
 
 instruct compareAndSwapN(mRegI res, indirect mem_ptr, mRegN oldval, mRegN newval) %{
+  predicate(n->as_LoadStore()->barrier_data() == 0);
   match(Set res (CompareAndSwapN mem_ptr (Binary oldval newval)));
   effect(TEMP_DEF res);
   ins_cost(3 * MEMORY_REF_COST);
@@ -11450,6 +11458,7 @@ instruct get_and_setL(indirect mem, mRegL newv, mRegL prev) %{
 %}
 
 instruct get_and_setN(indirect mem, mRegN newv, mRegN prev) %{
+  predicate(n->as_LoadStore()->barrier_data() == 0);
   match(Set prev (GetAndSetN mem newv));
   ins_cost(2 * MEMORY_REF_COST);
   format %{ "amswap_db_w $prev, $newv, [$mem] @get_and_setN" %}
@@ -11465,6 +11474,7 @@ instruct get_and_setN(indirect mem, mRegN newv, mRegN prev) %{
 %}
 
 instruct get_and_setP(indirect mem, mRegP newv, mRegP prev) %{
+  predicate(n->as_LoadStore()->barrier_data() == 0);
   match(Set prev (GetAndSetP mem newv));
   effect(TEMP_DEF prev);
   ins_cost(2 * MEMORY_REF_COST);
@@ -11683,7 +11693,7 @@ instruct compareAndExchangeP(mRegP res, memory_exclusive mem, mRegP oldval, mReg
 %}
 
 instruct compareAndExchangeN(mRegN res, memory_exclusive mem, mRegN oldval, mRegN newval) %{
-
+  predicate(n->as_LoadStore()->barrier_data() == 0);
   match(Set res (CompareAndExchangeN mem (Binary oldval newval)));
   ins_cost(2 * MEMORY_REF_COST);
   effect(TEMP_DEF res);
@@ -11816,7 +11826,7 @@ instruct weakCompareAndSwapP_acq(mRegI res,  memory_exclusive mem, mRegP oldval,
 %}
 
 instruct weakCompareAndSwapN(mRegI res, memory_exclusive mem, mRegN oldval, mRegN newval) %{
-
+  predicate(n->as_LoadStore()->barrier_data() == 0);
   match(Set res (WeakCompareAndSwapN mem (Binary oldval newval)));
   effect(TEMP_DEF res);
   ins_cost(2 * MEMORY_REF_COST);

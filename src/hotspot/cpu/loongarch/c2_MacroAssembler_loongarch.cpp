@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -143,6 +143,7 @@ void C2_MacroAssembler::fast_unlock_c2(Register oop, Register box, Register flag
   Label cont;
   Label object_has_monitor;
   Label count, no_count;
+  Label unlocked;
 
   assert(LockingMode != LM_LIGHTWEIGHT, "lightweight locking should use fast_unlock_lightweight");
   assert_different_registers(oop, box, tmp, disp_hdr, flag);
@@ -192,16 +193,37 @@ void C2_MacroAssembler::fast_unlock_c2(Register oop, Register box, Register flag
   b(cont);
 
   bind(notRecursive);
+
+  // Compute owner address.
+  // Set owner to null.
+  // Release to satisfy the JMM
+  membar(Assembler::Membar_mask_bits(MacroAssembler::LoadStore | MacroAssembler::StoreStore));
+  st_d(R0, tmp, in_bytes(ObjectMonitor::owner_offset()));
+  // We need a full fence after clearing owner to avoid stranding.
+  // StoreLoad achieves this.
+  membar(MacroAssembler::StoreLoad);
+
+  // Check if the entry lists are empty.
   ld_d(flag, Address(tmp, ObjectMonitor::EntryList_offset()));
   ld_d(disp_hdr, Address(tmp, ObjectMonitor::cxq_offset()));
   orr(AT, flag, disp_hdr);
+  beqz(AT, unlocked); // If so we are done.
+
+  // Check if there is a successor.
+  ld_d(AT, Address(tmp, ObjectMonitor::succ_offset()));
+  bnez(AT, unlocked); // If so we are done.
+
+  // Save the monitor pointer in the current thread, so we can try to
+  // reacquire the lock in SharedRuntime::monitor_exit_helper().
+  st_d(tmp, Address(TREG, JavaThread::unlocked_inflated_monitor_offset()));
 
   move(flag, R0);
-  bnez(AT, cont);
+  b(cont);
 
-  addi_d(AT, tmp, in_bytes(ObjectMonitor::owner_offset()));
-  amswap_db_d(tmp, R0, AT);
+  bind(unlocked);
   li(flag, 1);
+
+  // Intentional fall-through
 
   bind(cont);
   // flag == 1 indicates success
@@ -479,28 +501,35 @@ void C2_MacroAssembler::fast_unlock_lightweight(Register obj, Register box, Regi
 
     bind(not_recursive);
 
-    Label release;
     const Register tmp2_owner_addr = tmp2;
 
     // Compute owner address.
     lea(tmp2_owner_addr, Address(tmp1_monitor, ObjectMonitor::owner_offset()));
 
+    // Set owner to null.
+    // Release to satisfy the JMM
+    membar(Assembler::Membar_mask_bits(MacroAssembler::LoadStore | MacroAssembler::StoreStore));
+    st_d(R0, tmp2_owner_addr, 0);
+    // We need a full fence after clearing owner to avoid stranding.
+    // StoreLoad achieves this.
+    membar(MacroAssembler::StoreLoad);
+
     // Check if the entry lists are empty.
     ld_d(AT, Address(tmp1_monitor, ObjectMonitor::EntryList_offset()));
     ld_d(tmp3_t, Address(tmp1_monitor, ObjectMonitor::cxq_offset()));
     orr(AT, AT, tmp3_t);
-    beqz(AT, release);
+    beqz(AT, unlocked); // If so we are done.
 
-    // The owner may be anonymous and we removed the last obj entry in
-    // the lock-stack. This loses the information about the owner.
-    // Write the thread to the owner field so the runtime knows the owner.
-    st_d(TREG, tmp2_owner_addr, 0);
+    // Check if there is a successor.
+    ld_d(AT, Address(tmp1_monitor, ObjectMonitor::succ_offset()));
+    bnez(AT, unlocked);  // If so we are done.
+
+    // Save the monitor pointer in the current thread, so we can try
+    // to reacquire the lock in SharedRuntime::monitor_exit_helper().
+    st_d(tmp1_monitor, Address(TREG, JavaThread::unlocked_inflated_monitor_offset()));
+
+    move(flag, R0);
     b(slow_path);
-
-    bind(release);
-    // Set owner to null.
-    membar(Assembler::Membar_mask_bits(MacroAssembler::LoadStore | MacroAssembler::StoreStore));
-    st_d(R0, tmp2_owner_addr, 0);
   }
 
   bind(unlocked);

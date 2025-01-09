@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -802,34 +802,6 @@ private:
   void generate__kernel_rem_pio2(address two_over_pi, address pio2);
 
   void repne_scan(Register addr, Register value, Register count, Register tmp);
-};
-
-/**
- * class SkipIfEqual:
- *
- * Instantiating this class will result in assembly code being output that will
- * jump around any code emitted between the creation of the instance and it's
- * automatic destruction at the end of a scope block, depending on the value of
- * the flag passed to the constructor, which will be checked at run-time.
- */
-class SkipIfEqual {
-private:
-  MacroAssembler* _masm;
-  Label _label;
-
-public:
-  inline SkipIfEqual(MacroAssembler* masm, const bool* flag_addr, bool value)
-    : _masm(masm) {
-    _masm->li(AT, (address)flag_addr);
-    _masm->ld_b(AT, AT, 0);
-    if (value) {
-      _masm->bne(AT, R0, _label);
-    } else {
-      _masm->beq(AT, R0, _label);
-    }
-  }
-
-  ~SkipIfEqual();
 };
 
 #ifdef ASSERT

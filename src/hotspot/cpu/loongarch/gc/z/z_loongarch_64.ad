@@ -96,7 +96,7 @@ instruct zLoadP(mRegP dst, memory mem, mRegP tmp)
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(125);//must be equal loadP in loongarch_64.ad
 
-  predicate(UseZGC && ZGenerational && n->as_Load()->barrier_data() != 0);
+  predicate(UseZGC && n->as_Load()->barrier_data() != 0);
 
   format %{ "zLoadP  $dst, $mem" %}
 
@@ -113,7 +113,7 @@ instruct zLoadP(mRegP dst, memory mem, mRegP tmp)
 // Store Pointer
 instruct zStoreP(memory mem, mRegP src, mRegP tmp1, mRegP tmp2)
 %{
-  predicate(UseZGC && ZGenerational && n->as_Store()->barrier_data() != 0);
+  predicate(UseZGC && n->as_Store()->barrier_data() != 0);
   match(Set mem (StoreP mem src));
   effect(TEMP_DEF tmp1, TEMP tmp2);
 
@@ -131,7 +131,7 @@ instruct zStoreP(memory mem, mRegP src, mRegP tmp1, mRegP tmp2)
 // Store Null Pointer
 instruct zStorePNull(memory mem, immP_0 zero, mRegP tmp1, mRegP tmp2)
 %{
-  predicate(UseZGC && ZGenerational && n->as_Store()->barrier_data() != 0);
+  predicate(UseZGC && n->as_Store()->barrier_data() != 0);
   match(Set mem (StoreP mem zero));
   effect(TEMP_DEF tmp1, TEMP tmp2);
 
@@ -151,7 +151,7 @@ instruct zCompareAndSwapP(mRegI res, mRegP mem, mRegP oldval, mRegP newval, mReg
   match(Set res (WeakCompareAndSwapP mem (Binary oldval newval)));
   effect(TEMP_DEF res, TEMP oldval_tmp, TEMP newval_tmp, TEMP tmp);
 
-  predicate((UseZGC && ZGenerational && n->as_LoadStore()->barrier_data() != 0)
+  predicate((UseZGC && n->as_LoadStore()->barrier_data() != 0)
             && (((CompareAndSwapNode*)n)->order() != MemNode::acquire && ((CompareAndSwapNode*) n)->order() != MemNode::seqcst));
   ins_cost(3 * MEMORY_REF_COST);//must be equal compareAndSwapP in loongarch_64.ad
 
@@ -171,7 +171,7 @@ instruct zCompareAndSwapP_acq(mRegI res, mRegP mem, mRegP oldval, mRegP newval, 
   match(Set res (WeakCompareAndSwapP mem (Binary oldval newval)));
   effect(TEMP_DEF res, TEMP oldval_tmp, TEMP newval_tmp, TEMP tmp);
 
-  predicate((UseZGC && ZGenerational && n->as_LoadStore()->barrier_data() != 0)
+  predicate((UseZGC && n->as_LoadStore()->barrier_data() != 0)
             && (((CompareAndSwapNode*)n)->order() == MemNode::acquire || ((CompareAndSwapNode*) n)->order() == MemNode::seqcst));
   ins_cost(4 * MEMORY_REF_COST);//must be larger than zCompareAndSwapP
 
@@ -191,7 +191,7 @@ instruct zCompareAndExchangeP(mRegP res, mRegP mem, mRegP oldval, mRegP newval, 
   effect(TEMP_DEF res, TEMP oldval_tmp, TEMP newval_tmp, TEMP tmp);
   ins_cost(2* MEMORY_REF_COST);//must be equal compareAndExchangeP in loongarch_64.ad
 
-  predicate((UseZGC && ZGenerational && n->as_LoadStore()->barrier_data() != 0)
+  predicate((UseZGC && n->as_LoadStore()->barrier_data() != 0)
             && (
               ((CompareAndSwapNode*)n)->order() != MemNode::acquire
               && ((CompareAndSwapNode*)n)->order() != MemNode::seqcst
@@ -212,7 +212,7 @@ instruct zCompareAndExchangeP_acq(mRegP res, mRegP mem, mRegP oldval, mRegP newv
   match(Set res (CompareAndExchangeP mem (Binary oldval newval)));
   effect(TEMP_DEF res, TEMP oldval_tmp, TEMP newval_tmp, TEMP tmp);
 
-  predicate((UseZGC && ZGenerational && n->as_LoadStore()->barrier_data() != 0)
+  predicate((UseZGC && n->as_LoadStore()->barrier_data() != 0)
             && (
               ((CompareAndSwapNode*)n)->order() == MemNode::acquire
               || ((CompareAndSwapNode*)n)->order() == MemNode::seqcst
@@ -233,7 +233,7 @@ instruct zGetAndSetP(mRegP mem, mRegP newv, mRegP prev, mRegP tmp1, mRegP tmp2) 
   match(Set prev (GetAndSetP mem newv));
   effect(TEMP_DEF prev, TEMP tmp1, TEMP tmp2);
 
-  predicate(UseZGC && ZGenerational && n->as_LoadStore()->barrier_data() != 0);
+  predicate(UseZGC && n->as_LoadStore()->barrier_data() != 0);
 
   format %{ "zGetAndSetP $prev, $mem, $newv" %}
   ins_encode %{

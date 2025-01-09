@@ -22,8 +22,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2023. These
- * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2025. These
+ * modifications are Copyright (c) 2023, 2025, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -57,8 +57,8 @@ public class TestFloatConversionsVector {
 
     @Test
     @IR(counts = {IRNode.VECTOR_CAST_F2HF, IRNode.VECTOR_SIZE + "min(max_float, max_short)", "> 0"},
-                  applyIfPlatformOr = {"x64", "true", "aarch64", "true", "riscv64", "true"},
-                  applyIfCPUFeatureOr = {"f16c", "true", "avx512f", "true", "zvfh", "true", "asimd", "true", "sve", "true"})
+                  applyIfPlatformOr = {"x64", "true", "aarch64", "true", "riscv64", "true", "loongarch64", "true"},
+                  applyIfCPUFeatureOr = {"f16c", "true", "avx512f", "true", "zvfh", "true", "asimd", "true", "sve", "true", "lasx", "true"})
     public void test_float_float16(short[] sout, float[] finp) {
         for (int i = 0; i < finp.length; i++) {
             sout[i] = Float.floatToFloat16(finp[i]);
@@ -120,8 +120,8 @@ public class TestFloatConversionsVector {
 
     @Test
     @IR(counts = {IRNode.VECTOR_CAST_HF2F, IRNode.VECTOR_SIZE + "min(max_float, max_short)", "> 0"},
-                  applyIfPlatformOr = {"x64", "true", "aarch64", "true", "riscv64", "true"},
-                  applyIfCPUFeatureOr = {"f16c", "true", "avx512f", "true", "zvfh", "true", "asimd", "true", "sve", "true"})
+                  applyIfPlatformOr = {"x64", "true", "aarch64", "true", "riscv64", "true", "loongarch64", "true"},
+                  applyIfCPUFeatureOr = {"f16c", "true", "avx512f", "true", "zvfh", "true", "asimd", "true", "sve", "true", "lasx", "true"})
     public void test_float16_float(float[] fout, short[] sinp) {
         for (int i = 0; i < sinp.length; i++) {
             fout[i] = Float.float16ToFloat(sinp[i]);

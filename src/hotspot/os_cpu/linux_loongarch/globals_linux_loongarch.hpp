@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,7 +29,6 @@
 // Sets the default values for platform dependent flags used by the runtime system.
 // (see globals.hpp)
 
-define_pd_global(bool, DontYieldALot,            false);
 define_pd_global(intx, ThreadStackSize,          2048); // 0 => use system default
 define_pd_global(intx, VMThreadStackSize,        2048);
 

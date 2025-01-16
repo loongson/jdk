@@ -150,8 +150,6 @@ public:
 
   void vector_compare(FloatRegister dst, FloatRegister src1, FloatRegister src2, BasicType type, int cond, int vector_size);
 
-  void load_narrow_klass_compact_c2(Register dst, Register obj, int disp);
-
 private:
   // Return true if the phase output is in the scratch emit size mode.
   virtual bool in_scratch_emit_size() override;

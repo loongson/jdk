@@ -44,8 +44,6 @@ inline bool LinearScan::is_caller_save(int assigned_reg) {
     return true;
   if (assigned_reg > pd_last_callee_saved_reg && assigned_reg < pd_first_callee_saved_fpu_reg)
     return true;
-  if (assigned_reg > pd_last_callee_saved_fpu_reg && assigned_reg < pd_last_fpu_reg)
-    return true;
   return false;
 }
 

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -128,6 +128,11 @@ void FreezeBase::adjust_interpreted_frame_unextended_sp(frame& f) {
   }
 }
 
+inline void FreezeBase::prepare_freeze_interpreted_top_frame(frame& f) {
+  assert(f.interpreter_frame_last_sp() == nullptr, "should be null for top frame");
+  f.interpreter_frame_set_last_sp(f.unextended_sp());
+}
+
 inline void FreezeBase::relativize_interpreted_frame_metadata(const frame& f, const frame& hf) {
   assert(hf.fp() == hf.unextended_sp() + (f.fp() - f.unextended_sp()), "");
   assert((f.at(frame::interpreter_frame_last_sp_offset) != 0)
@@ -191,7 +196,8 @@ inline void Thaw<ConfigT>::patch_caller_links(intptr_t* sp, intptr_t* bottom) {
 
 inline frame ThawBase::new_entry_frame() {
   intptr_t* sp = _cont.entrySP();
-  return frame(sp, sp, _cont.entryFP(), _cont.entryPC()); // TODO PERF: This finds code blob and computes deopt state
+  // TODO PERF: This finds code blob and computes deopt state
+  return frame(sp, sp, _cont.entryFP(), _cont.entryPC());
 }
 
 template<typename FKind> frame ThawBase::new_stack_frame(const frame& hf, frame& caller, bool bottom) {
@@ -203,7 +209,6 @@ template<typename FKind> frame ThawBase::new_stack_frame(const frame& hf, frame&
     // If caller is interpreted it already made room for the callee arguments
     int overlap = caller.is_interpreted_frame() ? ContinuationHelper::InterpretedFrame::stack_argsize(hf) : 0;
     const int fsize = (int)(ContinuationHelper::InterpretedFrame::frame_bottom(hf) - hf.unextended_sp() - overlap);
-    const int locals = hf.interpreter_frame_method()->max_locals();
     intptr_t* frame_sp = caller.unextended_sp() - fsize;
     intptr_t* fp = frame_sp + (hf.fp() - heap_sp);
     DEBUG_ONLY(intptr_t* unextended_sp = fp + *hf.addr_at(frame::interpreter_frame_last_sp_offset);)
@@ -219,7 +224,7 @@ template<typename FKind> frame ThawBase::new_stack_frame(const frame& hf, frame&
     int fsize = FKind::size(hf);
     intptr_t* frame_sp = caller.unextended_sp() - fsize;
     if (bottom || caller.is_interpreted_frame()) {
-      int argsize = hf.compiled_frame_stack_argsize();
+      int argsize = FKind::stack_argsize(hf);
 
       fsize += argsize;
       frame_sp -= argsize;
@@ -234,13 +239,16 @@ template<typename FKind> frame ThawBase::new_stack_frame(const frame& hf, frame&
     intptr_t* fp;
     if (PreserveFramePointer) {
       // we need to recreate a "real" frame pointer, pointing into the stack
-      fp = frame_sp + FKind::size(hf) - 2;
+      fp = frame_sp + FKind::size(hf) - frame::sender_sp_offset;
     } else {
-      fp = FKind::stub
-        ? frame_sp + fsize - 2 // this value is used for the safepoint stub
-        : *(intptr_t**)(hf.sp() - 2); // we need to re-read fp because it may be an oop and we might have fixed the frame.
+      fp = FKind::stub || FKind::native
+        // fp always points to the address above the pushed return pc. We need correct address.
+        ? frame_sp + fsize - frame::sender_sp_offset
+        // we need to re-read fp because it may be an oop and we might have fixed the frame.
+        : *(intptr_t**)(hf.sp() - 2);
     }
-    return frame(frame_sp, frame_sp, fp, hf.pc(), hf.cb(), hf.oop_map(), false); // TODO PERF : this computes deopt state; is it necessary?
+    // TODO PERF : this computes deopt state; is it necessary?
+    return frame(frame_sp, frame_sp, fp, hf.pc(), hf.cb(), hf.oop_map(), false);
   }
 }
 
@@ -259,6 +267,22 @@ inline intptr_t* ThawBase::align(const frame& hf, intptr_t* frame_sp, frame& cal
 
 inline void ThawBase::patch_pd(frame& f, const frame& caller) {
   patch_callee_link(caller, caller.fp());
+}
+
+inline void ThawBase::patch_pd(frame& f, intptr_t* caller_sp) {
+  intptr_t* fp = caller_sp - frame::sender_sp_offset;
+  patch_callee_link(f, fp);
+}
+
+inline intptr_t* ThawBase::push_cleanup_continuation() {
+  frame enterSpecial = new_entry_frame();
+  intptr_t* sp = enterSpecial.sp();
+
+  sp[-1] = (intptr_t)ContinuationEntry::cleanup_pc();
+  sp[-2] = (intptr_t)enterSpecial.fp();
+
+  log_develop_trace(continuations, preempt)("push_cleanup_continuation initial sp: " INTPTR_FORMAT " final sp: " INTPTR_FORMAT, p2i(sp + 2 * frame::metadata_words), p2i(sp));
+  return sp;
 }
 
 inline void ThawBase::derelativize_interpreted_frame_metadata(const frame& hf, const frame& f) {

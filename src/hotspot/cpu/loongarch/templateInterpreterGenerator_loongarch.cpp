@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -692,6 +692,28 @@ address TemplateInterpreterGenerator::generate_safept_entry_for(
   return entry;
 }
 
+address TemplateInterpreterGenerator::generate_cont_resume_interpreter_adapter() {
+  if (!Continuations::enabled()) return nullptr;
+  address start = __ pc();
+
+  __ restore_bcp();
+  __ restore_locals();
+
+  // Restore the last_sp and null it out
+  __ ld_d(AT, FP, frame::interpreter_frame_last_sp_offset * wordSize);
+  __ alsl_d(SP, AT, FP, LogBytesPerWord-1);
+  __ st_d(R0, FP, frame::interpreter_frame_last_sp_offset * wordSize);
+
+  // Restore method
+  __ ld_d(Rmethod, Address(FP, frame::interpreter_frame_method_offset * wordSize));
+
+  // Restore dispatch
+  __ get_dispatch();
+
+  __ jr(RA);
+
+  return start;
+}
 
 
 // Helpers for commoning out cases in the various type of method entries.
@@ -1351,9 +1373,13 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     __ st_w(t, TREG, in_bytes(JavaThread::thread_state_offset()));
   }
 
+  __ push_cont_fastpath();
+
   // call native method
   __ jalr(T4);
-  __ bind(native_return);
+
+  __ pop_cont_fastpath();
+
   // result potentially in V0 or F0
 
 
@@ -1420,6 +1446,22 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   } else {
     __ st_w(t, TREG, in_bytes(JavaThread::thread_state_offset()));
   }
+
+  if (LockingMode != LM_LEGACY) {
+    // Check preemption for Object.wait()
+    Label not_preempted;
+    __ ld_d(AT, Address(TREG, JavaThread::preempt_alternate_return_offset()));
+    __ beqz(AT, not_preempted);
+    __ st_d(R0, Address(TREG, JavaThread::preempt_alternate_return_offset()));
+    __ jr(AT);
+    __ bind(native_return);
+    __ restore_after_resume(true /* is_native */);
+    __ bind(not_preempted);
+  } else {
+    // any pc will do so just use this one for LM_LEGACY to keep code together.
+    __ bind(native_return);
+  }
+
   __ reset_last_Java_frame(TREG, true);
 
   if (CheckJNICalls) {

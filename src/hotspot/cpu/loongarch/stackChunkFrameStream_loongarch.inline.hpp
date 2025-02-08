@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -115,6 +115,7 @@ inline int StackChunkFrameStream<frame_kind>::interpreter_frame_num_oops() const
   f.interpreted_frame_oop_map(&mask);
   return mask.num_oops()
         + 1 // for the mirror oop
+        + (f.interpreter_frame_method()->is_native() ? 1 : 0) // temp oop slot
         + pointer_delta_as_int((intptr_t*)f.interpreter_frame_monitor_begin(),
               (intptr_t*)f.interpreter_frame_monitor_end()) / BasicObjectLock::size();
 }

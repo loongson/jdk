@@ -35,6 +35,7 @@
 #include "gc/shared/collectedHeap.inline.hpp"
 #include "interpreter/bytecodeHistogram.hpp"
 #include "interpreter/interpreter.hpp"
+#include "interpreter/interpreterRuntime.hpp"
 #include "jvm.h"
 #include "memory/resourceArea.hpp"
 #include "memory/universe.hpp"
@@ -789,6 +790,10 @@ void MacroAssembler::call_VM(Register oop_result,
   call_VM(oop_result, last_java_sp, entry_point, 3, check_exceptions);
 }
 
+static bool is_preemptable(address entry_point) {
+  return entry_point == CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter);
+}
+
 void MacroAssembler::call_VM_base(Register oop_result,
                                   Register java_thread,
                                   Register last_java_sp,
@@ -814,7 +819,12 @@ void MacroAssembler::call_VM_base(Register oop_result,
   // set last Java frame before call
   Label before_call;
   bind(before_call);
-  set_last_Java_frame(java_thread, last_java_sp, FP, before_call);
+  if (is_preemptable(entry_point)) {
+    // skip setting last_pc since we already set it to desired value.
+    set_last_Java_frame(last_java_sp, FP, noreg);
+  } else {
+    set_last_Java_frame(java_thread, last_java_sp, FP, before_call);
+  }
 
   // do the call
   move(A0, java_thread);
@@ -1797,6 +1807,36 @@ void MacroAssembler::pop_cont_fastpath(Register java_thread) {
   bltu(SP, AT, done);
   st_d(R0, Address(java_thread, JavaThread::cont_fastpath_offset()));
   bind(done);
+}
+
+void MacroAssembler::inc_held_monitor_count(Register tmp) {
+  Address dst(TREG, JavaThread::held_monitor_count_offset());
+  ld_d(tmp, dst);
+  addi_d(tmp, tmp, 1);
+  st_d(tmp, dst);
+#ifdef ASSERT
+  Label ok;
+  test_bit(tmp, tmp, 63);
+  beqz(tmp, ok);
+  stop("assert(held monitor count overflow)");
+  should_not_reach_here();
+  bind(ok);
+#endif
+}
+
+void MacroAssembler::dec_held_monitor_count(Register tmp) {
+  Address dst(TREG, JavaThread::held_monitor_count_offset());
+  ld_d(tmp, dst);
+  addi_d(tmp, tmp, -1);
+  st_d(tmp, dst);
+#ifdef ASSERT
+  Label ok;
+  test_bit(tmp, tmp, 63);
+  beqz(tmp, ok);
+  stop("assert(held monitor count underflow)");
+  should_not_reach_here();
+  bind(ok);
+#endif
 }
 
 void MacroAssembler::align(int modulus) {

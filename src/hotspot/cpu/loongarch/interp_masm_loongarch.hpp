@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -58,6 +58,12 @@ class InterpreterMacroAssembler: public MacroAssembler {
   void dispatch_base(TosState state, address* table, bool verifyoop = true, bool generate_poll = false);
 
  public:
+  void call_VM_preemptable(Register oop_result,
+                           address entry_point,
+                           Register arg_1);
+
+  void restore_after_resume(bool is_native);
+
   void jump_to_entry(address entry);
   // narrow int return value
   void narrow(Register result);

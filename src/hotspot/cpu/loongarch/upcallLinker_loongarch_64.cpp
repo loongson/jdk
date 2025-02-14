@@ -70,7 +70,7 @@ static void preserve_callee_saved_registers(MacroAssembler* _masm, const ABIDesc
     Register reg = as_Register(i);
     if (reg == FP || reg == SP || reg == RA) continue; // saved/restored by prologue/epilogue
     if (!abi.is_volatile_reg(reg)) {
-      __ st_d(reg, SP, offset);
+      __ st_d(reg, Address(SP, offset));
       offset += 8;
     }
   }
@@ -78,7 +78,7 @@ static void preserve_callee_saved_registers(MacroAssembler* _masm, const ABIDesc
   for (int i = 0; i < FloatRegister::number_of_registers; i++) {
     FloatRegister reg = as_FloatRegister(i);
     if (!abi.is_volatile_reg(reg)) {
-      __ fst_d(reg, SP, offset);
+      __ fst_d(reg, Address(SP, offset));
       offset += 8;
     }
   }
@@ -98,7 +98,7 @@ static void restore_callee_saved_registers(MacroAssembler* _masm, const ABIDescr
     Register reg = as_Register(i);
     if (reg == FP || reg == SP || reg == RA) continue; // saved/restored by prologue/epilogue
     if (!abi.is_volatile_reg(reg)) {
-      __ ld_d(reg, SP, offset);
+      __ ld_d(reg, Address(SP, offset));
       offset += 8;
     }
   }
@@ -106,7 +106,7 @@ static void restore_callee_saved_registers(MacroAssembler* _masm, const ABIDescr
   for (int i = 0; i < FloatRegister::number_of_registers; i++) {
     FloatRegister reg = as_FloatRegister(i);
     if (!abi.is_volatile_reg(reg)) {
-      __ fld_d(reg, SP, offset);
+      __ fld_d(reg, Address(SP, offset));
       offset += 8;
     }
   }
@@ -214,7 +214,8 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Symbol* signature,
   __ enter(); // set up frame
   assert((abi._stack_alignment_bytes % 16) == 0, "must be 16 byte aligned");
   // allocate frame (frame_size is also aligned, so stack is still aligned)
-  __ addi_d(SP, SP, -frame_size);
+  __ li(SCR1, frame_size);
+  __ sub_d(SP, SP, SCR1);
 
   // we have to always spill args since we need to do a call to get the thread
   // (and maybe attach it).

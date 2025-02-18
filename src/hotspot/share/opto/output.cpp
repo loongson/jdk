@@ -22,12 +22,6 @@
  *
  */
 
-/*
- * This file has been modified by Loongson Technology in 2024. These
- * modifications are Copyright (c) 2019, 2024, Loongson Technology, and are made
- * available on the same license terms set forth above.
- */
-
 #include "precompiled.hpp"
 #include "asm/assembler.inline.hpp"
 #include "asm/macroAssembler.inline.hpp"
@@ -1724,22 +1718,6 @@ void PhaseOutput::fill_buffer(C2_MacroAssembler* masm, uint* blk_starts) {
       DEBUG_ONLY(uint instr_offset = masm->offset());
       n->emit(masm, C->regalloc());
       current_offset = masm->offset();
-#if defined(LOONGARCH)
-      if (!n->is_Proj() && (masm->code()->insts()->end() != badAddress)) {
-        // For LOONGARCH, the first instruction of the previous node (usually a instruction sequence) sometime
-        // is not the instruction which access memory. adjust is needed. previous_offset points to the
-        // instruction which access memory. Instruction size is 4. masm->code()->insts_size() and
-        // masm->code()->insts()->end() are the location of current instruction.
-        int adjust = 4;
-        NativeInstruction* inst = (NativeInstruction*) (masm->code()->insts()->end() - 4);
-        if (inst->is_sync()) {
-          // a sync may be the last instruction, see store_B_immI_enc_sync
-          adjust += 4;
-          inst = (NativeInstruction*) (masm->code()->insts()->end() - 8);
-        }
-        previous_offset = current_offset - adjust;
-      }
-#endif
 
       // Above we only verified that there is enough space in the instruction section.
       // However, the instruction may emit stubs that cause code buffer expansion.

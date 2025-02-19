@@ -29,6 +29,7 @@
  */
 
 #include "precompiled.hpp"
+#include "gc/shared/fullGCForwarding.hpp"
 #include "gc/shared/gcArguments.hpp"
 #include "gc/shared/tlab_globals.hpp"
 #include "gc/shared/workerPolicy.hpp"
@@ -202,6 +203,11 @@ void ShenandoahArguments::initialize_alignments() {
   }
   SpaceAlignment = align;
   HeapAlignment = align;
+}
+
+void ShenandoahArguments::initialize_heap_flags_and_sizes() {
+  GCArguments::initialize_heap_flags_and_sizes();
+  FullGCForwarding::initialize_flags(MaxHeapSize);
 }
 
 CollectedHeap* ShenandoahArguments::create_heap() {

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -76,6 +76,7 @@ class NativeInstruction {
   bool is_lu12iw_lu32id() const;
   bool is_pcaddu12i_add() const;
   bool is_pcaddi() const;
+  bool is_jalr() const;
 
   // LoongArch has no instruction to generate a illegal instruction exception?
   // But `break  11` is not illegal instruction for LoongArch.

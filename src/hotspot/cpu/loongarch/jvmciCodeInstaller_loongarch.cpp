@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,7 +40,7 @@ jint CodeInstaller::pd_next_offset(NativeInstruction* inst, jint pc_offset, JVMC
   address pc = (address) inst;
   if (inst->is_int_branch() || inst->is_float_branch()) {
     return pc_offset + NativeInstruction::nop_instruction_size;
-  } else if (inst->is_call()) {
+  } else if (inst->is_call() || inst->is_jalr()) {
     return pc_offset + NativeCall::instruction_size;
   } else if (inst->is_far_call()) {
     return pc_offset + NativeFarCall::instruction_size;

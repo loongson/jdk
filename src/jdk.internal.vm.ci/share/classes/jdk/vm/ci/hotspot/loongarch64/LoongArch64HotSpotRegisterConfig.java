@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -242,7 +242,7 @@ public class LoongArch64HotSpotRegisterConfig implements RegisterConfig {
                     if (currentFloat < floatParameterRegisters.size()) {
                         Register register = floatParameterRegisters.get(currentFloat++);
                         locations[i] = register.asValue(valueKindFactory.getValueKind(kind));
-                    } else if (currentGeneral < generalParameterRegisters.size()) {
+                    } else if (type == HotSpotCallingConventionType.NativeCall && currentGeneral < generalParameterRegisters.size()) {
                         Register register = generalParameterRegisters.get(currentGeneral++);
                         locations[i] = register.asValue(valueKindFactory.getValueKind(kind));
                     }

@@ -163,7 +163,7 @@ class NativeCall: public NativeInstruction {
     return next_instruction_address();
   }
 
-  address target_addr_for_bl(address orig_addr = 0) const;
+  address target_addr_for_bl(address orig_addr = nullptr) const;
   address destination() const;
   void set_destination(address dest);
 
@@ -245,7 +245,7 @@ class NativeFarCall: public NativeInstruction {
   }
 
   // Returns the NativeFarCall's destination.
-  address destination(address orig_addr = 0) const;
+  address destination(address orig_addr = nullptr) const;
 
   // Sets the NativeFarCall's destination, not necessarily mt-safe.
   // Used when relocating code.
@@ -403,7 +403,7 @@ class NativeJump: public NativeInstruction {
   bool is_far();
 
   address instruction_address() const { return addr_at(instruction_offset); }
-  address jump_destination(address orig_addr = 0);
+  address jump_destination(address orig_addr = nullptr);
   void  set_jump_destination(address dest);
 
   // Creation

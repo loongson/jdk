@@ -556,7 +556,7 @@ class MacroAssembler: public Assembler {
 
   void patchable_jump_far(Register ra, jlong offs);
   void patchable_jump(address target, bool force_patchable = false);
-  void patchable_call(address target, address call_size = 0);
+  void patchable_call(address target, address call_size = nullptr);
 
   // Floating
   void generate_dsin_dcos(bool isCos, address npio2_hw, address two_over_pi,

@@ -1063,7 +1063,4 @@ OopMapSet* Runtime1::generate_code_for(C1StubId id, StubAssembler* sasm) {
 
 #undef __
 
-const char *Runtime1::pd_name_for_address(address entry) {
-  Unimplemented();
-  return 0;
-}
+const char *Runtime1::pd_name_for_address(address entry) { Unimplemented(); }

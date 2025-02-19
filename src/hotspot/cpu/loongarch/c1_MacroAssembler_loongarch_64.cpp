@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -71,8 +71,8 @@ int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr
     // displaced header address in the object header - if it is not the same, get the
     // object header instead
     lea(SCR2, Address(obj, hdr_offset));
-    cmpxchg(Address(SCR2, 0), hdr, disp_hdr, SCR1, true, true /* acquire */, done);
     // if the object header was the same, we're done
+    cmpxchg(Address(SCR2, 0), hdr, disp_hdr, SCR1, true, true /* acquire */, done);
     // if the object header was not the same, it is now in the hdr register
     // => test if it is a stack pointer into the same stack (recursive locking), i.e.:
     //
@@ -94,10 +94,11 @@ int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr
     st_d(hdr, Address(disp_hdr, 0));
     // otherwise we don't care about the result and handle locking via runtime call
     bnez(hdr, slow_case);
+
     // done
     bind(done);
+    inc_held_monitor_count(SCR1);
   }
-  increment(Address(TREG, JavaThread::held_monitor_count_offset()), 1);
   return null_check_offset;
 }
 
@@ -132,10 +133,11 @@ void C1_MacroAssembler::unlock_object(Register hdr, Register obj, Register disp_
     } else {
       cmpxchg(Address(obj, 0), disp_hdr, hdr, SCR2, false, true /* acquire */, done, &slow_case);
     }
+
     // done
     bind(done);
+    dec_held_monitor_count(SCR1);
   }
-  decrement(Address(TREG, JavaThread::held_monitor_count_offset()), 1);
 }
 
 // Defines obj, preserves var_size_in_bytes
@@ -152,15 +154,18 @@ void C1_MacroAssembler::try_allocate(Register obj, Register var_size_in_bytes,
 void C1_MacroAssembler::initialize_header(Register obj, Register klass, Register len,
                                           Register t1, Register t2) {
   assert_different_registers(obj, klass, len);
-  // This assumes that all prototype bits fit in an int32_t
-  li(t1, (int32_t)(intptr_t)markWord::prototype().value());
-  st_d(t1, Address(obj, oopDesc::mark_offset_in_bytes()));
-
-  if (UseCompressedClassPointers) { // Take care not to kill klass
-    encode_klass_not_null(t1, klass);
-    st_w(t1, Address(obj, oopDesc::klass_offset_in_bytes()));
+  if (UseCompactObjectHeaders) {
+    ld_d(t1, Address(klass, Klass::prototype_header_offset()));
+    st_d(t1, Address(obj, oopDesc::mark_offset_in_bytes()));
   } else {
-    st_d(klass, Address(obj, oopDesc::klass_offset_in_bytes()));
+    li(t1, checked_cast<int32_t>(markWord::prototype().value()));
+    st_d(t1, Address(obj, oopDesc::mark_offset_in_bytes()));
+    if (UseCompressedClassPointers) { // Take care not to kill klass
+      encode_klass_not_null(t1, klass);
+      st_w(t1, Address(obj, oopDesc::klass_offset_in_bytes()));
+    } else {
+      st_d(klass, Address(obj, oopDesc::klass_offset_in_bytes()));
+    }
   }
 
   if (len->is_valid()) {
@@ -171,7 +176,7 @@ void C1_MacroAssembler::initialize_header(Register obj, Register klass, Register
       // Clear gap/first 4 bytes following the length field.
       st_w(R0, Address(obj, base_offset));
     }
-  } else if (UseCompressedClassPointers) {
+  } else if (UseCompressedClassPointers && !UseCompactObjectHeaders) {
     store_klass_gap(obj, R0);
   }
 }

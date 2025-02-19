@@ -2573,7 +2573,10 @@ void LIR_Assembler::emit_arraycopy(LIR_OpArrayCopy* op) {
     // We don't know the array types are compatible
     if (basic_type != T_OBJECT) {
       // Simple test for basic type arrays
-      if (UseCompressedClassPointers) {
+      if (UseCompactObjectHeaders) {
+        __ load_narrow_klass_compact(tmp, src);
+        __ load_narrow_klass_compact(SCR1, dst);
+      } else if (UseCompressedClassPointers) {
         __ ld_wu(tmp, src_klass_addr);
         __ ld_wu(SCR1, dst_klass_addr);
       } else {
@@ -2716,26 +2719,10 @@ void LIR_Assembler::emit_arraycopy(LIR_OpArrayCopy* op) {
     }
 
     if (basic_type != T_OBJECT) {
-
-      if (UseCompressedClassPointers) {
-        __ ld_wu(SCR1, dst_klass_addr);
-      } else {
-        __ ld_d(SCR1, dst_klass_addr);
-      }
-      __ bne(tmp, SCR1, halt);
-      if (UseCompressedClassPointers) {
-        __ ld_wu(SCR1, src_klass_addr);
-      } else {
-        __ ld_d(SCR1, src_klass_addr);
-      }
-      __ beq(tmp, SCR1, known_ok);
+      __ cmp_klass_compressed(dst, tmp, SCR1, halt, false);
+      __ cmp_klass_compressed(src, tmp, SCR1, known_ok, true);
     } else {
-      if (UseCompressedClassPointers) {
-        __ ld_wu(SCR1, dst_klass_addr);
-      } else {
-        __ ld_d(SCR1, dst_klass_addr);
-      }
-      __ beq(tmp, SCR1, known_ok);
+      __ cmp_klass_compressed(dst, tmp, SCR1, known_ok, true);
       __ beq(src, dst, known_ok);
     }
     __ bind(halt);
@@ -2814,12 +2801,7 @@ void LIR_Assembler::emit_load_klass(LIR_OpLoadKlass* op) {
     add_debug_info_for_null_check_here(info);
   }
 
-  if (UseCompressedClassPointers) {
-    __ ld_wu(result, obj, oopDesc::klass_offset_in_bytes());
-    __ decode_klass_not_null(result);
-  } else {
-    __ ld_d(result, obj, oopDesc::klass_offset_in_bytes());
-  }
+  __ load_klass(result, obj);
 }
 
 void LIR_Assembler::emit_profile_call(LIR_OpProfileCall* op) {

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -160,7 +160,7 @@ int StubAssembler::call_RT(Register oop_result1, Register metadata_result,
 }
 
 enum return_state_t {
-  does_not_return, requires_return
+  does_not_return, requires_return, requires_pop_epilogue_return
 };
 
 // Implementation of StubFrame
@@ -168,7 +168,7 @@ enum return_state_t {
 class StubFrame: public StackObj {
  private:
   StubAssembler* _sasm;
-  bool _return_state;
+  return_state_t _return_state;
 
  public:
   StubFrame(StubAssembler* sasm, const char* name, bool must_gc_arguments,
@@ -183,8 +183,16 @@ void StubAssembler::prologue(const char* name, bool must_gc_arguments) {
   enter();
 }
 
-void StubAssembler::epilogue() {
-  leave();
+void StubAssembler::epilogue(bool use_pop) {
+  // Avoid using a leave instruction when this frame may
+  // have been frozen, since the current value of fp
+  // restored from the stub would be invalid. We still
+  // must restore the fp value saved on enter though.
+  if (use_pop) {
+    pop2(RA, FP);
+  } else {
+    leave();
+  }
   jr(RA);
 }
 
@@ -204,11 +212,12 @@ void StubFrame::load_argument(int offset_in_words, Register reg) {
 }
 
 StubFrame::~StubFrame() {
-  if (_return_state == requires_return) {
-    __ epilogue();
-  } else {
+  if (_return_state == does_not_return) {
     __ should_not_reach_here();
+  } else {
+    __ epilogue(_return_state == requires_pop_epilogue_return);
   }
+  _sasm = nullptr;
 }
 
 #undef __
@@ -256,6 +265,11 @@ static OopMap* generate_oop_map(StubAssembler* sasm, bool save_fpu_registers) {
     }
   }
 
+  int sp_offset = cpu_reg_save_offsets[TREG->encoding()];
+  oop_map->set_callee_saved(VMRegImpl::stack2reg(sp_offset),
+                            TREG->as_VMReg());
+
+  // fpu_regs
   if (save_fpu_registers) {
     for (int i = 0; i < FrameMap::nof_fpu_regs; i++) {
       FloatRegister r = as_FloatRegister(i);
@@ -331,6 +345,16 @@ void Runtime1::initialize_pd() {
     cpu_reg_save_offsets[i] = sp_offset;
     sp_offset += 2; // SP offsets are in halfwords
   }
+}
+
+// return: offset in 64-bit words.
+uint Runtime1::runtime_blob_current_thread_offset(frame f) {
+  CodeBlob* cb = f.cb();
+  assert(cb == Runtime1::blob_for(C1StubId::monitorenter_id) ||
+         cb == Runtime1::blob_for(C1StubId::monitorenter_nofpu_id), "must be");
+  assert(cb != nullptr && cb->is_runtime_stub(), "invalid frame");
+  int offset = cpu_reg_save_offsets[TREG->encoding()];
+  return offset / 2;   // SP offsets are in halfwords
 }
 
 // target: the entry point of the method that creates and posts the exception oop
@@ -860,7 +884,7 @@ OopMapSet* Runtime1::generate_code_for(C1StubId id, StubAssembler* sasm) {
       // fall through
     case C1StubId::monitorenter_id:
       {
-        StubFrame f(sasm, "monitorenter", dont_gc_arguments);
+        StubFrame f(sasm, "monitorenter", dont_gc_arguments, requires_pop_epilogue_return);
         OopMap* map = save_live_registers(sasm, save_fpu_registers);
 
         // Called with store_parameter and not C abi

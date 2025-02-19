@@ -4807,6 +4807,36 @@ class StubGenerator: public StubCodeGenerator {
     return start;
   }
 
+  address generate_cont_preempt_stub() {
+    if (!Continuations::enabled()) return nullptr;
+    StubCodeMark mark(this, "StubRoutines","Continuation preempt stub");
+    address start = __ pc();
+
+    __ reset_last_Java_frame(true);
+
+    // Set sp to enterSpecial frame, i.e. remove all frames copied into the heap.
+    __ ld_d(SP, Address(TREG, JavaThread::cont_entry_offset()));
+
+    Label preemption_cancelled;
+    __ ld_bu(AT, Address(TREG, JavaThread::preemption_cancelled_offset()));
+    __ bnez(AT, preemption_cancelled);
+
+    // Remove enterSpecial frame from the stack and return to Continuation.run() to unmount.
+    SharedRuntime::continuation_enter_cleanup(_masm);
+    __ leave();
+    __ jr(RA);
+
+    // We acquired the monitor after freezing the frames so call thaw to continue execution.
+    __ bind(preemption_cancelled);
+    __ st_b(R0, Address(TREG, JavaThread::preemption_cancelled_offset()));
+    __ addi_d(FP, SP, checked_cast<int32_t>(ContinuationEntry::size() + 2 * wordSize));
+    __ li(AT, ContinuationEntry::thaw_call_pc_address());
+    __ ld_d(AT, AT, 0);
+    __ jr(AT);
+
+    return start;
+  }
+
 #ifdef COMPILER2
 
 static const int64_t right_2_bits = right_n_bits(2);
@@ -5676,6 +5706,7 @@ static const int64_t right_3_bits = right_n_bits(3);
     StubRoutines::_cont_thaw             = generate_cont_thaw();
     StubRoutines::_cont_returnBarrier    = generate_cont_returnBarrier();
     StubRoutines::_cont_returnBarrierExc = generate_cont_returnBarrier_exception();
+    StubRoutines::_cont_preempt_stub     = generate_cont_preempt_stub();
   }
 
   void generate_final_stubs() {

@@ -126,8 +126,11 @@ class MacroAssembler: public Assembler {
 
   address emit_trampoline_stub(int insts_call_instruction_offset, address target);
 
-  void push_cont_fastpath(Register java_thread);
-  void pop_cont_fastpath(Register java_thread);
+  void push_cont_fastpath(Register java_thread = TREG);
+  void pop_cont_fastpath(Register java_thread = TREG);
+
+  void inc_held_monitor_count(Register tmp);
+  void dec_held_monitor_count(Register tmp);
 
   void flt_to_flt16(Register dst, FloatRegister src, FloatRegister tmp) {
     vfcvt_h_s(tmp, src, src);
@@ -268,8 +271,10 @@ class MacroAssembler: public Assembler {
   void load_method_holder(Register holder, Register method);
 
   // oop manipulations
+  void load_narrow_klass_compact(Register dst, Register src);
   void load_klass(Register dst, Register src);
   void store_klass(Register dst, Register src);
+  void cmp_klass_compressed(Register oop, Register trial_klass, Register tmp, Label &L, bool equal);
 
   void access_load_at(BasicType type, DecoratorSet decorators, Register dst, Address src,
                       Register tmp1, Register tmp2);

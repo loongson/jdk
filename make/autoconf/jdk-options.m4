@@ -23,6 +23,12 @@
 # questions.
 #
 
+#
+# This file has been modified by Loongson Technology in 2025. These
+# modifications are Copyright (c) 2025, Loongson Technology, and are made
+# available on the same license terms set forth above.
+#
+
 ################################################################################
 # Set the debug level
 #    release: no debug information, all optimizations, no asserts.
@@ -719,6 +725,7 @@ AC_DEFUN([JDKOPT_ENABLE_DISABLE_CDS_ARCHIVE_COH],
              test "x$OPENJDK_TARGET_CPU" != "xppc64" &&
              test "x$OPENJDK_TARGET_CPU" != "xppc64le" &&
              test "x$OPENJDK_TARGET_CPU" != "xriscv64" &&
+             test "x$OPENJDK_TARGET_CPU" != "xloongarch64" &&
              test "x$OPENJDK_TARGET_CPU" != "xs390x"; then
           AC_MSG_RESULT([no (compact object headers not supported for this platform)])
           AVAILABLE=false

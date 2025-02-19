@@ -4276,6 +4276,7 @@ instruct loadKlass(mRegP dst, memory mem) %{
 // Load narrow Klass Pointer
 instruct loadNKlass(mRegN dst, memory mem)
 %{
+  predicate(!UseCompactObjectHeaders);
   match(Set dst (LoadNKlass mem));
 
   ins_cost(125);
@@ -4291,7 +4292,7 @@ instruct loadNKlass(mRegN dst, memory mem)
 instruct loadN2PKlass(mRegP dst, memory mem)
 %{
   match(Set dst (DecodeNKlass (LoadNKlass mem)));
-  predicate(CompressedKlassPointers::base() == nullptr && CompressedKlassPointers::shift() == 0);
+  predicate(CompressedKlassPointers::base() == nullptr && CompressedKlassPointers::shift() == 0 && !UseCompactObjectHeaders);
 
   ins_cost(125);
   format %{ "ld_wu    $dst, $mem\t# compressed klass ptr @ loadN2PKlass" %}
@@ -4301,6 +4302,20 @@ instruct loadN2PKlass(mRegP dst, memory mem)
     __ loadstore_enc($dst$$Register, $mem$$base, $mem$$index, $mem$$scale, $mem$$disp, C2_MacroAssembler::LOAD_U_INT);
   %}
   ins_pipe( ialu_load );
+%}
+
+instruct loadNKlassCompactHeaders(mRegN dst, memory_loadRange mem)
+%{
+  predicate(UseCompactObjectHeaders);
+  match(Set dst (LoadNKlass mem));
+
+  ins_cost(125);
+  format %{ "load_narrow_klass_compact  $dst, $mem\t# compressed class ptr" %}
+  ins_encode %{
+    assert($mem$$index$$Register == noreg, "must not have indexed address");
+    __ load_narrow_klass_compact_c2($dst$$Register, $mem$$base$$Register, $mem$$disp);
+  %}
+  ins_pipe(pipe_slow);
 %}
 
 // Load Constant
@@ -11076,15 +11091,18 @@ instruct storeSSD(stackSlotD dst, regD src)
   ins_pipe( fpu_store );
 %}
 
-instruct cmpFastLock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2) %{
+instruct cmpFastLock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box,
+                     no_CR_mRegP tmp1, no_CR_mRegP tmp2, no_CR_mRegP tmp3) %{
   predicate(LockingMode != LM_LIGHTWEIGHT);
   match(Set cr (FastLock object box));
-  effect(TEMP tmp1, TEMP tmp2);
+  effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
 
-  format %{ "FASTLOCK $cr <-- $object, $box, $tmp1, $tmp2 #@ cmpFastLock" %}
+  format %{ "FASTLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3 #@ cmpFastLock" %}
 
   ins_encode %{
-    __ fast_lock_c2($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register);
+    __ fast_lock_c2($object$$Register, $box$$Register,
+                    $cr$$Register, $tmp1$$Register,
+                    $tmp2$$Register, $tmp3$$Register);
   %}
 
   ins_pipe( pipe_slow );
@@ -11104,15 +11122,20 @@ instruct cmpFastUnlock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_m
   ins_pipe( pipe_slow );
 %}
 
-instruct cmpFastLockLightweight(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2, no_CR_mRegP tmp3) %{
+instruct cmpFastLockLightweight(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box,
+                                no_CR_mRegP tmp1, no_CR_mRegP tmp2,
+                                no_CR_mRegP tmp3, no_CR_mRegP tmp4) %{
   predicate(LockingMode == LM_LIGHTWEIGHT);
   match(Set cr (FastLock object box));
-  effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
+  effect(TEMP tmp1, TEMP tmp2, TEMP tmp3, TEMP tmp4);
 
-  format %{ "FASTLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3 #@ cmpFastLockLightweight" %}
+  format %{ "FASTLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3, $tmp4 #@ cmpFastLockLightweight" %}
 
   ins_encode %{
-    __ fast_lock_lightweight($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register, $tmp3$$Register);
+    __ fast_lock_lightweight($object$$Register, $box$$Register,
+                             $cr$$Register, $tmp1$$Register,
+                             $tmp2$$Register, $tmp3$$Register,
+                             $tmp4$$Register);
   %}
 
   ins_pipe( pipe_slow );

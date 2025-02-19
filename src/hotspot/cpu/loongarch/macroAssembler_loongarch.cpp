@@ -35,6 +35,7 @@
 #include "gc/shared/collectedHeap.inline.hpp"
 #include "interpreter/bytecodeHistogram.hpp"
 #include "interpreter/interpreter.hpp"
+#include "interpreter/interpreterRuntime.hpp"
 #include "jvm.h"
 #include "memory/resourceArea.hpp"
 #include "memory/universe.hpp"
@@ -600,7 +601,7 @@ address MacroAssembler::ic_call(address entry, jint method_index) {
 }
 
 int MacroAssembler::ic_check_size() {
-  return 4 * 5;
+  return 4 * (UseCompactObjectHeaders ? 6 : 5);
 }
 
 int MacroAssembler::ic_check(int end_alignment) {
@@ -616,11 +617,14 @@ int MacroAssembler::ic_check(int end_alignment) {
   align(end_alignment, offset() + ic_check_size());
   int uep_offset = offset();
 
-  if (UseCompressedClassPointers) {
+  if (UseCompactObjectHeaders) {
+    load_narrow_klass_compact(tmp1, receiver);
+    ld_wu(tmp2, Address(data, CompiledICData::speculated_klass_offset()));
+  } else if (UseCompressedClassPointers) {
     ld_wu(tmp1, Address(receiver, oopDesc::klass_offset_in_bytes()));
     ld_wu(tmp2, Address(data, CompiledICData::speculated_klass_offset()));
   } else {
-    ld_d(tmp1,  Address(receiver, oopDesc::klass_offset_in_bytes()));
+    ld_d(tmp1, Address(receiver, oopDesc::klass_offset_in_bytes()));
     ld_d(tmp2, Address(data, CompiledICData::speculated_klass_offset()));
   }
 
@@ -786,6 +790,10 @@ void MacroAssembler::call_VM(Register oop_result,
   call_VM(oop_result, last_java_sp, entry_point, 3, check_exceptions);
 }
 
+static bool is_preemptable(address entry_point) {
+  return entry_point == CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter);
+}
+
 void MacroAssembler::call_VM_base(Register oop_result,
                                   Register java_thread,
                                   Register last_java_sp,
@@ -811,7 +819,12 @@ void MacroAssembler::call_VM_base(Register oop_result,
   // set last Java frame before call
   Label before_call;
   bind(before_call);
-  set_last_Java_frame(java_thread, last_java_sp, FP, before_call);
+  if (is_preemptable(entry_point)) {
+    // skip setting last_pc since we already set it to desired value.
+    set_last_Java_frame(last_java_sp, FP, noreg);
+  } else {
+    set_last_Java_frame(java_thread, last_java_sp, FP, before_call);
+  }
 
   // do the call
   move(A0, java_thread);
@@ -1796,6 +1809,36 @@ void MacroAssembler::pop_cont_fastpath(Register java_thread) {
   bind(done);
 }
 
+void MacroAssembler::inc_held_monitor_count(Register tmp) {
+  Address dst(TREG, JavaThread::held_monitor_count_offset());
+  ld_d(tmp, dst);
+  addi_d(tmp, tmp, 1);
+  st_d(tmp, dst);
+#ifdef ASSERT
+  Label ok;
+  test_bit(tmp, tmp, 63);
+  beqz(tmp, ok);
+  stop("assert(held monitor count overflow)");
+  should_not_reach_here();
+  bind(ok);
+#endif
+}
+
+void MacroAssembler::dec_held_monitor_count(Register tmp) {
+  Address dst(TREG, JavaThread::held_monitor_count_offset());
+  ld_d(tmp, dst);
+  addi_d(tmp, tmp, -1);
+  st_d(tmp, dst);
+#ifdef ASSERT
+  Label ok;
+  test_bit(tmp, tmp, 63);
+  beqz(tmp, ok);
+  stop("assert(held monitor count underflow)");
+  should_not_reach_here();
+  bind(ok);
+#endif
+}
+
 void MacroAssembler::align(int modulus) {
   align(modulus, offset());
 }
@@ -1981,9 +2024,33 @@ void MacroAssembler::load_method_holder_cld(Register rresult, Register rmethod) 
   ld_d(rresult, Address(rresult, InstanceKlass::class_loader_data_offset()));
 }
 
+void MacroAssembler::cmp_klass_compressed(Register oop, Register trial_klass, Register tmp, Label &L, bool equal) {
+  if (UseCompactObjectHeaders) {
+    load_narrow_klass_compact(tmp, oop);
+  } else if (UseCompressedClassPointers) {
+    ld_wu(tmp, Address(oop, oopDesc::klass_offset_in_bytes()));
+  } else {
+    ld_d(tmp, Address(oop, oopDesc::klass_offset_in_bytes()));
+  }
+  if (equal) {
+    beq(trial_klass, tmp, L);
+  } else {
+    bne(trial_klass, tmp, L);
+  }
+}
+
+void MacroAssembler::load_narrow_klass_compact(Register dst, Register src) {
+  assert(UseCompactObjectHeaders, "expects UseCompactObjectHeaders");
+  ld_d(dst, Address(src, oopDesc::mark_offset_in_bytes()));
+  srli_d(dst, dst, markWord::klass_shift);
+}
+
 // for UseCompressedOops Option
 void MacroAssembler::load_klass(Register dst, Register src) {
-  if(UseCompressedClassPointers){
+  if (UseCompactObjectHeaders) {
+    load_narrow_klass_compact(dst, src);
+    decode_klass_not_null(dst);
+  } else if (UseCompressedClassPointers) {
     ld_wu(dst, Address(src, oopDesc::klass_offset_in_bytes()));
     decode_klass_not_null(dst);
   } else {
@@ -1992,6 +2059,7 @@ void MacroAssembler::load_klass(Register dst, Register src) {
 }
 
 void MacroAssembler::store_klass(Register dst, Register src) {
+  assert(!UseCompactObjectHeaders, "not with compact headers");
   if(UseCompressedClassPointers){
     encode_klass_not_null(src);
     st_w(src, dst, oopDesc::klass_offset_in_bytes());
@@ -2001,6 +2069,7 @@ void MacroAssembler::store_klass(Register dst, Register src) {
 }
 
 void MacroAssembler::store_klass_gap(Register dst, Register src) {
+  assert(!UseCompactObjectHeaders, "not with compact headers");
   if (UseCompressedClassPointers) {
     st_w(src, dst, oopDesc::klass_gap_offset_in_bytes());
   }
@@ -2284,8 +2353,7 @@ void MacroAssembler::encode_klass_not_null(Register r) {
     sub_d(r, r, AT);
   }
   if (CompressedKlassPointers::shift() != 0) {
-    assert (LogKlassAlignmentInBytes == CompressedKlassPointers::shift(), "decode alg wrong");
-    srli_d(r, r, LogKlassAlignmentInBytes);
+    srli_d(r, r, CompressedKlassPointers::shift());
   }
 }
 
@@ -2302,13 +2370,11 @@ void MacroAssembler::encode_klass_not_null(Register dst, Register src) {
       li(dst, (int64_t)CompressedKlassPointers::base());
       sub_d(dst, src, dst);
       if (CompressedKlassPointers::shift() != 0) {
-        assert (LogKlassAlignmentInBytes == CompressedKlassPointers::shift(), "decode alg wrong");
-        srli_d(dst, dst, LogKlassAlignmentInBytes);
+        srli_d(dst, dst, CompressedKlassPointers::shift());
       }
     } else {
       if (CompressedKlassPointers::shift() != 0) {
-        assert (LogKlassAlignmentInBytes == CompressedKlassPointers::shift(), "decode alg wrong");
-        srli_d(dst, src, LogKlassAlignmentInBytes);
+        srli_d(dst, src, CompressedKlassPointers::shift());
       } else {
         move(dst, src);
       }
@@ -2331,15 +2397,13 @@ void MacroAssembler::decode_klass_not_null(Register r) {
         add_d(r, r, AT);
       }
     } else {
-      assert(LogKlassAlignmentInBytes == CompressedKlassPointers::shift(), "decode alg wrong");
-      assert(LogKlassAlignmentInBytes == Address::times_8, "klass not aligned on 64bits?");
       li(AT, (int64_t)CompressedKlassPointers::base());
-      alsl_d(r, r, AT, Address::times_8 - 1);
+      slli_d(r, r, CompressedKlassPointers::shift());
+      add_d(r, r, AT);
     }
   } else {
     if (CompressedKlassPointers::shift() != 0) {
-      assert(LogKlassAlignmentInBytes == CompressedKlassPointers::shift(), "decode alg wrong");
-      slli_d(r, r, LogKlassAlignmentInBytes);
+      slli_d(r, r, CompressedKlassPointers::shift());
     }
   }
 }
@@ -2362,15 +2426,13 @@ void MacroAssembler::decode_klass_not_null(Register dst, Register src) {
           add_d(dst, dst, src);
         }
       } else {
-        assert(LogKlassAlignmentInBytes == CompressedKlassPointers::shift(), "decode alg wrong");
-        assert(LogKlassAlignmentInBytes == Address::times_8, "klass not aligned on 64bits?");
         li(dst, (int64_t)CompressedKlassPointers::base());
-        alsl_d(dst, src, dst, Address::times_8 - 1);
+        slli_d(AT, src, CompressedKlassPointers::shift());
+        add_d(dst, dst, AT);
       }
     } else {
       if (CompressedKlassPointers::shift() != 0) {
-        assert(LogKlassAlignmentInBytes == CompressedKlassPointers::shift(), "decode alg wrong");
-        slli_d(dst, src, LogKlassAlignmentInBytes);
+        slli_d(dst, src, CompressedKlassPointers::shift());
       } else {
         move(dst, src);
       }

@@ -1140,6 +1140,10 @@ bool Matcher::vector_needs_partial_operations(Node* node, const TypeVect* vt) {
   return false;
 }
 
+bool Matcher::vector_rearrange_requires_load_shuffle(BasicType elem_bt, int vlen) {
+  return false;
+}
+
 const RegMask* Matcher::predicate_reg_mask(void) {
   return nullptr;
 }
@@ -15204,36 +15208,6 @@ instruct populateIndexV(vReg dst, mRegI src1, immI_1 src2) %{
         default:
           ShouldNotReachHere();
       }
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-// ---------------------------- LOAD_SHUFFLE ----------------------------------
-
-instruct loadShuffleVB(vReg dst) %{
-  predicate(Matcher::vector_element_basic_type(n) == T_BYTE);
-  match(Set dst (VectorLoadShuffle dst));
-  format %{ "(x)vld_shuffle    $dst\t# @loadShuffleVB" %}
-  ins_encode %{
-    // empty
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct loadShuffleV(vReg dst, vReg src) %{
-  predicate(Matcher::vector_element_basic_type(n) != T_BYTE);
-  match(Set dst (VectorLoadShuffle src));
-  format %{ "(x)vld_shuffle    $dst, $src\t# @loadShuffleV" %}
-  ins_encode %{
-    switch (Matcher::vector_element_basic_type(this)) {
-      case T_SHORT : __ vext2xv_hu_bu($dst$$FloatRegister, $src$$FloatRegister); break;
-      case T_FLOAT :
-      case T_INT   : __ vext2xv_wu_bu($dst$$FloatRegister, $src$$FloatRegister); break;
-      case T_DOUBLE:
-      case T_LONG  : __ vext2xv_du_bu($dst$$FloatRegister, $src$$FloatRegister); break;
-      default:
-        ShouldNotReachHere();
     }
   %}
   ins_pipe( pipe_slow );

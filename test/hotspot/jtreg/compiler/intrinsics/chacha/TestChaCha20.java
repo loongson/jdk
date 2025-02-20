@@ -111,7 +111,7 @@ public class TestChaCha20 {
             // Riscv64 intrinsics require the vector instructions
             if (containsFuzzy(cpuFeatures, "rvv")) {
                 System.out.println("Setting up vector worker");
-                configs.add(List.of("-XX:+UseRVV"));
+                configs.add(List.of());
             }
         } else if (Platform.isLoongArch64()) {
             // LoongArch64 intrinsics require the lsx instructions

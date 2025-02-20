@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, Red Hat, Inc. All rights reserved.
- * Copyright (c) 2021, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -83,9 +83,9 @@ int RegSpiller::pd_reg_size(VMStorage reg) {
 
 void RegSpiller::pd_store_reg(MacroAssembler* masm, int offset, VMStorage reg) {
   if (reg.type() == StorageType::INTEGER) {
-    masm->st_d(as_Register(reg), SP, offset);
+    masm->st_d(as_Register(reg), Address(SP, offset));
   } else if (reg.type() == StorageType::FLOAT) {
-    masm->fst_d(as_FloatRegister(reg), SP, offset);
+    masm->fst_d(as_FloatRegister(reg), Address(SP, offset));
   } else {
     // stack and BAD
   }
@@ -93,9 +93,9 @@ void RegSpiller::pd_store_reg(MacroAssembler* masm, int offset, VMStorage reg) {
 
 void RegSpiller::pd_load_reg(MacroAssembler* masm, int offset, VMStorage reg) {
   if (reg.type() == StorageType::INTEGER) {
-    masm->ld_d(as_Register(reg), SP, offset);
+    masm->ld_d(as_Register(reg), Address(SP, offset));
   } else if (reg.type() == StorageType::FLOAT) {
-    masm->fld_d(as_FloatRegister(reg), SP, offset);
+    masm->fld_d(as_FloatRegister(reg), Address(SP, offset));
   } else {
     // stack and BAD
   }

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -68,6 +68,7 @@ define_pd_global(bool, OptoScheduling,               false);
 define_pd_global(bool, OptoBundling,                 false);
 define_pd_global(bool, OptoRegScheduling,            false);
 define_pd_global(bool, SuperWordLoopUnrollAnalysis,  true);
+define_pd_global(uint, SuperWordStoreToLoadForwardingFailureDetection, 16);
 define_pd_global(bool, IdealizeClearArrayNode,       true);
 
 define_pd_global(intx, ReservedCodeCacheSize,        48*M);

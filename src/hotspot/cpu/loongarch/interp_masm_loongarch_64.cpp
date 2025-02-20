@@ -660,7 +660,7 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
 
   // get method access flags
   ld_d(AT, FP, frame::interpreter_frame_method_offset * wordSize);
-  ld_wu(AT, AT, in_bytes(Method::access_flags_offset()));
+  ld_hu(AT, AT, in_bytes(Method::access_flags_offset()));
   test_bit(AT, AT, exact_log2(JVM_ACC_SYNCHRONIZED));
   beqz(AT, unlocked);
 

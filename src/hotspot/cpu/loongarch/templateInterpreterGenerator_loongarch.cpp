@@ -871,7 +871,7 @@ void TemplateInterpreterGenerator::lock_method(void) {
 
 #ifdef ASSERT
   { Label L;
-    __ ld_w(T0, Rmethod, in_bytes(Method::access_flags_offset()));
+    __ ld_hu(T0, Rmethod, in_bytes(Method::access_flags_offset()));
     __ test_bit(T0, T0, exact_log2(JVM_ACC_SYNCHRONIZED));
     __ bne(T0, R0, L);
     __ stop("method doesn't need synchronization");
@@ -881,7 +881,7 @@ void TemplateInterpreterGenerator::lock_method(void) {
   // get synchronization object
   {
     Label done;
-    __ ld_w(T0, Rmethod, in_bytes(Method::access_flags_offset()));
+    __ ld_hu(T0, Rmethod, in_bytes(Method::access_flags_offset()));
     __ test_bit(T2, T0, exact_log2(JVM_ACC_STATIC));
     __ ld_d(T0, LVP, Interpreter::local_offset_in_bytes(0));
     __ beq(T2, R0, done);
@@ -1092,7 +1092,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 
   // make sure method is native & not abstract
 #ifdef ASSERT
-  __ ld_w(T0, Rmethod, in_bytes(Method::access_flags_offset()));
+  __ ld_hu(T0, Rmethod, in_bytes(Method::access_flags_offset()));
   {
     Label L;
     __ test_bit(AT, T0, exact_log2(JVM_ACC_NATIVE));
@@ -1142,7 +1142,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 #ifdef ASSERT
     {
       Label L;
-      __ ld_w(T0, Rmethod, in_bytes(Method::access_flags_offset()));
+      __ ld_hu(T0, Rmethod, in_bytes(Method::access_flags_offset()));
       __ test_bit(AT, T0, exact_log2(JVM_ACC_SYNCHRONIZED));
       __ beq(AT, R0, L);
       __ stop("method needs synchronization");
@@ -1197,7 +1197,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     __ ld_hu(t, t, in_bytes(ConstMethod::size_of_parameters_offset()));
     // LoongArch ABI: caller does not reserve space for the register auguments.
     // A0 and A1(if needed)
-    __ ld_w(AT, Rmethod, in_bytes(Method::access_flags_offset()));
+    __ ld_hu(AT, Rmethod, in_bytes(Method::access_flags_offset()));
     __ test_bit(AT, AT, exact_log2(JVM_ACC_STATIC));
     __ beq(AT, R0, Lstatic);
     __ addi_d(t, t, 1);
@@ -1277,7 +1277,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   // pass mirror handle if static call
   {
     Label L;
-    __ ld_w(t, method, in_bytes(Method::access_flags_offset()));
+    __ ld_hu(t, method, in_bytes(Method::access_flags_offset()));
     __ test_bit(AT, t, exact_log2(JVM_ACC_STATIC));
     __ beq(AT, R0, L);
 
@@ -1529,7 +1529,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   {
     const Register monitor_reg = T0;
     Label L;
-    __ ld_w(t, method, in_bytes(Method::access_flags_offset()));
+    __ ld_hu(t, method, in_bytes(Method::access_flags_offset()));
     __ test_bit(t, t, exact_log2(JVM_ACC_SYNCHRONIZED));
     __ addi_d(monitor_reg, FP, frame::interpreter_frame_initial_sp_offset * wordSize - (int)sizeof(BasicObjectLock));
     __ beq(t, R0, L);
@@ -1701,7 +1701,7 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
 
   // make sure method is not native & not abstract
 #ifdef ASSERT
-  __ ld_d(AT, Rmethod, in_bytes(Method::access_flags_offset()));
+  __ ld_hu(AT, Rmethod, in_bytes(Method::access_flags_offset()));
   {
     Label L;
     __ test_bit(T2, AT, exact_log2(JVM_ACC_NATIVE));
@@ -1757,7 +1757,7 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
     // no synchronization necessary
 #ifdef ASSERT
     { Label L;
-      __ ld_w(AT, Rmethod, in_bytes(Method::access_flags_offset()));
+      __ ld_hu(AT, Rmethod, in_bytes(Method::access_flags_offset()));
       __ test_bit(AT, AT, exact_log2(JVM_ACC_SYNCHRONIZED));
       __ beqz(AT, L);
       __ stop("method needs synchronization");

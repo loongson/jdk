@@ -104,9 +104,9 @@ void C2_MacroAssembler::fast_lock_c2(Register oop, Register box,
   // Handle existing monitor.
   bind(object_has_monitor);
 
-  // Try to CAS owner (no owner => current thread's _lock_id).
+  // Try to CAS owner (no owner => current thread's _monitor_owner_id).
   Register tid = tmp2;
-  ld_d(tid, Address(TREG, JavaThread::lock_id_offset()));
+  ld_d(tid, Address(TREG, JavaThread::monitor_owner_id_offset()));
   move(AT, R0);
   addi_d(tmp, disp_hdr, in_bytes(ObjectMonitor::owner_offset()) - markWord::monitor_value);
   cmpxchg(Address(tmp, 0), AT, tid, flag, true, true /* acquire */);
@@ -359,9 +359,9 @@ void C2_MacroAssembler::fast_lock_lightweight(Register obj, Register box,
     // Compute owner address.
     lea(tmp2_owner_addr, owner_address);
 
-    // Try to CAS owner (no owner => current thread's _lock_id).
+    // Try to CAS owner (no owner => current thread's _monitor_owner_id).
     Register tid = tmp4;
-    ld_d(tid, Address(TREG, JavaThread::lock_id_offset()));
+    ld_d(tid, Address(TREG, JavaThread::monitor_owner_id_offset()));
     move(tmp3_owner, R0);
     cmpxchg(Address(tmp2_owner_addr, 0), tmp3_owner, tid, flag, true, true /* acquire */);
     bnez(flag, locked);

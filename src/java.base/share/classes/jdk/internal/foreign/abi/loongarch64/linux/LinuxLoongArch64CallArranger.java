@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,11 +26,7 @@
 
 package jdk.internal.foreign.abi.loongarch64.linux;
 
-import java.lang.foreign.AddressLayout;
-import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryLayout;
-import java.lang.foreign.MemorySegment;
+import jdk.internal.foreign.Utils;
 import jdk.internal.foreign.abi.ABIDescriptor;
 import jdk.internal.foreign.abi.AbstractLinker.UpcallStubFactory;
 import jdk.internal.foreign.abi.Binding;
@@ -40,17 +36,21 @@ import jdk.internal.foreign.abi.DowncallLinker;
 import jdk.internal.foreign.abi.LinkerOptions;
 import jdk.internal.foreign.abi.SharedUtils;
 import jdk.internal.foreign.abi.VMStorage;
-import jdk.internal.foreign.Utils;
 
+import java.lang.foreign.AddressLayout;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.GroupLayout;
+import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.MemorySegment;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static jdk.internal.foreign.abi.loongarch64.linux.TypeClass.*;
-import static jdk.internal.foreign.abi.loongarch64.LoongArch64Architecture.*;
 import static jdk.internal.foreign.abi.loongarch64.LoongArch64Architecture.Regs.*;
+import static jdk.internal.foreign.abi.loongarch64.LoongArch64Architecture.*;
+import static jdk.internal.foreign.abi.loongarch64.linux.TypeClass.*;
 
 /**
  * For the LoongArch64 C ABI specifically, this class uses CallingSequenceBuilder

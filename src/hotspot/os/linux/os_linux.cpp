@@ -24,8 +24,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2023. These
- * modifications are Copyright (c) 2021, 2023, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2025. These
+ * modifications are Copyright (c) 2021, 2025, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -4519,17 +4519,15 @@ void os::Linux::numa_init() {
       if (FLAG_IS_DEFAULT(UseNUMA)) {
         FLAG_SET_ERGO(UseNUMA, false);
       } else if (UseNUMA) {
-        log_info(os)("UseNUMA is disabled since insufficient initial heap size.");
-        UseNUMA = false;
+        disable_numa("UseNUMA is disabled since insufficient initial heap size.", false);
       }
     } else if (FLAG_IS_CMDLINE(NewSize) &&
                (NewSize < ScaleForWordSize(1*M) * os::numa_get_groups_num())) {
       if (FLAG_IS_DEFAULT(UseNUMA)) {
         FLAG_SET_ERGO(UseNUMA, false);
       } else if (UseNUMA) {
-        log_info(os)("Handcrafted MaxNewSize should be large enough "
-                     "to avoid GC trigger before VM initialization completed.");
-        UseNUMA = false;
+        disable_numa("Handcrafted MaxNewSize should be large enough "
+                     "to avoid GC trigger before VM initialization completed.", false);
       }
 #endif
     } else {

@@ -23,8 +23,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2022, These
- * modifications are Copyright (c) 2022, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2022, 2025, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -39,12 +39,6 @@
 #include "code/vmreg.inline.hpp"
 #include "runtime/timerTrace.hpp"
 #include "utilities/bitMap.inline.hpp"
-
-/*
- * This file has been modified by Loongson Technology in 2022, These
- * modifications are Copyright (c) 2022, Loongson Technology, and are made
- * available on the same license terms set forth above.
- */
 
 #ifndef PRODUCT
 

@@ -385,13 +385,9 @@
   static_field(StubRoutines,                _electronicCodeBook_decryptAESCrypt,              address)                               \
   static_field(StubRoutines,                _counterMode_AESCrypt,                            address)                               \
   static_field(StubRoutines,                _galoisCounterMode_AESCrypt,                      address)                               \
-  static_field(StubRoutines,                _descrypt_encryptBlock,                           address)                               \
-  static_field(StubRoutines,                _descrypt_decryptBlock,                           address)                               \
   static_field(StubRoutines,                _base64_encodeBlock,                              address)                               \
   static_field(StubRoutines,                _base64_decodeBlock,                              address)                               \
   static_field(StubRoutines,                _ghash_processBlocks,                             address)                               \
-  static_field(StubRoutines,                _descrypt_encryptBlock,                           address)                               \
-  static_field(StubRoutines,                _descrypt_decryptBlock,                           address)                               \
   static_field(StubRoutines,                _md5_implCompress,                                address)                               \
   static_field(StubRoutines,                _md5_implCompressMB,                              address)                               \
   static_field(StubRoutines,                _chacha20Block,                                   address)                               \

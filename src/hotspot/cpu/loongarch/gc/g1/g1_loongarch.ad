@@ -76,7 +76,7 @@ static void write_barrier_post(MacroAssembler* masm,
 
 instruct g1StoreP(indirect mem, mRegP src, mRegP tmp1, mRegP tmp2, mRegP tmp3)
 %{
-  predicate(UseG1GC && n->as_Store()->barrier_data() != 0);
+  predicate(UseG1GC && !needs_releasing_store(n) && n->as_Store()->barrier_data() != 0);
   match(Set mem (StoreP mem src));
   effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
   ins_cost(125);
@@ -99,9 +99,33 @@ instruct g1StoreP(indirect mem, mRegP src, mRegP tmp1, mRegP tmp2, mRegP tmp3)
   ins_pipe(pipe_slow);
 %}
 
+instruct g1StorePVolatile(indirect mem, mRegP src, mRegP tmp1, mRegP tmp2, mRegP tmp3)
+%{
+  predicate(UseG1GC && needs_releasing_store(n) && n->as_Store()->barrier_data() != 0);
+  match(Set mem (StoreP mem src));
+  effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
+  ins_cost(130);
+  format %{ "amswap_db_d    R0, $src, $mem # @g1StoreP" %}
+  ins_encode %{
+    write_barrier_pre(masm, this,
+                      $mem$$Register /* obj */,
+                      $tmp1$$Register /* pre_val */,
+                      $tmp2$$Register /* tmp1 */,
+                      $tmp3$$Register /* tmp2 */,
+                      RegSet::of($mem$$Register, $src$$Register) /* preserve */);
+    __ amswap_db_d(R0, $src$$Register, as_Register($mem$$base));
+    write_barrier_post(masm, this,
+                       $mem$$Register /* store_addr */,
+                       $src$$Register /* new_val */,
+                       $tmp2$$Register /* tmp1 */,
+                       $tmp3$$Register /* tmp2 */);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
 instruct g1StoreN(indirect mem, mRegN src, mRegP tmp1, mRegP tmp2, mRegP tmp3)
 %{
-  predicate(UseG1GC && n->as_Store()->barrier_data() != 0);
+  predicate(UseG1GC && !needs_releasing_store(n) && n->as_Store()->barrier_data() != 0);
   match(Set mem (StoreN mem src));
   effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
   ins_cost(125);
@@ -131,9 +155,40 @@ instruct g1StoreN(indirect mem, mRegN src, mRegP tmp1, mRegP tmp2, mRegP tmp3)
   ins_pipe(pipe_slow);
 %}
 
+instruct g1StoreNVolatile(indirect mem, mRegN src, mRegP tmp1, mRegP tmp2, mRegP tmp3)
+%{
+  predicate(UseG1GC && needs_releasing_store(n) && n->as_Store()->barrier_data() != 0);
+  match(Set mem (StoreN mem src));
+  effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
+  ins_cost(130);
+  format %{ "amswap_db_w    R0, $src, $mem # @g1StoreN" %}
+  ins_encode %{
+    write_barrier_pre(masm, this,
+                      $mem$$Register /* obj */,
+                      $tmp1$$Register /* pre_val */,
+                      $tmp2$$Register /* tmp1 */,
+                      $tmp3$$Register /* tmp2 */,
+                      RegSet::of($mem$$Register, $src$$Register) /* preserve */);
+    __ amswap_db_w(R0, $src$$Register, as_Register($mem$$base));
+    if ((barrier_data() & G1C2BarrierPost) != 0) {
+      if ((barrier_data() & G1C2BarrierPostNotNull) == 0) {
+        __ decode_heap_oop($tmp1$$Register, $src$$Register);
+      } else {
+        __ decode_heap_oop_not_null($tmp1$$Register, $src$$Register);
+      }
+    }
+    write_barrier_post(masm, this,
+                       $mem$$Register /* store_addr */,
+                       $tmp1$$Register /* new_val */,
+                       $tmp2$$Register /* tmp1 */,
+                       $tmp3$$Register /* tmp2 */);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
 instruct g1EncodePAndStoreN(indirect mem, mRegP src, mRegP tmp1, mRegP tmp2, mRegP tmp3)
 %{
-  predicate(UseG1GC && n->as_Store()->barrier_data() != 0);
+  predicate(UseG1GC && !needs_releasing_store(n) && n->as_Store()->barrier_data() != 0);
   match(Set mem (StoreN mem (EncodeP src)));
   effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
   ins_cost(125);
@@ -157,6 +212,35 @@ instruct g1EncodePAndStoreN(indirect mem, mRegP src, mRegP tmp1, mRegP tmp2, mRe
     write_barrier_post(masm, this,
                        $mem$$Register  /* store_addr */,
                        $src$$Register  /* new_val */,
+                       $tmp2$$Register /* tmp1 */,
+                       $tmp3$$Register /* tmp2 */);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct g1EncodePAndStoreNVolatile(indirect mem, mRegP src, mRegP tmp1, mRegP tmp2, mRegP tmp3)
+%{
+  predicate(UseG1GC && needs_releasing_store(n) && n->as_Store()->barrier_data() != 0);
+  match(Set mem (StoreN mem (EncodeP src)));
+  effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
+  ins_cost(130);
+  format %{ "encodeP_and_storeN    $src, [$mem]\t# TEMP($tmp1, $tmp2, $tmp3) @g1EncodePAndStoreNVolatile" %}
+  ins_encode %{
+    write_barrier_pre(masm, this,
+                      $mem$$Register /* obj */,
+                      $tmp1$$Register /* pre_val */,
+                      $tmp2$$Register /* tmp1 */,
+                      $tmp3$$Register /* tmp2 */,
+                      RegSet::of($mem$$Register, $src$$Register) /* preserve */);
+    if ((barrier_data() & G1C2BarrierPostNotNull) == 0) {
+      __ encode_heap_oop($tmp1$$Register, $src$$Register);
+    } else {
+      __ encode_heap_oop_not_null($tmp1$$Register, $src$$Register);
+    }
+    __ amswap_db_w(R0, $tmp1$$Register, as_Register($mem$$base));
+    write_barrier_post(masm, this,
+                       $mem$$Register /* store_addr */,
+                       $src$$Register /* new_val */,
                        $tmp2$$Register /* tmp1 */,
                        $tmp3$$Register /* tmp2 */);
   %}

@@ -122,12 +122,15 @@ void AbstractInterpreter::layout_activation(Method* method,
   interpreter_frame->interpreter_frame_set_method(method);
   // NOTE the difference in using sender_sp and interpreter_frame_sender_sp
   // interpreter_frame_sender_sp is the original sp of the caller (the unextended_sp)
-  // and sender_sp is fp+8
+  // and sender_sp is fp
   intptr_t* locals = interpreter_frame->sender_sp() + max_locals - 1;
 
 #ifdef ASSERT
   if (caller->is_interpreted_frame()) {
-    assert(locals < caller->fp() + frame::interpreter_frame_initial_sp_offset, "bad placement");
+    // Test exact placement on top of caller args
+    intptr_t* l2 = caller->interpreter_frame_last_sp() + caller_actual_parameters - 1;
+    assert(l2 <= caller->interpreter_frame_expression_stack(), "bad placement");
+    assert(l2 >= locals, "bad placement");
   }
 #endif
 

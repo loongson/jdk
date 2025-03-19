@@ -113,7 +113,7 @@ instruct zLoadP(mRegP dst, memory mem, mRegP tmp)
 // Store Pointer
 instruct zStoreP(memory mem, mRegP src, mRegP tmp1, mRegP tmp2)
 %{
-  predicate(UseZGC && n->as_Store()->barrier_data() != 0);
+  predicate(UseZGC && !needs_releasing_store(n) && n->as_Store()->barrier_data() != 0);
   match(Set mem (StoreP mem src));
   effect(TEMP_DEF tmp1, TEMP tmp2);
 
@@ -128,20 +128,19 @@ instruct zStoreP(memory mem, mRegP src, mRegP tmp1, mRegP tmp2)
   ins_pipe(pipe_slow);
 %}
 
-// Store Null Pointer
-instruct zStorePNull(memory mem, immP_0 zero, mRegP tmp1, mRegP tmp2)
+instruct zStorePVolatile(indirect mem, mRegP src, mRegP tmp1, mRegP tmp2)
 %{
-  predicate(UseZGC && n->as_Store()->barrier_data() != 0);
-  match(Set mem (StoreP mem zero));
+  predicate(UseZGC && needs_releasing_store(n) && n->as_Store()->barrier_data() != 0);
+  match(Set mem (StoreP mem src));
   effect(TEMP_DEF tmp1, TEMP tmp2);
 
-  ins_cost(125); // XXX
-  format %{ "zStoreP    $mem, null\t# ptr" %}
+  ins_cost(130); // XXX
+  format %{ "zStorePVolatile    $mem, $src\t# ptr" %}
   ins_encode %{
-    Address ref_addr = Address(as_Register($mem$$base), as_Register($mem$$index), Address::no_scale, $mem$$disp);
-    __ block_comment("zStoreP null");
-    z_store_barrier(masm, this, ref_addr, noreg, $tmp1$$Register, $tmp2$$Register, false /* is_atomic */);
-    __ st_d($tmp1$$Register, ref_addr);
+    Address ref_addr = Address($mem$$Register);
+    __ block_comment("zStorePVolatile");
+    z_store_barrier(masm, this, ref_addr, $src$$Register, $tmp1$$Register, $tmp2$$Register, false /* is_atomic */);
+    __ amswap_db_d(R0, $tmp1$$Register, as_Register($mem$$base));
   %}
   ins_pipe(pipe_slow);
 %}

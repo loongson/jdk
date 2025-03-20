@@ -1107,8 +1107,6 @@ bool Matcher::is_short_branch_offset(int rule, int br_size, int offset) {
     case branchConF_reg_reg_short_rule:
     case branchConD_reg_reg_long_rule:
     case branchConD_reg_reg_short_rule:
-    case partialSubtypeCheckVsZero_long_rule:
-    case partialSubtypeCheckVsZero_short_rule:
       return Assembler::is_simm(offs, 21);
     default:
       return Assembler::is_simm(offs, 16);
@@ -2489,10 +2487,8 @@ encode %{
     //    4c0     beq   S1, S2, B21 #@branchConP  P=0.999999 C=-1.000000
     //
     Label done;
-    __ check_klass_subtype_slow_path<false>(sub, super, length, tmp,
-        nullptr, &miss,
-        /*set_cond_codes:*/ true);
-    // Refer to X86_64's RDI
+    __ check_klass_subtype_slow_path(sub, super, length, tmp,
+        nullptr, &miss, /*set_cond_codes:*/ true);
     __ move(result, R0);
     __ b(done);
 
@@ -3399,6 +3395,16 @@ operand a5_RegP()
 operand a6_RegP()
 %{
   constraint(ALLOC_IN_RC(a6_long_reg));
+  match(RegP);
+  match(mRegP);
+
+  format %{ %}
+  interface(REG_INTER);
+%}
+
+operand a7_RegP()
+%{
+  constraint(ALLOC_IN_RC(a7_long_reg));
   match(RegP);
   match(mRegP);
 
@@ -11221,12 +11227,40 @@ instruct leaPIdxScale(mRegP dst, mRegP reg, mRegLorI2L lreg, immI_0_3 scale)
 // hit (cache is checked with exposed code in gen_subtype_check()).  Return
 // NZ for a miss or zero for a hit.  The encoding ALSO sets flags.
 instruct partialSubtypeCheck( mRegP result, mRegP sub, mRegP super, mRegI tmp2,  mRegI tmp ) %{
+  predicate(!UseSecondarySupersTable);
   match(Set result (PartialSubtypeCheck sub super));
   effect(TEMP tmp, TEMP tmp2);
-  ins_cost(1100);  // slightly larger than the next version
+  ins_cost(2000);  // slightly larger than the next version
   format %{ "partialSubtypeCheck result=$result, sub=$sub, super=$super, tmp=$tmp, tmp2=$tmp2" %}
 
   ins_encode( enc_PartialSubtypeCheck(result, sub, super, tmp, tmp2) );
+  ins_pipe( pipe_slow );
+%}
+
+// Two versions of partialSubtypeCheck, both used when we need to
+// search for a super class in the secondary supers array. The first
+// is used when we don't know _a priori_ the class being searched
+// for. The second, far more common, is used when we do know: this is
+// used for instanceof, checkcast, and any case where C2 can determine
+// it by constant propagation.
+
+instruct partialSubtypeCheckVarSuper(a4_RegP sub, a0_RegP super, a5_RegP result,
+                                     a1_RegP tmpA1, a2_RegP tmpA2, a3_RegP tmpA3,
+                                     a6_RegP tmpA6, a7_RegP tmpA7)
+%{
+  predicate(UseSecondarySupersTable);
+  match(Set result (PartialSubtypeCheck sub super));
+  effect(TEMP tmpA1, TEMP tmpA2, TEMP tmpA3, TEMP tmpA6, TEMP tmpA7);
+
+  ins_cost(1000);  // slightly larger than the next version
+  format %{ "partialSubtypeCheck $result, $sub, $super" %}
+
+  ins_encode %{
+    __ lookup_secondary_supers_table_var($sub$$Register, $super$$Register, $result$$Register,
+                                         $tmpA1$$Register, $tmpA2$$Register, $tmpA3$$Register,
+                                         $tmpA6$$Register, $tmpA7$$Register, nullptr /*L_success*/);
+  %}
+
   ins_pipe( pipe_slow );
 %}
 
@@ -11237,16 +11271,16 @@ instruct partialSubtypeCheckConstSuper(a4_RegP sub, a0_RegP super_reg, immP supe
   match(Set result (PartialSubtypeCheck sub (Binary super_reg super_con)));
   effect(TEMP tmpA1, TEMP tmpA2, TEMP tmpA3, TEMP tmpA6);
 
-  ins_cost(700);  // smaller than the next version
+  ins_cost(500);  // smaller than the next version
   format %{ "partialSubtypeCheck $result, $sub, $super_reg, $super_con" %}
 
   ins_encode %{
     bool success = false;
     u1 super_klass_slot = ((Klass*)$super_con$$constant)->hash_slot();
     if (InlineSecondarySupersTest) {
-      success = __ lookup_secondary_supers_table($sub$$Register, $super_reg$$Register, $result$$Register,
-                                                 $tmpA1$$Register, $tmpA2$$Register, $tmpA3$$Register,
-                                                 $tmpA6$$Register, super_klass_slot);
+      success = __ lookup_secondary_supers_table_const($sub$$Register, $super_reg$$Register, $result$$Register,
+                                                       $tmpA1$$Register, $tmpA2$$Register, $tmpA3$$Register,
+                                                       $tmpA6$$Register, super_klass_slot);
     } else {
       address call = __ trampoline_call(RuntimeAddress(StubRoutines::lookup_secondary_supers_table_stub(super_klass_slot)));
       success = (call != nullptr);
@@ -11258,51 +11292,6 @@ instruct partialSubtypeCheckConstSuper(a4_RegP sub, a0_RegP super_reg, immP supe
   %}
 
   ins_pipe( pipe_slow );
-%}
-
-instruct partialSubtypeCheckVsZero_long( mRegP sub, mRegP super, mRegP tmp1, mRegP tmp2, immP_0 zero, cmpOpEqNe cmp, label lbl) %{
-  match(If cmp (CmpP (PartialSubtypeCheck sub super) zero));
-  effect(USE lbl, TEMP tmp1, TEMP tmp2);
-  ins_cost(1100);  // slightly larger than the next version
-  format %{ "partialSubtypeCheckVsZero_long b$cmp (sub=$sub, super=$super) R0, $lbl using $tmp1,$tmp2 as TEMP" %}
-
-  ins_encode %{
-    Label miss;
-    Label*   success = $lbl$$label;
-    int     flag = $cmp$$cmpcode;
-
-    if (flag == 0x01) { //equal
-      __ check_klass_subtype_slow_path<true>($sub$$Register, $super$$Register, $tmp1$$Register, $tmp2$$Register, success, &miss);
-    } else { //no_equal
-      __ check_klass_subtype_slow_path<true>($sub$$Register, $super$$Register, $tmp1$$Register, $tmp2$$Register, &miss, success);
-    }
-    __ bind(miss);
-  %}
-
-  ins_pipe( pipe_serial );
-%}
-
-instruct partialSubtypeCheckVsZero_short( mRegP sub, mRegP super, mRegP tmp1, mRegP tmp2, immP_0 zero, cmpOpEqNe cmp, label lbl) %{
-  match(If cmp (CmpP (PartialSubtypeCheck sub super) zero));
-  effect(USE lbl, TEMP tmp1, TEMP tmp2);
-  ins_cost(1100);  // slightly larger than the next version
-  format %{ "partialSubtypeCheckVsZero_short b$cmp (sub=$sub, super=$super) R0, $lbl using $tmp1,$tmp2 as TEMP" %}
-
-  ins_encode %{
-    Label miss;
-    Label*   success = $lbl$$label;
-    int     flag = $cmp$$cmpcode;
-
-    if (flag == 0x01) { //equal
-      __ check_klass_subtype_slow_path<false>($sub$$Register, $super$$Register, $tmp1$$Register, $tmp2$$Register, success, &miss, true);
-    } else { //no_equal
-      __ check_klass_subtype_slow_path<false>($sub$$Register, $super$$Register, $tmp1$$Register, $tmp2$$Register, &miss, success, true);
-    }
-    __ bind(miss);
-  %}
-
-  ins_pipe( pipe_serial );
-  ins_short_branch(1);
 %}
 
 instruct compareAndSwapB(mRegI res, memory_exclusive mem_ptr, mRegI oldval, mRegI newval) %{

@@ -855,7 +855,12 @@ OopMapSet* Runtime1::generate_code_for(C1StubId id, StubAssembler* sasm) {
         __ ld_d(A0, Address(SP, sup_k_off * VMRegImpl::stack_slot_size)); // superclass
 
         Label miss;
-        __ check_klass_subtype_slow_path<false>(A4, A0, A2, A5, nullptr, &miss);
+        __ check_klass_subtype_slow_path(A4,      /*sub_klass*/
+                                         A0,      /*super_klass*/
+                                         A2,      /*tmp1_reg*/
+                                         A5,      /*tmp2_reg*/
+                                         nullptr, /*L_success*/
+                                         &miss    /*L_failure*/);
 
         // fallthrough on success:
         __ li(SCR1, 1);

@@ -2275,6 +2275,7 @@ class StubGenerator: public StubCodeGenerator {
   void generate_type_check(Register sub_klass,
                            Register super_check_offset,
                            Register super_klass,
+                           Register result,
                            Register tmp1,
                            Register tmp2,
                            Label& L_success) {
@@ -2286,7 +2287,7 @@ class StubGenerator: public StubCodeGenerator {
 
     __ check_klass_subtype_fast_path(sub_klass, super_klass, tmp1,       &L_success, &L_miss, nullptr,
                                      super_check_offset);
-    __ check_klass_subtype_slow_path<false>(sub_klass, super_klass, tmp1, tmp2, &L_success, nullptr);
+    __ check_klass_subtype_slow_path(sub_klass, super_klass, tmp1, tmp2, &L_success, nullptr);
 
     // Fall through on failure!
     __ bind(L_miss);
@@ -2421,7 +2422,18 @@ class StubGenerator: public StubCodeGenerator {
     __ beqz(copied_oop, L_store_element);
 
     __ load_klass(oop_klass, copied_oop); // query the object klass
-    generate_type_check(oop_klass, ckoff, ckval, tmp1, tmp2, L_store_element);
+
+    BLOCK_COMMENT("type_check:");
+    generate_type_check(oop_klass, /*sub_klass*/
+                        ckoff,     /*super_check_offset*/
+                        ckval,     /*super_klass*/
+                        A0,        /*result*/
+                        tmp1,      /*tmp1*/
+                        tmp2,      /*tmp2*/
+                        L_store_element);
+
+    // Fall through on failure!
+
     // ======== end loop ========
 
     // Register count = remaining oops, count_orig = total oops.
@@ -2429,7 +2441,7 @@ class StubGenerator: public StubCodeGenerator {
     // their number to the caller.
 
     __ sub_d(tmp1, count_save, count); // K = partially copied oop count
-    __ nor(count, tmp1, R0); // report (-1^K) to caller
+    __ nor(count, tmp1, R0);           // report (-1^K) to caller
     __ beqz(tmp1, L_done_pop);
 
     __ bind(L_do_card_marks);
@@ -2783,7 +2795,7 @@ class StubGenerator: public StubCodeGenerator {
       __ ld_w(sco_temp, Address(dst_klass, sco_offset));
 
       // Smashes SCR1, SCR2
-      generate_type_check(scratch_src_klass, sco_temp, dst_klass, tmp1, tmp2, L_plain_copy);
+      generate_type_check(scratch_src_klass, sco_temp, dst_klass, noreg, tmp1, tmp2, L_plain_copy);
 
       // Fetch destination element klass from the ObjArrayKlass header.
       int ek_offset = in_bytes(ObjArrayKlass::element_klass_offset());
@@ -5143,9 +5155,9 @@ static const int64_t right_3_bits = right_n_bits(3);
       StubRoutines::_lookup_secondary_supers_table_stubs[slot] = __ pc();
       Label L_success;
       __ enter();
-      __ lookup_secondary_supers_table(r_sub_klass, r_super_klass, result,
-                                       r_array_base, r_array_length, r_array_index,
-                                       r_bitmap, slot, /*stub_is_near*/true);
+      __ lookup_secondary_supers_table_const(r_sub_klass, r_super_klass, result,
+                                             r_array_base, r_array_length, r_array_index,
+                                             r_bitmap, slot, /*stub_is_near*/true);
       __ leave();
       __ jr(RA);
     }

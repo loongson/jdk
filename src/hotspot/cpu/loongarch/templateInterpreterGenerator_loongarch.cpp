@@ -2113,9 +2113,9 @@ address TemplateInterpreterGenerator::generate_trace_code(TosState state) {
 
 void TemplateInterpreterGenerator::count_bytecode() {
   __ li(T8, (long)&BytecodeCounter::_counter_value);
-  __ ld_w(AT, T8, 0);
+  __ ld_d(AT, T8, 0);
   __ addi_d(AT, AT, 1);
-  __ st_w(AT, T8, 0);
+  __ st_d(AT, T8, 0);
 }
 
 void TemplateInterpreterGenerator::histogram_bytecode(Template* t) {

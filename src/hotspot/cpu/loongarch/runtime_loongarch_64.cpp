@@ -39,7 +39,7 @@
 #define __ masm->
 
 //------------------------------generate_uncommon_trap_blob--------------------
-void OptoRuntime::generate_uncommon_trap_blob() {
+UncommonTrapBlob* OptoRuntime::generate_uncommon_trap_blob() {
   // Allocate space for the code
   ResourceMark rm;
   // Setup code generation tools
@@ -205,7 +205,7 @@ void OptoRuntime::generate_uncommon_trap_blob() {
   // make sure all code is generated
   masm->flush();
 
-  _uncommon_trap_blob = UncommonTrapBlob::create(&buffer, oop_maps, framesize >> 1);
+  return UncommonTrapBlob::create(&buffer, oop_maps, framesize >> 1);
 }
 
 //-------------- generate_exception_blob -----------
@@ -240,7 +240,7 @@ void OptoRuntime::generate_uncommon_trap_blob() {
 //                 `- jr OptoRuntime::exception_blob
 //                        `- here
 //
-void OptoRuntime::generate_exception_blob() {
+ExceptionBlob* OptoRuntime::generate_exception_blob() {
   enum frame_layout {
     fp_off, fp_off2,
     return_off, return_off2,
@@ -338,6 +338,6 @@ void OptoRuntime::generate_exception_blob() {
   masm->flush();
 
   // Set exception blob
-  _exception_blob = ExceptionBlob::create(&buffer, oop_maps, framesize >> 1);
+  return ExceptionBlob::create(&buffer, oop_maps, framesize >> 1);
 }
 #endif // COMPILER2

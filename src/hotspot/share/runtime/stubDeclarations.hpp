@@ -23,6 +23,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2025, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_RUNTIME_STUBDECLARATIONS_HPP
 #define SHARE_RUNTIME_STUBDECLARATIONS_HPP
 
@@ -675,6 +681,12 @@
   do_stub(compiler, ghash_processBlocks)                                \
   do_entry(compiler, ghash_processBlocks, ghash_processBlocks,          \
            ghash_processBlocks)                                         \
+  do_stub(compiler, descrypt_encryptBlock)                              \
+  do_entry(compiler, descrypt_encryptBlock, descrypt_encryptBlock,      \
+           descrypt_encryptBlock)                                       \
+  do_stub(compiler, descrypt_decryptBlock)                              \
+  do_entry(compiler, descrypt_decryptBlock, descrypt_decryptBlock,      \
+           descrypt_decryptBlock)                                       \
   do_stub(compiler, chacha20Block)                                      \
   do_entry(compiler, chacha20Block, chacha20Block, chacha20Block)       \
   do_stub(compiler, data_cache_writeback)                               \

@@ -30,13 +30,18 @@
 
 // a description of how to extend it, see the stubRoutines.hpp file.
 
-//find the last fp value
-address StubRoutines::la::_vector_iota_indices       = nullptr;
-address StubRoutines::la::_string_indexof_linear_ll  = nullptr;
-address StubRoutines::la::_string_indexof_linear_uu  = nullptr;
-address StubRoutines::la::_string_indexof_linear_ul  = nullptr;
-address StubRoutines::la::_jlong_fill                = nullptr;
-address StubRoutines::la::_arrayof_jlong_fill        = nullptr;
+// define fields for arch-specific entries
+
+#define DEFINE_ARCH_ENTRY(arch, blob_name, stub_name, field_name, getter_name) \
+  address StubRoutines:: arch :: STUB_FIELD_NAME(field_name)  = nullptr;
+
+#define DEFINE_ARCH_ENTRY_INIT(arch, blob_name, stub_name, field_name, getter_name, init_function) \
+  address StubRoutines:: arch :: STUB_FIELD_NAME(field_name)  = CAST_FROM_FN_PTR(address, init_function);
+
+STUBGEN_ARCH_ENTRIES_DO(DEFINE_ARCH_ENTRY, DEFINE_ARCH_ENTRY_INIT)
+
+#undef DEFINE_ARCH_ENTRY_INIT
+#undef DEFINE_ARCH_ENTRY
 
 /**
  *  crc_table[] from jdk/src/share/native/java/util/zip/zlib-1.2.5/crc32.h

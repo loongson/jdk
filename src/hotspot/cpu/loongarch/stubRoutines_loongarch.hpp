@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,31 +34,39 @@ static bool returns_to_call_stub(address return_pc){
   return return_pc == _call_stub_return_address;
 }
 
+// emit enum used to size per-blob code buffers
+
+#define DEFINE_BLOB_SIZE(blob_name, size) \
+  _ ## blob_name ## _code_size = size,
+
 enum platform_dependent_constants {
-  // simply increase sizes if too small (assembler will crash if too small)
-  _initial_stubs_code_size      = 20000,
-  _continuation_stubs_code_size =  2000,
-  _compiler_stubs_code_size     = 60000,
-  _final_stubs_code_size        = 60000 ZGC_ONLY(+477000)
+  STUBGEN_ARCH_BLOBS_DO(DEFINE_BLOB_SIZE)
 };
+
+#undef DEFINE_BLOB_SIZE
 
 class la {
   friend class StubGenerator;
   friend class VMStructs;
- private:
-  // If we call compiled code directly from the call stub we will
-  // need to adjust the return back to the call stub to a specialized
-  // piece of code that can handle compiled results and cleaning the fpu
-  // stack. The variable holds that location.
-  static address _vector_iota_indices;
+#if INCLUDE_JVMCI
+  friend class JVMCIVMStructs;
+#endif
+
+  // declare fields for arch-specific entries
+
+#define DECLARE_ARCH_ENTRY(arch, blob_name, stub_name, field_name, getter_name) \
+  static address STUB_FIELD_NAME(field_name) ;
+
+#define DECLARE_ARCH_ENTRY_INIT(arch, blob_name, stub_name, field_name, getter_name, init_function) \
+  DECLARE_ARCH_ENTRY(arch, blob_name, stub_name, field_name, getter_name)
+
+private:
+  STUBGEN_ARCH_ENTRIES_DO(DECLARE_ARCH_ENTRY, DECLARE_ARCH_ENTRY_INIT)
+
+#undef DECLARE_ARCH_ENTRY_INIT
+#undef DECLARE_ARCH_ENTRY
+
   static juint   _crc_table[];
-
-  static address _string_indexof_linear_ll;
-  static address _string_indexof_linear_uu;
-  static address _string_indexof_linear_ul;
-
-  static address _jlong_fill;
-  static address _arrayof_jlong_fill;
 
   static julong _string_compress_index[];
 
@@ -74,28 +82,19 @@ class la {
   // end trigonometric tables block
 
 public:
-  // Call back points for traps in compiled code
-  static address vector_iota_indices()              { return _vector_iota_indices; }
 
-  static address string_indexof_linear_ul() {
-    return _string_indexof_linear_ul;
-  }
+  // declare getters for arch-specific entries
 
-  static address string_indexof_linear_ll() {
-    return _string_indexof_linear_ll;
-  }
+#define DEFINE_ARCH_ENTRY_GETTER(arch, blob_name, stub_name, field_name, getter_name) \
+  static address getter_name() { return STUB_FIELD_NAME(field_name) ; }
 
-  static address string_indexof_linear_uu() {
-    return _string_indexof_linear_uu;
-  }
+#define DEFINE_ARCH_ENTRY_GETTER_INIT(arch, blob_name, stub_name, field_name, getter_name, init_function) \
+  DEFINE_ARCH_ENTRY_GETTER(arch, blob_name, stub_name, field_name, getter_name)
 
-  static address jlong_fill() {
-    return _jlong_fill;
-  }
+  STUBGEN_ARCH_ENTRIES_DO(DEFINE_ARCH_ENTRY_GETTER, DEFINE_ARCH_ENTRY_GETTER_INIT)
 
-  static address arrayof_jlong_fill() {
-    return _arrayof_jlong_fill;
-  }
+#undef DEFINE_ARCH_ENTRY_GETTER_INIT
+#undef DEFINE_ARCH_ENTRY_GETTER
 
   static address string_compress_index() {
     return (address) _string_compress_index;

@@ -502,12 +502,12 @@ void LIR_Assembler::const2stack(LIR_Opr src, LIR_Opr dest) {
       __ st_d(R0, frame_map()->address_for_slot(dest->single_stack_ix()));
     else {
       const2reg(src, FrameMap::scr1_opr, lir_patch_none, nullptr);
-      reg2stack(FrameMap::scr1_opr, dest, c->type(), false);
+      reg2stack(FrameMap::scr1_opr, dest, c->type());
     }
     break;
   case T_ADDRESS:
     const2reg(src, FrameMap::scr1_opr, lir_patch_none, nullptr);
-    reg2stack(FrameMap::scr1_opr, dest, c->type(), false);
+    reg2stack(FrameMap::scr1_opr, dest, c->type());
   case T_INT:
   case T_FLOAT:
     if (c->as_jint_bits() == 0)
@@ -622,7 +622,7 @@ void LIR_Assembler::reg2reg(LIR_Opr src, LIR_Opr dest) {
   }
 }
 
-void LIR_Assembler::reg2stack(LIR_Opr src, LIR_Opr dest, BasicType type, bool pop_fpu_stack) {
+void LIR_Assembler::reg2stack(LIR_Opr src, LIR_Opr dest, BasicType type) {
   precond(src->is_register() && dest->is_stack());
 
   uint const c_sz32 = sizeof(uint32_t);
@@ -654,7 +654,7 @@ void LIR_Assembler::reg2stack(LIR_Opr src, LIR_Opr dest, BasicType type, bool po
 }
 
 void LIR_Assembler::reg2mem(LIR_Opr src, LIR_Opr dest, BasicType type, LIR_PatchCode patch_code,
-                            CodeEmitInfo* info, bool pop_fpu_stack, bool wide) {
+                            CodeEmitInfo* info, bool wide) {
   LIR_Address* to_addr = dest->as_address_ptr();
   PatchingStub* patch = nullptr;
   Register compressed_src = SCR2;
@@ -786,7 +786,7 @@ void LIR_Assembler::stack2stack(LIR_Opr src, LIR_Opr dest, BasicType type) {
     temp = FrameMap::scr1_opr;
 
   stack2reg(src, temp, src->type());
-  reg2stack(temp, dest, dest->type(), false);
+  reg2stack(temp, dest, dest->type());
 }
 
 void LIR_Assembler::mem2reg(LIR_Opr src, LIR_Opr dest, BasicType type, LIR_PatchCode patch_code,
@@ -1916,7 +1916,7 @@ void LIR_Assembler::cmove(LIR_Condition condition, LIR_Opr src1, LIR_Opr src2, L
 }
 
 void LIR_Assembler::arith_op(LIR_Code code, LIR_Opr left, LIR_Opr right, LIR_Opr dest,
-                             CodeEmitInfo* info, bool pop_fpu_stack) {
+                             CodeEmitInfo* info) {
   assert(info == nullptr, "should never be used, idiv/irem and ldiv/lrem not handled by this method");
 
   if (left->is_single_cpu()) {
@@ -2084,11 +2084,6 @@ void LIR_Assembler::arith_op(LIR_Code code, LIR_Opr left, LIR_Opr right, LIR_Opr
   } else {
     ShouldNotReachHere();
   }
-}
-
-void LIR_Assembler::arith_fpu_implementation(LIR_Code code, int left_index, int right_index,
-                                             int dest_index, bool pop_fpu_stack) {
-  Unimplemented();
 }
 
 void LIR_Assembler::intrinsic_op(LIR_Code code, LIR_Opr value, LIR_Opr tmp, LIR_Opr dest, LIR_Op* op) {
@@ -3130,7 +3125,7 @@ void LIR_Assembler::rt_call(LIR_Opr result, address dest, const LIR_OprList* arg
 void LIR_Assembler::volatile_move_op(LIR_Opr src, LIR_Opr dest, BasicType type,
                                      CodeEmitInfo* info) {
   if (dest->is_address() || src->is_address()) {
-    move_op(src, dest, type, lir_patch_none, info, /*pop_fpu_stack*/ false, /*wide*/ false);
+    move_op(src, dest, type, lir_patch_none, info, /*wide*/ false);
   } else {
     ShouldNotReachHere();
   }

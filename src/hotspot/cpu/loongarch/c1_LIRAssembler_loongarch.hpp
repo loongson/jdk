@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,9 +31,6 @@ friend class ArrayCopyStub;
 
  private:
   int array_element_size(BasicType type) const;
-
-  void arith_fpu_implementation(LIR_Code code, int left_index, int right_index,
-                                int dest_index, bool pop_fpu_stack);
 
   // helper functions which checks for overflow and sets bailout if it
   // occurs.  Always returns a valid embeddable pointer but in the

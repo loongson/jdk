@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -102,9 +102,6 @@
   // piece-by-piece.  Only happens when passing doubles into C code as the
   // Java calling convention forces doubles to be aligned.
   static const bool misaligned_doubles_ok = false;
-
-  // Advertise here if the CPU requires explicit rounding operations to implement strictfp mode.
-  static const bool strict_fp_requires_explicit_rounding = false;
 
   // Are floats converted to double when stored to stack during
   // deoptimization?

@@ -258,10 +258,6 @@ class InterpreterMacroAssembler: public MacroAssembler {
   void profile_switch_case(Register index_in_scratch, Register mdp,
                            Register scratch2);
 
-  // Debugging
-  // only if +VerifyFPU  && (state == ftos || state == dtos)
-  void verify_FPU(int stack_depth, TosState state = ftos);
-
   void profile_obj_type(Register obj, const Address& mdo_addr);
   void profile_arguments_type(Register mdp, Register callee, Register tmp, bool is_virtual);
   void profile_return_type(Register mdp, Register ret, Register tmp);

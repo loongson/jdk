@@ -2113,16 +2113,14 @@ address TemplateInterpreterGenerator::generate_trace_code(TosState state) {
 
 void TemplateInterpreterGenerator::count_bytecode() {
   __ li(T8, (long)&BytecodeCounter::_counter_value);
-  __ ld_d(AT, T8, 0);
-  __ addi_d(AT, AT, 1);
-  __ st_d(AT, T8, 0);
+  __ li(AT, 1);
+  __ amadd_d(R0, AT, T8);
 }
 
 void TemplateInterpreterGenerator::histogram_bytecode(Template* t) {
   __ li(T8, (long)&BytecodeHistogram::_counters[t->bytecode()]);
-  __ ld_w(AT, T8, 0);
-  __ addi_d(AT, AT, 1);
-  __ st_w(AT, T8, 0);
+  __ li(AT, 1);
+  __ amadd_w(R0, AT, T8);
 }
 
 void TemplateInterpreterGenerator::histogram_bytecode_pair(Template* t) {
@@ -2136,9 +2134,8 @@ void TemplateInterpreterGenerator::histogram_bytecode_pair(Template* t) {
   __ slli_d(T4, T4, 2);
   __ li(T8, (long)BytecodePairHistogram::_counters);
   __ add_d(T8, T8, T4);
-  __ ld_w(AT, T8, 0);
-  __ addi_d(AT, AT, 1);
-  __ st_w(AT, T8, 0);
+  __ li(AT, 1);
+  __ amadd_w(R0, AT, T8);
 }
 
 

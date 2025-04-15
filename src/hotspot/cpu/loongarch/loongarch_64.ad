@@ -11167,7 +11167,8 @@ instruct ShouldNotReachHere( )
   format %{ "stop; #@ShouldNotReachHere" %}
   ins_encode %{
     if (is_reachable()) {
-      __ stop(_halt_reason);
+      const char* str = __ code_string(_halt_reason);
+      __ stop(str);
     }
   %}
 

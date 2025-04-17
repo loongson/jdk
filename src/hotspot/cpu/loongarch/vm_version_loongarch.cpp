@@ -144,6 +144,8 @@ uint32_t VM_Version::get_feature_flags_by_cpucfg() {
     result |= CPU_SCDLY;
   if (_cpuid_info.cpucfg_info_id3.bits.LLEXC != 0)
     result |= CPU_LLEXC;
+  if (_cpuid_info.cpucfg_info_id3.bits.DBARHINTS != 0)
+    result |= CPU_DBARHINTS;
 
   result |= CPU_ULSYNC;
 
@@ -244,7 +246,7 @@ void VM_Version::get_processor_features() {
   //   Features may have one comma at the end.
   //   Furthermore, use one, and only one, separator space between features.
   //   Multiple spaces are considered separate tokens, messing up everything.
-  jio_snprintf(buf, sizeof(buf), "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s, "
+  jio_snprintf(buf, sizeof(buf), "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s, "
     "0x%lx, fp_ver: %d, lvz_ver: %d, ",
     (is_la64()             ?  "la64"  : ""),
     (is_la32()             ?  "la32"  : ""),
@@ -264,6 +266,7 @@ void VM_Version::get_processor_features() {
     (needs_ulsync()        ?  ", needs_ulsync": ""),
     (supports_lam_bh()     ?  ", lam_bh" : ""),
     (supports_lamcas()     ?  ", lamcas" : ""),
+    (supports_dbarhints()  ?  ", dbarhints" : ""),
     _cpuid_info.cpucfg_info_id0.bits.PRID,
     _cpuid_info.cpucfg_info_id2.bits.FP_VER,
     _cpuid_info.cpucfg_info_id2.bits.LVZ_VER);

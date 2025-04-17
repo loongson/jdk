@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -103,7 +103,8 @@ public:
                SPW_HP_HF  : 1,
                RVA        : 1,
                RVAMAXM1   : 4,
-                          : 15;
+               DBARHINTS  : 1,
+                          : 14;
     } bits;
   };
 
@@ -221,6 +222,7 @@ public:
     decl(ULSYNC,        ulsync,          22)    \
     decl(LAM_BH,        lam_bh,          23)    \
     decl(LAMCAS,        lamcas,          24)    \
+    decl(DBARHINTS,     dbarhints,       25)    \
 
   enum Feature_Flag {
 #define DECLARE_CPU_FEATURE_FLAG(id, name, bit) CPU_##id = (1 << bit),
@@ -294,6 +296,7 @@ public:
   static bool needs_ulsync()        { return 1; }
   static bool supports_lam_bh()     { return _features & CPU_LAM_BH; }
   static bool supports_lamcas()     { return _features & CPU_LAMCAS; }
+  static bool supports_dbarhints()  { return _features & CPU_DBARHINTS; }
 
   // LoongArch64 supports fast class initialization checks
   static bool supports_fast_class_init_checks() { return true; }

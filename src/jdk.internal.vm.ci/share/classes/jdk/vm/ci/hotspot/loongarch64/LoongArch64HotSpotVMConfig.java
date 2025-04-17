@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2016, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -75,5 +75,6 @@ class LoongArch64HotSpotVMConfig extends HotSpotVMConfigAccess {
     final long loongarch64LAM_BH = getConstant("VM_Version::CPU_LAM_BH", Long.class);
     final long loongarch64LAMCAS = getConstant("VM_Version::CPU_LAMCAS", Long.class);
     final long loongarch64UAL = getConstant("VM_Version::CPU_UAL", Long.class);
+    final long loongarch64DBARHINTS = getConstant("VM_Version::CPU_DBARHINTS", Long.class);
     // Checkstyle: resume
 }

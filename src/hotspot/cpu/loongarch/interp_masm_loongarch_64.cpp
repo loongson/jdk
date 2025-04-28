@@ -824,17 +824,18 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
     // Load object pointer into scr_reg
     ld_d(scr_reg, lock_reg, obj_offset);
 
-    if (DiagnoseSyncOnValueBasedClasses != 0) {
-      load_klass(tmp_reg, scr_reg);
-      ld_bu(tmp_reg, Address(tmp_reg, Klass::misc_flags_offset()));
-      test_bit(tmp_reg, tmp_reg, exact_log2(KlassFlags::_misc_is_value_based_class));
-      bnez(tmp_reg, slow_case);
-    }
-
     if (LockingMode == LM_LIGHTWEIGHT) {
       lightweight_lock(lock_reg, scr_reg, tmp_reg, SCR1, SCR2, slow_case);
       b(done);
     } else if (LockingMode == LM_LEGACY) {
+
+      if (DiagnoseSyncOnValueBasedClasses != 0) {
+        load_klass(tmp_reg, scr_reg);
+        ld_bu(tmp_reg, Address(tmp_reg, Klass::misc_flags_offset()));
+        test_bit(tmp_reg, tmp_reg, exact_log2(KlassFlags::_misc_is_value_based_class));
+        bnez(tmp_reg, slow_case);
+      }
+
       // Load (object->mark() | 1) into tmp_reg
       ld_d(AT, scr_reg, 0);
       ori(tmp_reg, AT, 1);

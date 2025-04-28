@@ -2691,7 +2691,7 @@ RuntimeStub* SharedRuntime::generate_resolve_blob(SharedStubId id, address desti
   __ ld_d(AT, Address(TREG, Thread::pending_exception_offset()));
   __ bne(AT, R0, pending);
   // get the returned Method*
-  __ get_vm_result_2(Rmethod, TREG);
+  __ get_vm_result_metadata(Rmethod, TREG);
   __ st_d(Rmethod, SP, reg_save.s3_offset());
   __ st_d(V0, SP, reg_save.t5_offset());
   reg_save.restore_live_registers(masm);
@@ -2706,7 +2706,7 @@ RuntimeStub* SharedRuntime::generate_resolve_blob(SharedStubId id, address desti
 
   // exception pending => remove activation and forward to exception handler
 
-  __ st_d(R0, Address(TREG, JavaThread::vm_result_offset()));
+  __ st_d(R0, Address(TREG, JavaThread::vm_result_oop_offset()));
   __ ld_d(V0, Address(TREG, Thread::pending_exception_offset()));
   __ jmp(StubRoutines::forward_exception_entry(), relocInfo::runtime_call_type);
   //

@@ -1988,11 +1988,11 @@ void TemplateInterpreterGenerator::generate_throw_exception() {
 
   // preserve exception over this code sequence
   __ pop(T0);
-  __ st_d(T0, TREG, in_bytes(JavaThread::vm_result_offset()));
+  __ st_d(T0, TREG, in_bytes(JavaThread::vm_result_oop_offset()));
   // remove the activation (without doing throws on illegalMonitorExceptions)
   __ remove_activation(vtos, false, true, false);
   // restore exception
-  __ get_vm_result(T0, TREG);
+  __ get_vm_result_oop(T0, TREG);
 
   // In between activations - previous activation type unknown yet
   // compute continuation point - the continuation point expects

@@ -29,7 +29,7 @@
 void ICacheStubGenerator::generate_icache_flush(ICache::flush_icache_stub_t* flush_icache_stub)
 {
 #define __ _masm->
-  StubCodeMark mark(this, "ICache", "flush_icache_stub");
+  StubCodeMark mark(this, "ICache", _stub_name);
   address start = __ pc();
 
   __ ibar(0);
@@ -37,5 +37,7 @@ void ICacheStubGenerator::generate_icache_flush(ICache::flush_icache_stub_t* flu
   __ jr(RA);
 
   *flush_icache_stub = (ICache::flush_icache_stub_t)start;
+  // instruction barrier required in second icache_init to validate new _flush_icache_stub
+  __asm__ __volatile__ ("ibar 0"   : : : "memory");
 #undef __
 }

@@ -420,7 +420,7 @@ class NativeJump: public NativeInstruction {
 
 inline NativeJump* nativeJump_at(address address) {
   NativeJump* jump = (NativeJump*)(address - NativeJump::instruction_offset);
-  debug_only(jump->verify();)
+  DEBUG_ONLY(jump->verify();)
   return jump;
 }
 
@@ -436,7 +436,7 @@ class NativeGeneralJump: public NativeJump {
 
 inline NativeGeneralJump* nativeGeneralJump_at(address address) {
   NativeGeneralJump* jump = (NativeGeneralJump*)(address);
-  debug_only(jump->verify();)
+  DEBUG_ONLY(jump->verify();)
   return jump;
 }
 

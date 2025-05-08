@@ -68,7 +68,7 @@ void RangeCheckStub::emit_code(LIR_Assembler* ce) {
     __ call(a, relocInfo::runtime_call_type);
     ce->add_call_info_here(_info);
     ce->verify_oop_map(_info);
-    debug_only(__ should_not_reach_here());
+    DEBUG_ONLY(__ should_not_reach_here());
     return;
   }
 
@@ -88,7 +88,7 @@ void RangeCheckStub::emit_code(LIR_Assembler* ce) {
   __ call(Runtime1::entry_for(stub_id), relocInfo::runtime_call_type);
   ce->add_call_info_here(_info);
   ce->verify_oop_map(_info);
-  debug_only(__ should_not_reach_here());
+  DEBUG_ONLY(__ should_not_reach_here());
 }
 
 PredicateFailedStub::PredicateFailedStub(CodeEmitInfo* info) {
@@ -101,7 +101,7 @@ void PredicateFailedStub::emit_code(LIR_Assembler* ce) {
   __ call(a, relocInfo::runtime_call_type);
   ce->add_call_info_here(_info);
   ce->verify_oop_map(_info);
-  debug_only(__ should_not_reach_here());
+  DEBUG_ONLY(__ should_not_reach_here());
 }
 
 void DivByZeroStub::emit_code(LIR_Assembler* ce) {
@@ -261,7 +261,7 @@ void ImplicitNullCheckStub::emit_code(LIR_Assembler* ce) {
   __ call(a, relocInfo::runtime_call_type);
   ce->add_call_info_here(_info);
   ce->verify_oop_map(_info);
-  debug_only(__ should_not_reach_here());
+  DEBUG_ONLY(__ should_not_reach_here());
 }
 
 void SimpleExceptionStub::emit_code(LIR_Assembler* ce) {
@@ -275,7 +275,7 @@ void SimpleExceptionStub::emit_code(LIR_Assembler* ce) {
   }
   __ call(Runtime1::entry_for(_stub), relocInfo::runtime_call_type);
   ce->add_call_info_here(_info);
-  debug_only(__ should_not_reach_here());
+  DEBUG_ONLY(__ should_not_reach_here());
 }
 
 void ArrayCopyStub::emit_code(LIR_Assembler* ce) {

@@ -238,8 +238,8 @@ void VM_Version::get_processor_features() {
 
   char buf[256];
 
-  // A note on the _features_string format:
-  //   There are jtreg tests checking the _features_string for various properties.
+  // A note on the _cpu_info_string format:
+  //   There are jtreg tests checking the _cpu_info_string for various properties.
   //   For some strange reason, these tests require the string to contain
   //   only _lowercase_ characters. Keep that in mind when being surprised
   //   about the unusual notation of features - and when adding new ones.
@@ -270,7 +270,7 @@ void VM_Version::get_processor_features() {
     _cpuid_info.cpucfg_info_id0.bits.PRID,
     _cpuid_info.cpucfg_info_id2.bits.FP_VER,
     _cpuid_info.cpucfg_info_id2.bits.LVZ_VER);
-  _features_string = os::strdup(buf);
+  _cpu_info_string = os::strdup(buf);
 
   assert(!is_la32(), "Should Not Reach Here, what is the cpu type?");
   assert( is_la64(), "Should be LoongArch64");
@@ -499,7 +499,7 @@ void VM_Version::initialize_cpu_information(void) {
   _no_of_threads = _no_of_cores;
   _no_of_sockets = _no_of_cores;
   snprintf(_cpu_name, CPU_TYPE_DESC_BUF_SIZE - 1, "LoongArch");
-  snprintf(_cpu_desc, CPU_DETAILED_DESC_BUF_SIZE, "LoongArch %s", features_string());
+  snprintf(_cpu_desc, CPU_DETAILED_DESC_BUF_SIZE, "LoongArch %s", cpu_info_string());
   _initialized = true;
 }
 

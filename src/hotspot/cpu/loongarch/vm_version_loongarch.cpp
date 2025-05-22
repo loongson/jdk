@@ -146,6 +146,8 @@ uint32_t VM_Version::get_feature_flags_by_cpucfg() {
     result |= CPU_LLEXC;
   if (_cpuid_info.cpucfg_info_id3.bits.DBARHINTS != 0)
     result |= CPU_DBARHINTS;
+  if (_cpuid_info.cpucfg_info_id3.bits.LD_SEQ_SA != 0)
+    result |= CPU_LD_SEQ_SA;
 
   result |= CPU_ULSYNC;
 
@@ -246,7 +248,7 @@ void VM_Version::get_processor_features() {
   //   Features may have one comma at the end.
   //   Furthermore, use one, and only one, separator space between features.
   //   Multiple spaces are considered separate tokens, messing up everything.
-  jio_snprintf(buf, sizeof(buf), "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s, "
+  jio_snprintf(buf, sizeof(buf), "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s, "
     "0x%lx, fp_ver: %d, lvz_ver: %d, ",
     (is_la64()             ?  "la64"  : ""),
     (is_la32()             ?  "la32"  : ""),
@@ -267,6 +269,7 @@ void VM_Version::get_processor_features() {
     (supports_lam_bh()     ?  ", lam_bh" : ""),
     (supports_lamcas()     ?  ", lamcas" : ""),
     (supports_dbarhints()  ?  ", dbarhints" : ""),
+    (supports_sa_ordered() ?  ", sa_ll_ordered" : ", sa_ll_reordered"),
     _cpuid_info.cpucfg_info_id0.bits.PRID,
     _cpuid_info.cpucfg_info_id2.bits.FP_VER,
     _cpuid_info.cpucfg_info_id2.bits.LVZ_VER);
@@ -391,6 +394,17 @@ void VM_Version::get_processor_features() {
       if (!FLAG_IS_DEFAULT(UseChaCha20Intrinsics))
           warning("ChaCha20 intrinsic requires LSX instructions");
       FLAG_SET_DEFAULT(UseChaCha20Intrinsics, false);
+  }
+
+  if (supports_sa_ordered()) {
+    if (FLAG_IS_DEFAULT(UseSameCachelineLoadLoadReorder)) {
+      FLAG_SET_DEFAULT(UseSameCachelineLoadLoadReorder, false);
+    }
+  } else if (!UseSameCachelineLoadLoadReorder) {
+    if (!FLAG_IS_DEFAULT(UseSameCachelineLoadLoadReorder)) {
+      warning("Reordering of Load-Load in the same cache line is enabled on this CPU, setting UseSameCachelineLoadLoadReorder false may cause unknown issues");
+    }
+    FLAG_SET_DEFAULT(UseSameCachelineLoadLoadReorder, true);
   }
 
 #ifdef COMPILER2

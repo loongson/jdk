@@ -177,7 +177,8 @@ public class LoongArch64 extends Architecture {
         LAM_BH,
         LAMCAS,
         UAL,
-        DBARHINTS
+        DBARHINTS,
+        LD_SEQ_SA
     }
 
     private final EnumSet<CPUFeature> features;

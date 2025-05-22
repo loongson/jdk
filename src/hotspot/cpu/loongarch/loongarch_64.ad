@@ -5991,6 +5991,7 @@ instruct membar_storestore() %{
 %}
 
 instruct same_addr_load_fence() %{
+  predicate(UseSameCachelineLoadLoadReorder);
   match(SameAddrLoadFence);
   ins_cost(400);
 
@@ -5999,6 +6000,18 @@ instruct same_addr_load_fence() %{
     __ dbar(0x700);
   %}
   ins_pipe( pipe_serial );
+%}
+
+instruct unnecessary_same_addr_load_fence() %{
+  predicate(!UseSameCachelineLoadLoadReorder);
+  match(SameAddrLoadFence);
+  ins_cost(0);
+
+  format %{ "MEMBAR @ same_addr_load_fence (elided)" %}
+  ins_encode %{
+    __ block_comment("MEMBAR @ same_addr_load_fence (elided)");
+  %}
+  ins_pipe( empty );
 %}
 
 //----------Move Instructions--------------------------------------------------

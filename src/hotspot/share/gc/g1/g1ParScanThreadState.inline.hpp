@@ -23,8 +23,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2021, These
- * modifications are Copyright (c) 2021, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2021, 2025, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -67,7 +67,7 @@ void G1ParScanThreadState::trim_queue() {
   assert(_task_queue->overflow_empty(), "invariant");
   // Load of _age._fields._top in trim_queue_to_threshold must not pass
   // the load of _age._fields._top in assert _task_queue->taskqueue_empty().
-  DEBUG_ONLY(OrderAccess::loadload();)
+  LOONGARCH64_ONLY(DEBUG_ONLY(OrderAccess::loadload_for_sa();))
   assert(_task_queue->taskqueue_empty(), "invariant");
 }
 

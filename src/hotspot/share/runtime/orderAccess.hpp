@@ -22,6 +22,12 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2025, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 #ifndef SHARE_RUNTIME_ORDERACCESS_HPP
 #define SHARE_RUNTIME_ORDERACCESS_HPP
 
@@ -262,6 +268,10 @@ class OrderAccess : public AllStatic {
     loadload();
 #endif
   }
+
+#ifdef LOONGARCH64
+  static void     loadload_for_sa();
+#endif
 private:
   // This is a helper that invokes the StubRoutines::fence_entry()
   // routine if it exists, It should only be used by platforms that

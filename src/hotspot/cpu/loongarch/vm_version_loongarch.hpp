@@ -104,7 +104,9 @@ public:
                RVA        : 1,
                RVAMAXM1   : 4,
                DBARHINTS  : 1,
-                          : 14;
+               UNUSED     : 5,
+               LD_SEQ_SA  : 1,
+                          : 8;
     } bits;
   };
 
@@ -223,6 +225,7 @@ public:
     decl(LAM_BH,        lam_bh,          23)    \
     decl(LAMCAS,        lamcas,          24)    \
     decl(DBARHINTS,     dbarhints,       25)    \
+    decl(LD_SEQ_SA,     ld_seq_sa,       26)    \
 
   enum Feature_Flag {
 #define DECLARE_CPU_FEATURE_FLAG(id, name, bit) CPU_##id = (1 << bit),
@@ -297,6 +300,7 @@ public:
   static bool supports_lam_bh()     { return _features & CPU_LAM_BH; }
   static bool supports_lamcas()     { return _features & CPU_LAMCAS; }
   static bool supports_dbarhints()  { return _features & CPU_DBARHINTS; }
+  static bool supports_sa_ordered() { return _features & CPU_LD_SEQ_SA; }
 
   // LoongArch64 supports fast class initialization checks
   static bool supports_fast_class_init_checks() { return true; }

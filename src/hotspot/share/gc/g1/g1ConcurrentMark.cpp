@@ -2607,7 +2607,7 @@ void G1CMTask::attempt_stealing() {
       drain_local_queue(false);
       // Load of _age._fields._top in drain_local_queue must not pass
       // the load of _age._fields._top in assert _task_queue->size().
-      LOONGARCH64_ONLY(DEBUG_ONLY(OrderAccess::loadload();))
+      LOONGARCH64_ONLY(DEBUG_ONLY(OrderAccess::loadload_for_sa();))
       drain_global_stack(false);
     } else {
       break;
@@ -2900,7 +2900,7 @@ void G1CMTask::do_marking_step(double time_target_ms,
   drain_local_queue(false);
   // Load of _age._fields._top in drain_local_queue must not pass
   // the load of _age._fields._top in assert _task_queue->size().
-  LOONGARCH64_ONLY(DEBUG_ONLY(OrderAccess::loadload();))
+  LOONGARCH64_ONLY(DEBUG_ONLY(OrderAccess::loadload_for_sa();))
   drain_global_stack(false);
 
   // Attempt at work stealing from other task's queues.

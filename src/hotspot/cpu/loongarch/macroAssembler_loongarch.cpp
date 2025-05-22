@@ -1436,7 +1436,7 @@ void MacroAssembler::cmpxchg(Address addr, Register oldval, Register newval,
     bind(fail);
     if (acquire) {
       membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
-    } else {
+    } else if (UseSameCachelineLoadLoadReorder) {
       dbar(0x700);
     }
     if (retold && oldval != R0)
@@ -1488,7 +1488,7 @@ void MacroAssembler::cmpxchg(Address addr, Register oldval, Register newval,
     bind(neq);
     if (acquire) {
       membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
-    } else {
+    } else if (UseSameCachelineLoadLoadReorder) {
       dbar(0x700);
     }
     if (retold && oldval != R0)
@@ -1560,7 +1560,7 @@ void MacroAssembler::cmpxchg32(Address addr, Register oldval, Register newval,
     bind(fail);
     if (acquire) {
       membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
-    } else {
+    } else if (UseSameCachelineLoadLoadReorder) {
       dbar(0x700);
     }
     if (retold && oldval != R0)
@@ -1618,7 +1618,7 @@ void MacroAssembler::cmpxchg32(Address addr, Register oldval, Register newval, R
     bind(neq);
     if (acquire) {
       membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
-    } else {
+    } else if (UseSameCachelineLoadLoadReorder) {
       dbar(0x700);
     }
     if (retold && oldval != R0)

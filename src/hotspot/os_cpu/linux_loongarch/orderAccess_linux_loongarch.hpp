@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,6 +39,7 @@ inline void OrderAccess::loadload()   { inlasm_sync(0x15); }
 inline void OrderAccess::storestore() { inlasm_sync(0x1a); }
 inline void OrderAccess::loadstore()  { inlasm_sync(0x16); }
 inline void OrderAccess::storeload()  { inlasm_sync(0x19); }
+inline void OrderAccess::loadload_for_sa() { if (UseSameCachelineLoadLoadReorder) { inlasm_sync(0x700); } }
 
 inline void OrderAccess::acquire() { inlasm_sync(0x14); }
 inline void OrderAccess::release() { inlasm_sync(0x12); }

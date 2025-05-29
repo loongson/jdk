@@ -40,14 +40,6 @@ class LoongArch64HotSpotVMConfig extends HotSpotVMConfigAccess {
 
     final boolean useCompressedOops = getFlag("UseCompressedOops", Boolean.class);
 
-    // CPU Capabilities
-
-    /*
-     * These flags are set based on the corresponding command line flags.
-     */
-    final boolean useLSX = getFlag("UseLSX", Boolean.class);
-    final boolean useLASX = getFlag("UseLASX", Boolean.class);
-
     final long vmVersionFeatures = getFieldValue("Abstract_VM_Version::_features", Long.class, "uint64_t");
 
     /*

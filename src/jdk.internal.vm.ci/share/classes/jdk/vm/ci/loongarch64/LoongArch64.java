@@ -25,12 +25,12 @@ package jdk.vm.ci.loongarch64;
 
 import java.nio.ByteOrder;
 import java.util.EnumSet;
+import java.util.List;
 
 import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.code.CPUFeatureName;
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.Register.RegisterCategory;
-import jdk.vm.ci.code.RegisterArray;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.PlatformKind;
 
@@ -82,7 +82,7 @@ public class LoongArch64 extends Architecture {
     public static final Register v0 = a0;
 
     // @formatter:off
-    public static final RegisterArray cpuRegisters = new RegisterArray(
+    public static final List<Register> cpuRegisters = List.of(
         zero, ra,  tp,  sp,  a0,  a1,  a2,  a3,
         a4,   a5,  a6,  a7,  t0,  t1,  t2,  t3,
         t4,   t5,  t6,  t7,  t8,  rx,  fp,  s0,
@@ -129,7 +129,7 @@ public class LoongArch64 extends Architecture {
     public static final Register fv0 = f0;
 
     // @formatter:off
-    public static final RegisterArray simdRegisters = new RegisterArray(
+    public static final List<Register> simdRegisters = List.of(
         f0,  f1,  f2,  f3,  f4,  f5,  f6,  f7,
         f8,  f9,  f10, f11, f12, f13, f14, f15,
         f16, f17, f18, f19, f20, f21, f22, f23,
@@ -138,7 +138,7 @@ public class LoongArch64 extends Architecture {
     // @formatter:on
 
     // @formatter:off
-    public static final RegisterArray allRegisters = new RegisterArray(
+    public static final List<Register> allRegisters = List.of(
         zero, ra,  tp,  sp,  a0,  a1,  a2,  a3,
         a4,   a5,  a6,  a7,  t0,  t1,  t2,  t3,
         t4,   t5,  t6,  t7,  t8,  rx,  fp,  s0,
@@ -183,29 +183,14 @@ public class LoongArch64 extends Architecture {
 
     private final EnumSet<CPUFeature> features;
 
-    /**
-     * Set of flags to control code emission.
-     */
-    public enum Flag {
-        useLSX,
-        useLASX
-    }
-
-    private final EnumSet<Flag> flags;
-
-    public LoongArch64(EnumSet<CPUFeature> features, EnumSet<Flag> flags) {
+    public LoongArch64(EnumSet<CPUFeature> features) {
         super("loongarch64", LoongArch64Kind.QWORD, ByteOrder.LITTLE_ENDIAN, true, allRegisters, 0, 0, 0);
         this.features = features;
-        this.flags = flags;
     }
 
     @Override
     public EnumSet<CPUFeature> getFeatures() {
         return features;
-    }
-
-    public EnumSet<Flag> getFlags() {
-        return flags;
     }
 
     @Override

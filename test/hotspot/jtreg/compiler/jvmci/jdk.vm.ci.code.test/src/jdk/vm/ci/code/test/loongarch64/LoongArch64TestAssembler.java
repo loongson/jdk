@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,13 +24,13 @@
 
 package jdk.vm.ci.code.test.loongarch64;
 
+import java.util.List;
 import jdk.vm.ci.loongarch64.LoongArch64;
 import jdk.vm.ci.loongarch64.LoongArch64Kind;
 import jdk.vm.ci.code.CallingConvention;
 import jdk.vm.ci.code.CodeCacheProvider;
 import jdk.vm.ci.code.DebugInfo;
 import jdk.vm.ci.code.Register;
-import jdk.vm.ci.code.RegisterArray;
 import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.StackSlot;
 import jdk.vm.ci.code.site.ConstantReference;
@@ -49,12 +49,12 @@ public class LoongArch64TestAssembler extends TestAssembler {
     private static final Register scratchRegister = LoongArch64.SCR1;
     private static final Register scratchRegister2 = LoongArch64.SCR2;
     private static final Register doubleScratch = LoongArch64.f23;
-    private static final RegisterArray nativeGeneralParameterRegisters = new RegisterArray(LoongArch64.a0,
+    private static final List<Register> nativeGeneralParameterRegisters = List.of(LoongArch64.a0,
                                                                       LoongArch64.a1, LoongArch64.a2,
                                                                       LoongArch64.a3, LoongArch64.a4,
                                                                       LoongArch64.a5, LoongArch64.a6,
                                                                       LoongArch64.a7);
-    private static final RegisterArray floatParameterRegisters = new RegisterArray(LoongArch64.f0,
+    private static final List<Register> floatParameterRegisters = List.of(LoongArch64.f0,
                                                                       LoongArch64.f1, LoongArch64.f2,
                                                                       LoongArch64.f3, LoongArch64.f4,
                                                                       LoongArch64.f5, LoongArch64.f6,
@@ -328,9 +328,9 @@ public class LoongArch64TestAssembler extends TestAssembler {
     public void emitCallPrologue(CallingConvention cc, Object... prim) {
         emitGrowStack(cc.getStackSize());
         frameSize += cc.getStackSize();
-        AllocatableValue[] args = cc.getArguments();
-        for (int i = 0; i < args.length; i++) {
-            emitLoad(args[i], prim[i]);
+        List<AllocatableValue> args = cc.getArguments();
+        for (int i = 0; i < args.size(); i++) {
+            emitLoad(args.get(i), prim[i]);
         }
         currentGeneral = 0;
         currentFloat = 0;

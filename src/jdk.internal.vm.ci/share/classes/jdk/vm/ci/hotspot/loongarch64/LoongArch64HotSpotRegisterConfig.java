@@ -63,7 +63,6 @@ import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.code.CallingConvention;
 import jdk.vm.ci.code.CallingConvention.Type;
 import jdk.vm.ci.code.Register;
-import jdk.vm.ci.code.RegisterArray;
 import jdk.vm.ci.code.RegisterAttributes;
 import jdk.vm.ci.code.RegisterConfig;
 import jdk.vm.ci.code.StackSlot;
@@ -82,24 +81,24 @@ public class LoongArch64HotSpotRegisterConfig implements RegisterConfig {
 
     private final TargetDescription target;
 
-    private final RegisterArray allocatable;
+    private final List<Register> allocatable;
 
     /**
      * The caller saved registers always include all parameter registers.
      */
-    private final RegisterArray callerSaved;
+    private final List<Register> callerSaved;
 
     private final boolean allAllocatableAreCallerSaved;
 
-    private final RegisterAttributes[] attributesMap;
+    private final List<RegisterAttributes> attributesMap;
 
     @Override
-    public RegisterArray getAllocatableRegisters() {
+    public List<Register> getAllocatableRegisters() {
         return allocatable;
     }
 
     @Override
-    public RegisterArray filterAllocatableRegisters(PlatformKind kind, RegisterArray registers) {
+    public List<Register> filterAllocatableRegisters(PlatformKind kind, List<Register> registers) {
         ArrayList<Register> list = new ArrayList<>();
         for (Register reg : registers) {
             if (target.arch.canStoreValue(reg.getRegisterCategory(), kind)) {
@@ -107,31 +106,30 @@ public class LoongArch64HotSpotRegisterConfig implements RegisterConfig {
             }
         }
 
-        return new RegisterArray(list);
+        return List.copyOf(list);
     }
 
     @Override
-    public RegisterAttributes[] getAttributesMap() {
-        return attributesMap.clone();
+    public List<RegisterAttributes> getAttributesMap() {
+        return attributesMap;
     }
 
-    private final RegisterArray javaGeneralParameterRegisters = new RegisterArray(t0, a0, a1, a2, a3, a4, a5, a6, a7);
-    private final RegisterArray nativeGeneralParameterRegisters = new RegisterArray(a0, a1, a2, a3, a4, a5, a6, a7);
-    private final RegisterArray floatParameterRegisters = new RegisterArray(f0, f1, f2, f3, f4, f5, f6, f7);
+    private final List<Register> javaGeneralParameterRegisters = List.of(t0, a0, a1, a2, a3, a4, a5, a6, a7);
+    private final List<Register> nativeGeneralParameterRegisters = List.of(a0, a1, a2, a3, a4, a5, a6, a7);
+    private final List<Register> floatParameterRegisters = List.of(f0, f1, f2, f3, f4, f5, f6, f7);
 
     public static final Register heapBaseRegister = s5;
     public static final Register TREG = s6;
 
-    private static final RegisterArray reservedRegisters = new RegisterArray(fp, ra, zero, sp, tp, rx, SCR1, SCR2, TREG);
+    private static final List<Register> reservedRegisters = List.of(fp, ra, zero, sp, tp, rx, SCR1, SCR2, TREG);
 
-    private static RegisterArray initAllocatable(Architecture arch, boolean reserveForHeapBase) {
-        RegisterArray allRegisters = arch.getAvailableValueRegisters();
+    private static List<Register> initAllocatable(Architecture arch, boolean reserveForHeapBase) {
+        List<Register> allRegisters = arch.getAvailableValueRegisters();
         Register[] registers = new Register[allRegisters.size() - reservedRegisters.size() - (reserveForHeapBase ? 1 : 0)];
-        List<Register> reservedRegistersList = reservedRegisters.asList();
 
         int idx = 0;
         for (Register reg : allRegisters) {
-            if (reservedRegistersList.contains(reg)) {
+            if (reservedRegisters.contains(reg)) {
                 // skip reserved registers
                 continue;
             }
@@ -144,7 +142,7 @@ public class LoongArch64HotSpotRegisterConfig implements RegisterConfig {
         }
 
         assert idx == registers.length;
-        return new RegisterArray(registers);
+        return List.of(registers);
     }
 
     public LoongArch64HotSpotRegisterConfig(TargetDescription target, boolean useCompressedOops) {
@@ -152,28 +150,28 @@ public class LoongArch64HotSpotRegisterConfig implements RegisterConfig {
         assert callerSaved.size() >= allocatable.size();
     }
 
-    public LoongArch64HotSpotRegisterConfig(TargetDescription target, RegisterArray allocatable) {
+    public LoongArch64HotSpotRegisterConfig(TargetDescription target, List<Register> allocatable) {
         this.target = target;
 
         this.allocatable = allocatable;
         Set<Register> callerSaveSet = new HashSet<>();
-        allocatable.addTo(callerSaveSet);
-        floatParameterRegisters.addTo(callerSaveSet);
-        javaGeneralParameterRegisters.addTo(callerSaveSet);
-        nativeGeneralParameterRegisters.addTo(callerSaveSet);
-        callerSaved = new RegisterArray(callerSaveSet);
+        callerSaveSet.addAll(allocatable);
+        callerSaveSet.addAll(floatParameterRegisters);
+        callerSaveSet.addAll(javaGeneralParameterRegisters);
+        callerSaveSet.addAll(nativeGeneralParameterRegisters);
+        callerSaved = List.copyOf(callerSaveSet);
 
         allAllocatableAreCallerSaved = true;
         attributesMap = RegisterAttributes.createMap(this, LoongArch64.allRegisters);
     }
 
     @Override
-    public RegisterArray getCallerSaveRegisters() {
+    public List<Register> getCallerSaveRegisters() {
         return callerSaved;
     }
 
     @Override
-    public RegisterArray getCalleeSaveRegisters() {
+    public List<Register> getCalleeSaveRegisters() {
         return null;
     }
 
@@ -194,7 +192,7 @@ public class LoongArch64HotSpotRegisterConfig implements RegisterConfig {
     }
 
     @Override
-    public RegisterArray getCallingConventionRegisters(Type type, JavaKind kind) {
+    public List<Register> getCallingConventionRegisters(Type type, JavaKind kind) {
         HotSpotCallingConventionType hotspotType = (HotSpotCallingConventionType) type;
         switch (kind) {
             case Boolean:
@@ -213,7 +211,7 @@ public class LoongArch64HotSpotRegisterConfig implements RegisterConfig {
         }
     }
 
-    private CallingConvention callingConvention(RegisterArray generalParameterRegisters, JavaType returnType, JavaType[] parameterTypes, HotSpotCallingConventionType type,
+    private CallingConvention callingConvention(List<Register> generalParameterRegisters, JavaType returnType, JavaType[] parameterTypes, HotSpotCallingConventionType type,
                     ValueKindFactory<?> valueKindFactory) {
         AllocatableValue[] locations = new AllocatableValue[parameterTypes.length];
 

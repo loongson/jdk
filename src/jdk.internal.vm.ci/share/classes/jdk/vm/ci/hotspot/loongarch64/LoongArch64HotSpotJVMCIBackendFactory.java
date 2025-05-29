@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2022, 2023, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,24 +53,11 @@ public class LoongArch64HotSpotJVMCIBackendFactory implements HotSpotJVMCIBacken
         return HotSpotJVMCIBackendFactory.convertFeatures(CPUFeature.class, constants, config.vmVersionFeatures, emptyMap());
     }
 
-    private static EnumSet<LoongArch64.Flag> computeFlags(LoongArch64HotSpotVMConfig config) {
-        EnumSet<LoongArch64.Flag> flags = EnumSet.noneOf(LoongArch64.Flag.class);
-
-        if (config.useLSX) {
-            flags.add(LoongArch64.Flag.useLSX);
-        }
-        if (config.useLASX) {
-            flags.add(LoongArch64.Flag.useLASX);
-        }
-
-        return flags;
-    }
-
     private static TargetDescription createTarget(LoongArch64HotSpotVMConfig config) {
         final int stackFrameAlignment = 16;
         final int implicitNullCheckLimit = 4096;
         final boolean inlineObjects = true;
-        Architecture arch = new LoongArch64(computeFeatures(config), computeFlags(config));
+        Architecture arch = new LoongArch64(computeFeatures(config));
         return new TargetDescription(arch, true, stackFrameAlignment, implicitNullCheckLimit, inlineObjects);
     }
 
@@ -101,9 +88,7 @@ public class LoongArch64HotSpotJVMCIBackendFactory implements HotSpotJVMCIBacken
     }
 
     @Override
-    @SuppressWarnings("try")
     public JVMCIBackend createJVMCIBackend(HotSpotJVMCIRuntime runtime, JVMCIBackend host) {
-
         assert host == null;
         LoongArch64HotSpotVMConfig config = new LoongArch64HotSpotVMConfig(runtime.getConfigStore());
         TargetDescription target = createTarget(config);
@@ -113,24 +98,24 @@ public class LoongArch64HotSpotJVMCIBackendFactory implements HotSpotJVMCIBacken
         ConstantReflectionProvider constantReflection;
         HotSpotMetaAccessProvider metaAccess;
         StackIntrospection stackIntrospection;
-        try (InitTimer t = timer("create providers")) {
-            try (InitTimer rt = timer("create MetaAccess provider")) {
+        try (InitTimer _ = timer("create providers")) {
+            try (InitTimer _ = timer("create MetaAccess provider")) {
                 metaAccess = createMetaAccess(runtime);
             }
-            try (InitTimer rt = timer("create RegisterConfig")) {
+            try (InitTimer _ = timer("create RegisterConfig")) {
                 regConfig = createRegisterConfig(config, target);
             }
-            try (InitTimer rt = timer("create CodeCache provider")) {
+            try (InitTimer _ = timer("create CodeCache provider")) {
                 codeCache = createCodeCache(runtime, target, regConfig);
             }
-            try (InitTimer rt = timer("create ConstantReflection provider")) {
+            try (InitTimer _ = timer("create ConstantReflection provider")) {
                 constantReflection = createConstantReflection(runtime);
             }
-            try (InitTimer rt = timer("create StackIntrospection provider")) {
+            try (InitTimer _ = timer("create StackIntrospection provider")) {
                 stackIntrospection = new HotSpotStackIntrospection(runtime);
             }
         }
-        try (InitTimer rt = timer("instantiate backend")) {
+        try (InitTimer _ = timer("instantiate backend")) {
             return createBackend(metaAccess, codeCache, constantReflection, stackIntrospection);
         }
     }

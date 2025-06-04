@@ -1725,6 +1725,9 @@ void TemplateTable::branch(bool is_jsr, bool is_wide) {
     // Ensure to save the osr nmethod over the migration call,
     // it will be preserved in Rnext.
     __ move(Rnext, V0);
+
+    JFR_ONLY(__ enter_jfr_critical_section();)
+
     call_VM(noreg, CAST_FROM_FN_PTR(address, SharedRuntime::OSR_migration_begin));
 
     // V0 is OSR buffer, move it to expected parameter location
@@ -1737,6 +1740,8 @@ void TemplateTable::branch(bool is_jsr, bool is_wide) {
     __ leave();
     __ move(LVP, RA);
     __ move(SP, A7);
+
+    JFR_ONLY(__ leave_jfr_critical_section();)
 
     assert(StackAlignmentInBytes == 16, "must be");
     __ bstrins_d(SP, R0, 3, 0);

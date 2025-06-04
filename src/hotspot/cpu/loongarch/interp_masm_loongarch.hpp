@@ -268,6 +268,9 @@ class InterpreterMacroAssembler: public MacroAssembler {
   // support for jvmti/dtrace
   void notify_method_entry();
   void notify_method_exit(TosState state, NotifyMethodExitMode mode);
+
+  JFR_ONLY(void enter_jfr_critical_section();)
+  JFR_ONLY(void leave_jfr_critical_section();)
 };
 
 #endif // CPU_LOONGARCH_INTERP_MASM_LOONGARCH_64_HPP

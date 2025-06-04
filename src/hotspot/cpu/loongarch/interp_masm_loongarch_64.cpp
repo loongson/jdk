@@ -74,9 +74,9 @@ void InterpreterMacroAssembler::call_VM_leaf_base(address entry_point,
                                                   int number_of_arguments) {
   // interpreter specific
   //
-  // Note: No need to save/restore bcp & locals pointer
-  //       since these are callee saved registers and no blocking/
-  //       GC can happen in leaf calls.
+  // Note: No need to save/restore bcp & locals pointer since these
+  //       are callee saved registers and no blocking/ GC can happen
+  //       in leaf calls.
   // Further Note: DO NOT save/restore bcp/locals. If a caller has
   // already saved them so that it can use BCP/LVP as temporaries
   // then a save/restore here will DESTROY the copy the caller
@@ -611,9 +611,10 @@ void InterpreterMacroAssembler::dispatch_via(TosState state, address* table) {
 
 // remove activation
 //
-// Apply stack watermark barrier.
 // Unlock the receiver if this is a synchronized method.
 // Unlock any Java monitors from synchronized blocks.
+// Apply stack watermark barrier.
+// Notify JVMTI.
 // Remove the activation from the stack.
 //
 // If there are locked Java monitors
@@ -630,26 +631,6 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
   const Register monitor_reg = j_rarg0;
 
   Label unlocked, unlock, no_unlock;
-
-  // The below poll is for the stack watermark barrier. It allows fixing up frames lazily,
-  // that would normally not be safe to use. Such bad returns into unsafe territory of
-  // the stack, will call InterpreterRuntime::at_unwind.
-  Label slow_path;
-  Label fast_path;
-  safepoint_poll(slow_path, TREG, true /* at_return */, false /* acquire */, false /* in_nmethod */);
-  b(fast_path);
-
-  bind(slow_path);
-  push(state);
-  Label L;
-  address the_pc = pc();
-  bind(L);
-  set_last_Java_frame(TREG, SP, FP, L);
-  super_call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::at_unwind), TREG);
-  reset_last_Java_frame(true);
-  pop(state);
-
-  bind(fast_path);
 
   // get the value of _do_not_unlock_if_synchronized and then reset the flag
   const Address do_not_unlock_if_synchronized(TREG,
@@ -760,7 +741,29 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
 
   bind(no_unlock);
 
-  // jvmpi support
+  JFR_ONLY(enter_jfr_critical_section();)
+
+  // The below poll is for the stack watermark barrier. It allows fixing up frames lazily,
+  // that would normally not be safe to use. Such bad returns into unsafe territory of
+  // the stack, will call InterpreterRuntime::at_unwind.
+  Label slow_path;
+  Label fast_path;
+  safepoint_poll(slow_path, TREG, true /* at_return */, false /* acquire */, false /* in_nmethod */);
+  b(fast_path);
+
+  bind(slow_path);
+  push(state);
+  Label L;
+  address the_pc = pc();
+  bind(L);
+  set_last_Java_frame(TREG, SP, FP, L);
+  super_call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::at_unwind), TREG);
+  reset_last_Java_frame(true);
+  pop(state);
+
+  bind(fast_path);
+
+  // JVMTI support. Make sure the safepoint poll test is issued prior.
   if (notify_jvmdi) {
     notify_method_exit(state, NotifyJVMTI); // preserve TOSCA
   } else {
@@ -779,8 +782,12 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
     addi_w(AT, AT, StackOverflow::stack_guard_enabled);
     beqz(AT, no_reserved_zone_enabling);
 
+    // look for an overflow into the stack reserved zone, i.e.
+    // interpreter_frame_sender_sp <= JavaThread::reserved_stack_activation
     ld_d(AT, Address(TREG, JavaThread::reserved_stack_activation_offset()));
     bge(AT, Rsender, no_reserved_zone_enabling);
+
+    JFR_ONLY(leave_jfr_critical_section();)
 
     call_VM_leaf(
       CAST_FROM_FN_PTR(address, SharedRuntime::enable_stack_reserved_zone), TREG);
@@ -794,9 +801,24 @@ void InterpreterMacroAssembler::remove_activation(TosState state,
   // remove frame anchor
   leave();
 
+  JFR_ONLY(leave_jfr_critical_section();)
+
   // set sp to sender sp
   move(SP, Rsender);
 }
+
+#if INCLUDE_JFR
+void InterpreterMacroAssembler::enter_jfr_critical_section() {
+  const Address sampling_critical_section(TREG, in_bytes(SAMPLING_CRITICAL_SECTION_OFFSET_JFR));
+  li(AT, 1);
+  st_b(AT, sampling_critical_section);
+}
+
+void InterpreterMacroAssembler::leave_jfr_critical_section() {
+  const Address sampling_critical_section(TREG, in_bytes(SAMPLING_CRITICAL_SECTION_OFFSET_JFR));
+  st_b(R0, sampling_critical_section);
+}
+#endif // INCLUDE_JFR
 
 // Lock object
 //

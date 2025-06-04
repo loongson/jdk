@@ -76,6 +76,7 @@
 
 #define REG_SP 3
 #define REG_FP 22
+#define REG_BCP 23
 
 NOINLINE address os::current_stack_pointer() {
   register void *sp __asm__ ("$r3");
@@ -147,6 +148,13 @@ frame os::fetch_compiled_frame_from_context(const void* ucVoid) {
   intptr_t* sp = os::Linux::ucontext_get_sp(uc);
   address pc = (address)(uc->uc_mcontext.__gregs[1]);
   return frame(sp, fp, pc);
+}
+
+intptr_t* os::fetch_bcp_from_context(const void* ucVoid) {
+  assert(ucVoid != nullptr, "invariant");
+  const ucontext_t* uc = (const ucontext_t*)ucVoid;
+  assert(os::Posix::ucontext_is_interpreter(uc), "invariant");
+  return reinterpret_cast<intptr_t*>(uc->uc_mcontext.__gregs[REG_BCP]);
 }
 
 // By default, gcc always save frame pointer on stack. It may get

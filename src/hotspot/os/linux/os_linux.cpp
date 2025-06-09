@@ -4492,19 +4492,12 @@ void os::Linux::numa_init() {
       // successive garbage collection cycles recover garbage. When the heap is
       // full of live objects, the GC compacts the heap. If sufficient garbage
       // is still not recovered, the GC expands the heap.
-      if (FLAG_IS_DEFAULT(UseNUMA)) {
-        FLAG_SET_ERGO(UseNUMA, false);
-      } else if (UseNUMA) {
-        disable_numa("UseNUMA is disabled since insufficient initial heap size.", false);
-      }
+      disable_numa("Insufficient initial heap size", false);
     } else if (FLAG_IS_CMDLINE(NewSize) &&
                (NewSize < ScaleForWordSize(1*M) * os::numa_get_groups_num())) {
-      if (FLAG_IS_DEFAULT(UseNUMA)) {
-        FLAG_SET_ERGO(UseNUMA, false);
-      } else if (UseNUMA) {
-        disable_numa("Handcrafted MaxNewSize should be large enough "
-                     "to avoid GC trigger before VM initialization completed.", false);
-      }
+      // Handcrafted MaxNewSize should be large enough to avoid GC trigger
+      // before VM initialization completed.
+      disable_numa("Insufficient maximum size of young generation", false);
 #endif
     } else {
       LogTarget(Info,os) log;

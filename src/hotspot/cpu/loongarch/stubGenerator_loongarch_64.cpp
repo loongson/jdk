@@ -5766,6 +5766,10 @@ static const int64_t right_3_bits = right_n_bits(3);
     // }
   };
 
+  void generate_preuniverse_stubs() {
+    // preuniverse stubs are not needed for loongarch64
+  }
+
   // Initialization
   void generate_initial_stubs() {
     // Generates all stubs and initializes the entry points
@@ -5908,6 +5912,9 @@ static const int64_t right_3_bits = right_n_bits(3);
  public:
   StubGenerator(CodeBuffer* code, StubGenBlobId blob_id) : StubCodeGenerator(code, blob_id) {
     switch(blob_id) {
+      case preuniverse_id:
+        generate_preuniverse_stubs();
+        break;
       case initial_id:
         generate_initial_stubs();
         break;

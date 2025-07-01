@@ -230,13 +230,7 @@ bool PosixSignals::pd_hotspot_signal_handler(int sig, siginfo_t* info,
       tty->print("java thread running in java code\n");
 #endif
 
-      // Handle signal from NativeJump::patch_verified_entry().
-      if (sig == SIGILL && nativeInstruction_at(pc)->is_sigill_not_entrant()) {
-#ifdef PRINT_SIGNAL_HANDLE
-        tty->print_cr("verified entry = %lx, sig=%d", nativeInstruction_at(pc), sig);
-#endif
-        stub = SharedRuntime::get_handle_wrong_method_stub();
-      } else if (sig == SIGSEGV && SafepointMechanism::is_poll_address((address)info->si_addr)) {
+      if (sig == SIGSEGV && SafepointMechanism::is_poll_address((address)info->si_addr)) {
 #ifdef PRINT_SIGNAL_HANDLE
         tty->print_cr("polling address = %lx, sig=%d", os::get_polling_page(), sig);
 #endif

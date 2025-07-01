@@ -86,8 +86,6 @@ class NativeInstruction {
   bool is_float_branch();
 
   inline bool is_NativeCallTrampolineStub_at();
-  //We use an illegal instruction for marking a method as not_entrant or zombie.
-  bool is_sigill_not_entrant();
   bool is_stop();
 
  protected:
@@ -411,9 +409,6 @@ class NativeJump: public NativeInstruction {
 
   // Insertion of native jump instruction
   static void insert(address code_pos, address entry) { Unimplemented(); }
-  // MT-safe insertion of native jump at verified method entry
-  static void check_verified_entry_alignment(address entry, address verified_entry){}
-  static void patch_verified_entry(address entry, address verified_entry, address dest);
 
   void verify();
 };

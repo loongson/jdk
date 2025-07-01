@@ -405,10 +405,6 @@ void NativeMovRegMem::print() {
   guarantee(0, "LA not implemented yet");
 }
 
-bool NativeInstruction::is_sigill_not_entrant() {
-  return uint_at(0) == NativeIllegalInstruction::instruction_code;
-}
-
 bool NativeInstruction::is_stop() {
   return uint_at(0) == 0x04000000; // csrrd R0 0
 }
@@ -475,23 +471,6 @@ void NativeGeneralJump::insert_unconditional(address code_pos, address entry) {
 void NativeGeneralJump::replace_mt_safe(address instr_addr, address code_buffer) {
   //TODO: LA
   guarantee(0, "LA not implemented yet");
-}
-
-// Must ensure atomicity
-void NativeJump::patch_verified_entry(address entry, address verified_entry, address dest) {
-  assert(dest == SharedRuntime::get_handle_wrong_method_stub(), "expected fixed destination of patch");
-  jlong offs = dest - verified_entry;
-
-  if (MacroAssembler::reachable_from_branch_short(offs)) {
-    CodeBuffer cb(verified_entry, 1 * BytesPerInstWord);
-    MacroAssembler masm(&cb);
-    masm.b(dest);
-  } else {
-    // We use an illegal instruction for marking a method as
-    // not_entrant.
-    NativeIllegalInstruction::insert(verified_entry);
-  }
-  ICache::invalidate_range(verified_entry, 1 * BytesPerInstWord);
 }
 
 bool NativeInstruction::is_safepoint_poll() {

@@ -2196,8 +2196,6 @@ void MachPrologNode::emit(C2_MacroAssembler* masm, PhaseRegAlloc *ra_) const {
 
   __ build_frame(framesize);
 
-  assert((__ pc() - start) >= 1 * BytesPerInstWord, "No enough room for patch_verified_entry");
-
   if (C->stub_function() == nullptr) {
     BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
     // Dummy labels for just measuring the code size

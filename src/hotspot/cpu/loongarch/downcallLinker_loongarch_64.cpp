@@ -292,7 +292,7 @@ void DowncallLinker::StubGenerator::generate() {
       }
     }
 
-    __ safepoint_poll(L_safepoint_poll_slow_path, TREG, true /* at_return */, true /* acquire */, false /* in_nmethod */);
+    __ safepoint_poll(L_safepoint_poll_slow_path, TREG, true /* at_return */, false /* in_nmethod */);
 
     __ ld_w(tmp1, TREG, in_bytes(JavaThread::suspend_flags_offset()));
     __ bnez(tmp1, L_safepoint_poll_slow_path);

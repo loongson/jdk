@@ -518,7 +518,7 @@ class MacroAssembler: public Assembler {
   // Check for reserved stack access in method being exited (for JIT)
   void reserved_stack_check();
 
-  void safepoint_poll(Label& slow_path, Register thread_reg, bool at_return, bool acquire, bool in_nmethod);
+  void safepoint_poll(Label& slow_path, Register thread_reg, bool at_return, bool in_nmethod);
 
   void verify_tlab(Register t1, Register t2);
 

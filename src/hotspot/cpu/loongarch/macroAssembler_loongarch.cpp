@@ -1054,13 +1054,8 @@ void MacroAssembler::reset_last_Java_frame(bool clear_fp) {
   st_d(R0, TREG, in_bytes(JavaThread::last_Java_pc_offset()));
 }
 
-void MacroAssembler::safepoint_poll(Label& slow_path, Register thread_reg, bool at_return, bool acquire, bool in_nmethod) {
-  if (acquire) {
-    ld_d(AT, thread_reg, in_bytes(JavaThread::polling_word_offset()));
-    membar(Assembler::Membar_mask_bits(LoadLoad|LoadStore));
-  } else {
-    ld_d(AT, thread_reg, in_bytes(JavaThread::polling_word_offset()));
-  }
+void MacroAssembler::safepoint_poll(Label& slow_path, Register thread_reg, bool at_return, bool in_nmethod) {
+  ld_d(AT, thread_reg, in_bytes(JavaThread::polling_word_offset()));
   if (at_return) {
     // Note that when in_nmethod is set, the stack pointer is incremented before the poll. Therefore,
     // we may safely use the sp instead to perform the stack watermark check.

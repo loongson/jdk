@@ -4381,11 +4381,12 @@ class StubGenerator: public StubCodeGenerator {
 
     address start = __ pc();
 
-    const Register crc = A0;  // crc
-    const Register buf = A1;  // source java byte array address
-    const Register len = A2;  // length
-    const Register tmp = A3;
+    const Register crc = c_rarg0;  // crc
+    const Register buf = c_rarg1;  // source java byte array address
+    const Register len = c_rarg2;  // length
+    const Register tmp = c_rarg3;
 
+    BLOCK_COMMENT("Entry:");
     __ enter(); // required for proper stackwalking of RuntimeStub frame
 
     __ kernel_crc32(crc, buf, len, tmp);
@@ -4406,11 +4407,12 @@ class StubGenerator: public StubCodeGenerator {
 
     address start = __ pc();
 
-    const Register crc = A0;  // crc
-    const Register buf = A1;  // source java byte array address
-    const Register len = A2;  // length
-    const Register tmp = A3;
+    const Register crc = c_rarg0;  // crc
+    const Register buf = c_rarg1;  // source java byte array address
+    const Register len = c_rarg2;  // length
+    const Register tmp = c_rarg3;
 
+    BLOCK_COMMENT("Entry:");
     __ enter(); // required for proper stackwalking of RuntimeStub frame
 
     __ kernel_crc32c(crc, buf, len, tmp);

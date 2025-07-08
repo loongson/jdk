@@ -143,13 +143,13 @@ address TemplateInterpreterGenerator::generate_CRC32_update_entry() {
   // We don't generate local frame and don't align stack because
   // we call stub code and there is no safepoint on this path.
 
-  const Register crc = A0;  // crc
-  const Register val = A1;  // source java byte value
-  const Register tbl = A2;  // scratch
+  const Register crc = c_rarg0;  // crc
+  const Register val = c_rarg1;  // source java byte value
+  const Register tbl = c_rarg2;  // scratch
 
   // Arguments are reversed on java expression stack
-  __ ld_w(val, SP, 0);              // byte value
-  __ ld_w(crc, SP, wordSize);       // Initial CRC
+  __ ld_w(val, Address(SP));                 // byte value
+  __ ld_w(crc, Address(SP, wordSize));       // Initial CRC
 
   __ li(tbl, (long)StubRoutines::crc_table_addr());
 
@@ -178,7 +178,6 @@ address TemplateInterpreterGenerator::generate_CRC32_updateBytes_entry(AbstractI
 
   // rmethod: Method*
   // Rsender: senderSP must preserved for slow path
-  // SP: args
 
   Label slow_path;
   // If we need a safepoint check, generate full interpreter entry.
@@ -187,33 +186,32 @@ address TemplateInterpreterGenerator::generate_CRC32_updateBytes_entry(AbstractI
   // We don't generate local frame and don't align stack because
   // we call stub code and there is no safepoint on this path.
 
-  const Register crc = A0;  // crc
-  const Register buf = A1;  // source java byte array address
-  const Register len = A2;  // length
-  const Register tmp = A3;
+  // Load parameters
+  const Register crc = c_rarg0;  // crc
+  const Register buf = c_rarg1;  // source java byte array address
+  const Register len = c_rarg2;  // length
 
   const Register off = len; // offset (never overlaps with 'len')
 
   // Arguments are reversed on java expression stack
   // Calculate address of start element
-  __ ld_w(off, SP, wordSize);       // int offset
-  __ ld_d(buf, SP, 2 * wordSize);   // byte[] buf | long buf
-  __ add_d(buf, buf, off);          // + offset
+  __ ld_d(buf, Address(SP, 2 * wordSize)); // long buf
+  __ ld_w(off, Address(SP, wordSize)); // offset
+  __ add_d(buf, buf, off); // + offset
   if (kind == Interpreter::java_util_zip_CRC32_updateByteBuffer) {
-    __ ld_w(crc, SP, 4 * wordSize); // long crc
+    __ ld_w(crc, Address(SP, 4 * wordSize)); // Initial CRC
   } else {
     __ addi_d(buf, buf, arrayOopDesc::base_offset_in_bytes(T_BYTE)); // + header size
-    __ ld_w(crc, SP, 3 * wordSize); // long crc
+    __ ld_w(crc, Address(SP, 3 * wordSize)); // Initial CRC
   }
 
   // Can now load 'len' since we're finished with 'off'
-  __ ld_w(len, SP, 0); // length
+  __ ld_w(len, Address(SP)); // length
 
-  __ kernel_crc32(crc, buf, len, tmp);
+  __ move(SP, Rsender); // Restore the caller's SP
 
-  // restore caller SP
-  __ move(SP, Rsender);
-  __ jr(RA);
+  // We are frameless so we can just jump to the stub.
+  __ b(CAST_FROM_FN_PTR(address, StubRoutines::updateBytesCRC32()));
 
   // generate a vanilla native entry as the slow path
   __ bind(slow_path);
@@ -232,31 +230,30 @@ address TemplateInterpreterGenerator::generate_CRC32C_updateBytes_entry(Abstract
   assert(UseCRC32CIntrinsics, "this intrinsic is not supported");
   address entry = __ pc();
 
-  const Register crc = A0; // initial crc
-  const Register buf = A1; // source java byte array address
-  const Register len = A2; // len argument to the kernel
-  const Register tmp = A3;
+  // Prepare jump to stub using parameters from the stack
+  const Register crc = c_rarg0; // initial crc
+  const Register buf = c_rarg1; // source java byte array address
+  const Register len = c_rarg2; // len argument to the kernel
 
   const Register end = len; // index of last element to process
   const Register off = crc; // offset
 
-  __ ld_w(end, SP, 0);              // int end
-  __ ld_w(off, SP, wordSize);       // int offset
-  __ sub_w(len, end, off);          // calculate length
-  __ ld_d(buf, SP, 2 * wordSize);   // byte[] buf | long buf
-  __ add_d(buf, buf, off);          // + offset
+  __ ld_w(end, Address(SP)); // int end
+  __ ld_w(off, Address(SP, wordSize)); // int offset
+  __ sub_w(len, end, off);
+  __ ld_d(buf, Address(SP, 2 * wordSize)); // byte[] buf | long buf
+  __ add_d(buf, buf, off); // + offset
   if (kind == Interpreter::java_util_zip_CRC32C_updateDirectByteBuffer) {
-    __ ld_w(crc, SP, 4 * wordSize); // int crc
+    __ ld_w(crc, Address(SP, 4 * wordSize)); // long crc
   } else {
     __ addi_d(buf, buf, arrayOopDesc::base_offset_in_bytes(T_BYTE)); // + header size
-    __ ld_w(crc, SP, 3 * wordSize); // int crc
+    __ ld_w(crc, Address(SP, 3 * wordSize)); // long crc
   }
 
-  __ kernel_crc32c(crc, buf, len, tmp);
+  __ move(SP, Rsender); // Restore the caller's SP
 
-  // restore caller SP
-  __ move(SP, Rsender);
-  __ jr(RA);
+  // Jump to the stub.
+  __ b(CAST_FROM_FN_PTR(address, StubRoutines::updateBytesCRC32C()));
 
   return entry;
 }

@@ -269,7 +269,7 @@ class OrderAccess : public AllStatic {
 #endif
   }
 
-#ifdef LOONGARCH64
+#if defined(LOONGARCH64) && !defined(ZERO)
   static void     loadload_for_sa();
 #endif
 private:

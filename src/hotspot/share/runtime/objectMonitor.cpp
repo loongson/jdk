@@ -497,9 +497,11 @@ bool ObjectMonitor::enter(JavaThread* current) {
   }
 
   assert(!has_owner(current), "invariant");
+#if defined(LOONGARCH64) && !defined(ZERO)
   // Thread _succ != current assertion load reording before Thread if (_succ == current) _succ = nullptr.
   // But expect order is firstly if (_succ == current) _succ = nullptr then _succ != current assertion.
-  LOONGARCH64_ONLY(DEBUG_ONLY(OrderAccess::loadload_for_sa();))
+  DEBUG_ONLY(OrderAccess::loadload_for_sa();)
+#endif
   assert(!has_successor(current), "invariant");
   assert(!SafepointSynchronize::is_at_safepoint(), "invariant");
   assert(current->thread_state() != _thread_blocked, "invariant");
@@ -961,7 +963,9 @@ void ObjectMonitor::enter_internal(JavaThread* current) {
   }
 
   // The Spin failed -- Enqueue and park the thread ...
-  LOONGARCH64_ONLY(DEBUG_ONLY(OrderAccess::loadload_for_sa();))
+#if defined(LOONGARCH64) && !defined(ZERO)
+  DEBUG_ONLY(OrderAccess::loadload_for_sa();)
+#endif
   assert(!has_successor(current), "invariant");
   assert(!has_owner(current), "invariant");
 

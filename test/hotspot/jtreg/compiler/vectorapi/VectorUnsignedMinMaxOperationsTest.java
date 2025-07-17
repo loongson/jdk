@@ -21,6 +21,12 @@
  * questions.
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2025, Thes
+ * modifications are Copyright (c) 2025, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 /**
 * @test
 * @bug 8342676
@@ -105,7 +111,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMAX_VB, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMAX_VB, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umax_byte() {
         for (int i = 0; i < COUNT; i += bspec.length()) {
@@ -128,7 +134,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMAX_VS, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMAX_VS, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umax_short() {
         for (int i = 0; i < COUNT; i += sspec.length()) {
@@ -151,7 +157,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMAX_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMAX_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umax_int() {
         for (int i = 0; i < COUNT; i += ispec.length()) {
@@ -174,7 +180,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMAX_VL, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMAX_VL, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umax_long() {
         for (int i = 0; i < COUNT; i += lspec.length()) {
@@ -197,7 +203,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMIN_VB, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMIN_VB, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umin_byte() {
         for (int i = 0; i < COUNT; i += bspec.length()) {
@@ -220,7 +226,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMIN_VS, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMIN_VS, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umin_short() {
         for (int i = 0; i < COUNT; i += sspec.length()) {
@@ -243,7 +249,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMIN_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMIN_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umin_int() {
         for (int i = 0; i < COUNT; i += ispec.length()) {
@@ -266,7 +272,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMIN_VL, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMIN_VL, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umin_long() {
         for (int i = 0; i < COUNT; i += lspec.length()) {
@@ -289,7 +295,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMIN_VI, " 0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMIN_VI, " 0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umin_ir_transform1() {
         for (int i = 0; i < COUNT; i += ispec.length()) {
@@ -312,7 +318,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMAX_VI, " 0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMAX_VI, " 0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umax_ir_transform1() {
         for (int i = 0; i < COUNT; i += ispec.length()) {
@@ -335,7 +341,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMAX_VI, " 0 ", IRNode.UMIN_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMAX_VI, " 0 ", IRNode.UMIN_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umin_max_ir_transform1() {
         for (int i = 0; i < COUNT; i += ispec.length()) {
@@ -362,7 +368,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMIN_VI, " 0 ", IRNode.UMAX_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMIN_VI, " 0 ", IRNode.UMAX_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umin_max_ir_transform2() {
         for (int i = 0; i < COUNT; i += ispec.length()) {
@@ -389,7 +395,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMAX_VI, " 0 ", IRNode.UMIN_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMAX_VI, " 0 ", IRNode.UMIN_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umin_max_ir_transform3() {
         for (int i = 0; i < COUNT; i += ispec.length()) {
@@ -416,7 +422,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMIN_VI, " 0 ", IRNode.UMAX_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMIN_VI, " 0 ", IRNode.UMAX_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umin_max_ir_transform4() {
         for (int i = 0; i < COUNT; i += ispec.length()) {
@@ -443,7 +449,7 @@ public class VectorUnsignedMinMaxOperationsTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMIN_VI, " 0 ", IRNode.UMAX_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMIN_VI, " 0 ", IRNode.UMAX_VI, " >0 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     @Warmup(value = 10000)
     public void umin_max_ir_transform5() {
         for (int i = 0; i < COUNT; i += ispec.length()) {

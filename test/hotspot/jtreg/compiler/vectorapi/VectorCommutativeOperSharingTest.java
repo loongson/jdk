@@ -21,6 +21,12 @@
  * questions.
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2025, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 package compiler.vectorapi;
 
 import compiler.lib.ir_framework.*;
@@ -576,7 +582,7 @@ public class VectorCommutativeOperSharingTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMAX_VI, IRNode.VECTOR_SIZE_ANY, " 1 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMAX_VI, IRNode.VECTOR_SIZE_ANY, " 1 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     public void testVectorIRSharing20(int index) {
         IntVector vec1 = IntVector.fromArray(I_SPECIES, ia, index);
         IntVector vec2 = IntVector.fromArray(I_SPECIES, ib, index);
@@ -601,7 +607,7 @@ public class VectorCommutativeOperSharingTest {
     }
 
     @Test
-    @IR(counts = {IRNode.UMIN_VI, IRNode.VECTOR_SIZE_ANY, " 1 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true"})
+    @IR(counts = {IRNode.UMIN_VI, IRNode.VECTOR_SIZE_ANY, " 1 "}, applyIfCPUFeatureOr = {"avx", "true", "rvv", "true", "lsx", "true"})
     public void testVectorIRSharing21(int index) {
         IntVector vec1 = IntVector.fromArray(I_SPECIES, ia, index);
         IntVector vec2 = IntVector.fromArray(I_SPECIES, ib, index);

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -873,6 +873,14 @@ class Assembler : public AbstractAssembler  {
     vmin_h_op          = 0b01110000011100101,
     vmin_w_op          = 0b01110000011100110,
     vmin_d_op          = 0b01110000011100111,
+    vmax_bu_op         = 0b01110000011101000,
+    vmax_hu_op         = 0b01110000011101001,
+    vmax_wu_op         = 0b01110000011101010,
+    vmax_du_op         = 0b01110000011101011,
+    vmin_bu_op         = 0b01110000011101100,
+    vmin_hu_op         = 0b01110000011101101,
+    vmin_wu_op         = 0b01110000011101110,
+    vmin_du_op         = 0b01110000011101111,
     vmul_b_op          = 0b01110000100001000,
     vmul_h_op          = 0b01110000100001001,
     vmul_w_op          = 0b01110000100001010,
@@ -1052,6 +1060,14 @@ class Assembler : public AbstractAssembler  {
     xvmin_h_op         = 0b01110100011100101,
     xvmin_w_op         = 0b01110100011100110,
     xvmin_d_op         = 0b01110100011100111,
+    xvmax_bu_op        = 0b01110100011101000,
+    xvmax_hu_op        = 0b01110100011101001,
+    xvmax_wu_op        = 0b01110100011101010,
+    xvmax_du_op        = 0b01110100011101011,
+    xvmin_bu_op        = 0b01110100011101100,
+    xvmin_hu_op        = 0b01110100011101101,
+    xvmin_wu_op        = 0b01110100011101110,
+    xvmin_du_op        = 0b01110100011101111,
     xvmul_b_op         = 0b01110100100001000,
     xvmul_h_op         = 0b01110100100001001,
     xvmul_w_op         = 0b01110100100001010,
@@ -2425,6 +2441,15 @@ public:
   void xvmax_w(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmax_w_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
   void xvmax_d(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmax_d_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
 
+  void  vmax_bu(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmax_bu_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vmax_hu(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmax_hu_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vmax_wu(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmax_wu_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vmax_du(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmax_du_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void xvmax_bu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmax_bu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvmax_hu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmax_hu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvmax_wu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmax_wu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvmax_du(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmax_du_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+
   void  vmin_b(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmin_b_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
   void  vmin_h(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmin_h_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
   void  vmin_w(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmin_w_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
@@ -2433,6 +2458,15 @@ public:
   void xvmin_h(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmin_h_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
   void xvmin_w(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmin_w_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
   void xvmin_d(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmin_d_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+
+  void  vmin_bu(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmin_bu_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vmin_hu(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmin_hu_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vmin_wu(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmin_wu_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vmin_du(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmin_du_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void xvmin_bu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmin_bu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvmin_hu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmin_hu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvmin_wu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmin_wu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvmin_du(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvmin_du_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
 
   void  vmul_b(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmul_b_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
   void  vmul_h(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vmul_h_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }

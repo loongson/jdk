@@ -12907,6 +12907,33 @@ instruct absdV(vReg dst, vReg src1, vReg src2) %{
 
 // --------------------------------- MAX --------------------------------------
 
+instruct umaxV(vReg dst, vReg src1, vReg src2) %{
+  match(Set dst (UMaxV src1 src2));
+  format %{ "(x)vumax    $dst, $src1, $src2\t# @umaxV" %}
+  ins_encode %{
+    if (Matcher::vector_length_in_bytes(this) > 16) {
+      switch (Matcher::vector_element_basic_type(this)) {
+        case T_BYTE : __ xvmax_bu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_SHORT: __ xvmax_hu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_INT  : __ xvmax_wu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_LONG : __ xvmax_du($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        default:
+          ShouldNotReachHere();
+      }
+    } else {
+      switch (Matcher::vector_element_basic_type(this)) {
+        case T_BYTE : __ vmax_bu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_SHORT: __ vmax_hu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_INT  : __ vmax_wu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_LONG : __ vmax_du($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        default:
+          ShouldNotReachHere();
+      }
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 instruct maxV(vReg dst, vReg src1, vReg src2) %{
   predicate(!(is_floating_point_type(Matcher::vector_element_basic_type(n))));
   match(Set dst (MaxV src1 src2));
@@ -12982,6 +13009,33 @@ instruct maxVD(vReg dst, vReg src1, vReg src2, vReg tmp) %{
 %}
 
 // --------------------------------- MIN --------------------------------------
+
+instruct uminV(vReg dst, vReg src1, vReg src2) %{
+  match(Set dst (UMinV src1 src2));
+  format %{ "(x)vumin    $dst, $src1, $src2\t# @uminV" %}
+  ins_encode %{
+    if (Matcher::vector_length_in_bytes(this) > 16) {
+      switch (Matcher::vector_element_basic_type(this)) {
+        case T_BYTE : __ xvmin_bu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_SHORT: __ xvmin_hu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_INT  : __ xvmin_wu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_LONG : __ xvmin_du($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        default:
+          ShouldNotReachHere();
+      }
+    } else {
+      switch (Matcher::vector_element_basic_type(this)) {
+        case T_BYTE : __ vmin_bu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_SHORT: __ vmin_hu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_INT  : __ vmin_wu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_LONG : __ vmin_du($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        default:
+          ShouldNotReachHere();
+      }
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
 
 instruct minV(vReg dst, vReg src1, vReg src2) %{
   predicate(!(is_floating_point_type(Matcher::vector_element_basic_type(n))));

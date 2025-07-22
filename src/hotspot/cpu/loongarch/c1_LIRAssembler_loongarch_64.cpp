@@ -277,16 +277,16 @@ void LIR_Assembler::deoptimize_trap(CodeEmitInfo *info) {
 
   switch (patching_id(info)) {
   case PatchingStub::access_field_id:
-    target = Runtime1::entry_for(C1StubId::access_field_patching_id);
+    target = Runtime1::entry_for(StubId::c1_access_field_patching_id);
     break;
   case PatchingStub::load_klass_id:
-    target = Runtime1::entry_for(C1StubId::load_klass_patching_id);
+    target = Runtime1::entry_for(StubId::c1_load_klass_patching_id);
     break;
   case PatchingStub::load_mirror_id:
-    target = Runtime1::entry_for(C1StubId::load_mirror_patching_id);
+    target = Runtime1::entry_for(StubId::c1_load_mirror_patching_id);
     break;
   case PatchingStub::load_appendix_id:
-    target = Runtime1::entry_for(C1StubId::load_appendix_patching_id);
+    target = Runtime1::entry_for(StubId::c1_load_appendix_patching_id);
     break;
   default: ShouldNotReachHere();
   }
@@ -324,7 +324,7 @@ int LIR_Assembler::emit_exception_handler() {
   __ verify_not_null_oop(A0);
 
   // search an exception handler (A0: exception oop, A1: throwing pc)
-  __ call(Runtime1::entry_for(C1StubId::handle_exception_from_callee_id), relocInfo::runtime_call_type);
+  __ call(Runtime1::entry_for(StubId::c1_handle_exception_from_callee_id), relocInfo::runtime_call_type);
   __ should_not_reach_here();
   guarantee(code_offset() - offset <= exception_handler_size(), "overflow");
   __ end_a_stub();
@@ -378,7 +378,7 @@ int LIR_Assembler::emit_unwind_handler() {
   // remove the activation and dispatch to the unwind handler
   __ block_comment("remove_frame and dispatch to the unwind handler");
   __ remove_frame(initial_frame_size_in_bytes());
-  __ jmp(Runtime1::entry_for(C1StubId::unwind_exception_id), relocInfo::runtime_call_type);
+  __ jmp(Runtime1::entry_for(StubId::c1_unwind_exception_id), relocInfo::runtime_call_type);
 
   // Emit the slow path assembly
   if (stub != nullptr) {
@@ -759,16 +759,16 @@ void LIR_Assembler::klass2reg_with_patching(Register reg, CodeEmitInfo* info) {
 
   switch (patching_id(info)) {
   case PatchingStub::access_field_id:
-    target = Runtime1::entry_for(C1StubId::access_field_patching_id);
+    target = Runtime1::entry_for(StubId::c1_access_field_patching_id);
     break;
   case PatchingStub::load_klass_id:
-    target = Runtime1::entry_for(C1StubId::load_klass_patching_id);
+    target = Runtime1::entry_for(StubId::c1_load_klass_patching_id);
     break;
   case PatchingStub::load_mirror_id:
-    target = Runtime1::entry_for(C1StubId::load_mirror_patching_id);
+    target = Runtime1::entry_for(StubId::c1_load_mirror_patching_id);
     break;
   case PatchingStub::load_appendix_id:
-    target = Runtime1::entry_for(C1StubId::load_appendix_patching_id);
+    target = Runtime1::entry_for(StubId::c1_load_appendix_patching_id);
     break;
   default: ShouldNotReachHere();
   }
@@ -1334,7 +1334,7 @@ void LIR_Assembler::emit_typecheck_helper(LIR_OpTypeCheck *op, Label* success,
         __ addi_d(SP, SP, -2 * wordSize);
         __ st_d(k_RInfo, Address(SP, 0 * wordSize));
         __ st_d(klass_RInfo, Address(SP, 1 * wordSize));
-        __ call(Runtime1::entry_for(C1StubId::slow_subtype_check_id), relocInfo::runtime_call_type);
+        __ call(Runtime1::entry_for(StubId::c1_slow_subtype_check_id), relocInfo::runtime_call_type);
         __ ld_d(klass_RInfo, Address(SP, 0 * wordSize));
         __ addi_d(SP, SP, 2 * wordSize);
         // result is a boolean
@@ -1348,7 +1348,7 @@ void LIR_Assembler::emit_typecheck_helper(LIR_OpTypeCheck *op, Label* success,
       __ addi_d(SP, SP, -2 * wordSize);
       __ st_d(k_RInfo, Address(SP, 0 * wordSize));
       __ st_d(klass_RInfo, Address(SP, 1 * wordSize));
-      __ call(Runtime1::entry_for(C1StubId::slow_subtype_check_id), relocInfo::runtime_call_type);
+      __ call(Runtime1::entry_for(StubId::c1_slow_subtype_check_id), relocInfo::runtime_call_type);
       __ ld_d(k_RInfo, Address(SP, 0 * wordSize));
       __ ld_d(klass_RInfo, Address(SP, 1 * wordSize));
       __ addi_d(SP, SP, 2 * wordSize);
@@ -1428,7 +1428,7 @@ void LIR_Assembler::emit_opTypeCheck(LIR_OpTypeCheck* op) {
     __ addi_d(SP, SP, -2 * wordSize);
     __ st_d(k_RInfo, Address(SP, 0 * wordSize));
     __ st_d(klass_RInfo, Address(SP, 1 * wordSize));
-    __ call(Runtime1::entry_for(C1StubId::slow_subtype_check_id), relocInfo::runtime_call_type);
+    __ call(Runtime1::entry_for(StubId::c1_slow_subtype_check_id), relocInfo::runtime_call_type);
     __ ld_d(k_RInfo, Address(SP, 0 * wordSize));
     __ ld_d(klass_RInfo, Address(SP, 1 * wordSize));
     __ addi_d(SP, SP, 2 * wordSize);
@@ -2311,7 +2311,7 @@ void LIR_Assembler::throw_op(LIR_Opr exceptionPC, LIR_Opr exceptionOop, CodeEmit
   // exception object is not added to oop map by LinearScan
   // (LinearScan assumes that no oops are in fixed registers)
   info->add_register_oop(exceptionOop);
-  C1StubId unwind_id;
+  StubId unwind_id;
 
   // get current pc information
   // pc is only needed if the method has an exception handler, the unwind code does not need it.
@@ -2331,9 +2331,9 @@ void LIR_Assembler::throw_op(LIR_Opr exceptionPC, LIR_Opr exceptionOop, CodeEmit
   __ verify_not_null_oop(A0);
   // search an exception handler (A0: exception oop, A1: throwing pc)
   if (compilation()->has_fpu_code()) {
-    unwind_id = C1StubId::handle_exception_id;
+    unwind_id = StubId::c1_handle_exception_id;
   } else {
-    unwind_id = C1StubId::handle_exception_nofpu_id;
+    unwind_id = StubId::c1_handle_exception_nofpu_id;
   }
   __ call(Runtime1::entry_for(unwind_id), relocInfo::runtime_call_type);
 
@@ -2595,7 +2595,7 @@ void LIR_Assembler::emit_arraycopy(LIR_OpArrayCopy* op) {
       __ addi_d(SP, SP, -2 * wordSize);
       __ st_d(dst, Address(SP, 0 * wordSize));
       __ st_d(src, Address(SP, 1 * wordSize));
-      __ call(Runtime1::entry_for(C1StubId::slow_subtype_check_id), relocInfo::runtime_call_type);
+      __ call(Runtime1::entry_for(StubId::c1_slow_subtype_check_id), relocInfo::runtime_call_type);
       __ ld_d(dst, Address(SP, 0 * wordSize));
       __ ld_d(src, Address(SP, 1 * wordSize));
       __ addi_d(SP, SP, 2 * wordSize);

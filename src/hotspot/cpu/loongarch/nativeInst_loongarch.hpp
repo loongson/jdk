@@ -38,8 +38,7 @@
 // - - NativeCall
 // - - NativeMovConstReg
 // - - NativeMovConstRegPatching
-// - - NativeMovRegMem
-// - - NativeMovRegMemPatching
+// - - NativeMovRegMem - Unimplemented
 // - - NativeIllegalOpCode
 // - - NativeGeneralJump
 // - - NativePushConst
@@ -182,7 +181,6 @@ class NativeCall: public NativeInstruction {
   }
 
   // MT-safe patching of a call instruction.
-  static void insert(address code_pos, address entry);
   static void replace_mt_safe(address instr_addr, address code_buffer);
 
   // Similar to replace_mt_safe, but just changes the destination.  The
@@ -332,54 +330,19 @@ class NativeMovConstRegPatching: public NativeMovConstReg {
 
 class NativeMovRegMem: public NativeInstruction {
  public:
-  enum loongarch_specific_constants {
-    instruction_offset = 0,
-    instruction_size = 4,
-    hiword_offset   = 4,
-    ldst_offset     = 12,
-    immediate_size  = 4,
-    ldst_size       = 16
-  };
+  int num_bytes_to_end_of_patch() const { Unimplemented(); return 0; }
 
-  address instruction_address() const       { return addr_at(instruction_offset); }
+  int offset() const { Unimplemented(); return 0; }
 
-  int num_bytes_to_end_of_patch() const { return instruction_offset + instruction_size; }
+  void set_offset(int x) { Unimplemented(); }
 
-  int   offset() const;
-
-  void  set_offset(int x);
-
-  void  add_offset_in_bytes(int add_offset)     { set_offset ( ( offset() + add_offset ) ); }
-
-  void verify();
-  void print ();
-
-  // unit test stuff
-  static void test() {}
-
- private:
-  inline friend NativeMovRegMem* nativeMovRegMem_at (address address);
+  void add_offset_in_bytes(int add_offset) { Unimplemented(); }
 };
 
-inline NativeMovRegMem* nativeMovRegMem_at (address address) {
-  NativeMovRegMem* test = (NativeMovRegMem*)(address - NativeMovRegMem::instruction_offset);
-#ifdef ASSERT
-  test->verify();
-#endif
-  return test;
+inline NativeMovRegMem* nativeMovRegMem_at(address addr) {
+  Unimplemented();
+  return (NativeMovRegMem*)nullptr;
 }
-
-class NativeMovRegMemPatching: public NativeMovRegMem {
- private:
-  friend NativeMovRegMemPatching* nativeMovRegMemPatching_at (address address) {
-    NativeMovRegMemPatching* test = (NativeMovRegMemPatching*)(address - instruction_offset);
-    #ifdef ASSERT
-      test->verify();
-    #endif
-    return test;
-  }
-};
-
 
 // Handles all kinds of jump on Loongson.
 //   short:
@@ -425,8 +388,8 @@ class NativeGeneralJump: public NativeJump {
   inline friend NativeGeneralJump* nativeGeneralJump_at(address address);
 
   // Insertion of native general jump instruction
-  static void insert_unconditional(address code_pos, address entry);
-  static void replace_mt_safe(address instr_addr, address code_buffer);
+  static void insert_unconditional(address code_pos, address entry) { Unimplemented(); }
+  static void replace_mt_safe(address instr_addr, address code_buffer) { Unimplemented(); }
 };
 
 inline NativeGeneralJump* nativeGeneralJump_at(address address) {

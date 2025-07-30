@@ -210,12 +210,6 @@ void NativeCall::print() {
                 p2i(instruction_address()), p2i(destination()));
 }
 
-// Inserts a native call instruction at a given pc
-void NativeCall::insert(address code_pos, address entry) {
-  //TODO: LA
-  guarantee(0, "LA not implemented yet");
-}
-
 // MT-safe patching of a call instruction.
 // First patches first word of instruction to two jmp's that jmps to themselves
 // (spinlock). Then patches the last byte, and then atomically replaces
@@ -383,28 +377,6 @@ void NativeMovConstReg::set_data(intptr_t x, intptr_t o) {
 
 //-------------------------------------------------------------------
 
-int NativeMovRegMem::offset() const{
-  //TODO: LA
-  guarantee(0, "LA not implemented yet");
-  return 0; // mute compiler
-}
-
-void NativeMovRegMem::set_offset(int x) {
-  //TODO: LA
-  guarantee(0, "LA not implemented yet");
-}
-
-void NativeMovRegMem::verify() {
-  //TODO: LA
-  guarantee(0, "LA not implemented yet");
-}
-
-
-void NativeMovRegMem::print() {
-  //TODO: LA
-  guarantee(0, "LA not implemented yet");
-}
-
 bool NativeInstruction::is_stop() {
   return uint_at(0) == 0x04000000; // csrrd R0 0
 }
@@ -457,20 +429,6 @@ void NativeJump::set_jump_destination(address dest) {
   MacroAssembler masm(&cb);
   masm.patchable_jump(dest);
   ICache::invalidate_range(addr_at(0), instruction_size);
-}
-
-void NativeGeneralJump::insert_unconditional(address code_pos, address entry) {
-  //TODO: LA
-  guarantee(0, "LA not implemented yet");
-}
-
-// MT-safe patching of a long jump instruction.
-// First patches first word of instruction to two jmp's that jmps to themselves
-// (spinlock). Then patches the last byte, and then atomically replaces
-// the jmp's with the first 4 byte of the new instruction.
-void NativeGeneralJump::replace_mt_safe(address instr_addr, address code_buffer) {
-  //TODO: LA
-  guarantee(0, "LA not implemented yet");
 }
 
 bool NativeInstruction::is_safepoint_poll() {

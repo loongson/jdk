@@ -3882,21 +3882,117 @@ void MacroAssembler::update_byte_crc32(Register crc, Register val, Register tabl
  * @param len   register containing number of bytes
  * @param tmp   scratch register
 **/
-void MacroAssembler::kernel_crc32(Register crc, Register buf, Register len, Register tmp) {
-  Label CRC_by64_loop, CRC_by4_loop, CRC_by1_loop, CRC_less64, CRC_by64_pre, CRC_by32_loop, CRC_less32, L_exit;
+void MacroAssembler::kernel_crc32(Register crc, Register buf,
+                                  Register len, Register tmp) {
   assert_different_registers(crc, buf, len, tmp);
 
-    nor(crc, crc, R0);
+  Label L_loop64, L_loop8, L_small, L_exit;
 
-    addi_d(len, len, -64);
-    bge(len, R0, CRC_by64_loop);
-    addi_d(len, len, 64-4);
-    bge(len, R0, CRC_by4_loop);
-    addi_d(len, len, 4);
-    blt(R0, len, CRC_by1_loop);
+  nor(crc, crc, R0);
+  bge(R0, len, L_exit);
+
+  srli_w(AT, len, 6);
+  bnez(AT, L_loop64);
+  srli_w(AT, len, 3);
+  beqz(AT, L_small);
+
+  bind(L_loop8);
+    ld_d(tmp, buf, 0);
+    crc_w_d_w(crc, tmp, crc);
+    addi_w(AT, AT, -1);
+    addi_d(buf, buf, 8);
+    bnez(AT, L_loop8);
+    andi(len, len, 7);
+    beqz(len, L_exit);
+
+  bind(L_small);
+    pcaddi(AT, 4);
+    slli_d(len, len, 5);
+    add_d(AT, AT, len);
+    jr(AT);
+
+    // 0:
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+    nop();
+    nop();
+    nop();
+    nop();
+
+    // 1:
+    ld_b(tmp, buf, 0);
+    crc_w_b_w(crc, tmp, crc);
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+    nop();
+    nop();
+
+    // 2:
+    ld_h(tmp, buf, 0);
+    crc_w_h_w(crc, tmp, crc);
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+    nop();
+    nop();
+
+    // 3:
+    ld_h(tmp, buf, 0);
+    crc_w_h_w(crc, tmp, crc);
+    ld_b(tmp, buf, 2);
+    crc_w_b_w(crc, tmp, crc);
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+
+    // 4:
+    ld_w(tmp, buf, 0);
+    crc_w_w_w(crc, tmp, crc);
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+    nop();
+    nop();
+
+    // 5:
+    ld_w(tmp, buf, 0);
+    crc_w_w_w(crc, tmp, crc);
+    ld_b(tmp, buf, 4);
+    crc_w_b_w(crc, tmp, crc);
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+
+    // 6:
+    ld_w(tmp, buf, 0);
+    crc_w_w_w(crc, tmp, crc);
+    ld_h(tmp, buf, 4);
+    crc_w_h_w(crc, tmp, crc);
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+
+    // 7:
+    ld_w(tmp, buf, 0);
+    crc_w_w_w(crc, tmp, crc);
+    ld_h(tmp, buf, 4);
+    crc_w_h_w(crc, tmp, crc);
+    ld_b(tmp, buf, 6);
+    crc_w_b_w(crc, tmp, crc);
     b(L_exit);
 
-  bind(CRC_by64_loop);
+  align(CodeEntryAlignment);
+
+  bind(L_loop64);
     ld_d(tmp, buf, 0);
     crc_w_d_w(crc, tmp, crc);
     ld_d(tmp, buf, 8);
@@ -3913,30 +4009,13 @@ void MacroAssembler::kernel_crc32(Register crc, Register buf, Register len, Regi
     crc_w_d_w(crc, tmp, crc);
     ld_d(tmp, buf, 56);
     crc_w_d_w(crc, tmp, crc);
+    addi_w(AT, AT, -1);
     addi_d(buf, buf, 64);
-    addi_d(len, len, -64);
-    bge(len, R0, CRC_by64_loop);
-    addi_d(len, len, 64-4);
-    bge(len, R0, CRC_by4_loop);
-    addi_d(len, len, 4);
-    blt(R0, len, CRC_by1_loop);
-    b(L_exit);
-
-  bind(CRC_by4_loop);
-    ld_w(tmp, buf, 0);
-    crc_w_w_w(crc, tmp, crc);
-    addi_d(buf, buf, 4);
-    addi_d(len, len, -4);
-    bge(len, R0, CRC_by4_loop);
-    addi_d(len, len, 4);
-    bge(R0, len, L_exit);
-
-  bind(CRC_by1_loop);
-    ld_b(tmp, buf, 0);
-    crc_w_b_w(crc, tmp, crc);
-    addi_d(buf, buf, 1);
-    addi_d(len, len, -1);
-    blt(R0, len, CRC_by1_loop);
+    bnez(AT, L_loop64);
+    bstrpick_w(AT, len, 5, 3);
+    bnez(AT, L_loop8);
+    andi(len, len, 7);
+    bnez(len, L_small);
 
   bind(L_exit);
     nor(crc, crc, R0);
@@ -3948,19 +4027,116 @@ void MacroAssembler::kernel_crc32(Register crc, Register buf, Register len, Regi
  * @param len   register containing number of bytes
  * @param tmp   scratch register
 **/
-void MacroAssembler::kernel_crc32c(Register crc, Register buf, Register len, Register tmp) {
-  Label CRC_by64_loop, CRC_by4_loop, CRC_by1_loop, CRC_less64, CRC_by64_pre, CRC_by32_loop, CRC_less32, L_exit;
+void MacroAssembler::kernel_crc32c(Register crc, Register buf,
+                                   Register len, Register tmp) {
   assert_different_registers(crc, buf, len, tmp);
 
-    addi_d(len, len, -64);
-    bge(len, R0, CRC_by64_loop);
-    addi_d(len, len, 64-4);
-    bge(len, R0, CRC_by4_loop);
-    addi_d(len, len, 4);
-    blt(R0, len, CRC_by1_loop);
+  Label L_loop64, L_loop8, L_small, L_exit;
+
+  bge(R0, len, L_exit);
+
+  srli_w(AT, len, 6);
+  bnez(AT, L_loop64);
+  srli_w(AT, len, 3);
+  beqz(AT, L_small);
+
+  bind(L_loop8);
+    ld_d(tmp, buf, 0);
+    crcc_w_d_w(crc, tmp, crc);
+    addi_w(AT, AT, -1);
+    addi_d(buf, buf, 8);
+    bnez(AT, L_loop8);
+    andi(len, len, 7);
+    beqz(len, L_exit);
+
+  bind(L_small);
+    pcaddi(AT, 4);
+    slli_d(len, len, 5);
+    add_d(AT, AT, len);
+    jr(AT);
+
+    // 0:
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+    nop();
+    nop();
+    nop();
+    nop();
+
+    // 1:
+    ld_b(tmp, buf, 0);
+    crcc_w_b_w(crc, tmp, crc);
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+    nop();
+    nop();
+
+    // 2:
+    ld_h(tmp, buf, 0);
+    crcc_w_h_w(crc, tmp, crc);
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+    nop();
+    nop();
+
+    // 3:
+    ld_h(tmp, buf, 0);
+    crcc_w_h_w(crc, tmp, crc);
+    ld_b(tmp, buf, 2);
+    crcc_w_b_w(crc, tmp, crc);
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+
+    // 4:
+    ld_w(tmp, buf, 0);
+    crcc_w_w_w(crc, tmp, crc);
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+    nop();
+    nop();
+
+    // 5:
+    ld_w(tmp, buf, 0);
+    crcc_w_w_w(crc, tmp, crc);
+    ld_b(tmp, buf, 4);
+    crcc_w_b_w(crc, tmp, crc);
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+
+    // 6:
+    ld_w(tmp, buf, 0);
+    crcc_w_w_w(crc, tmp, crc);
+    ld_h(tmp, buf, 4);
+    crcc_w_h_w(crc, tmp, crc);
+    b(L_exit);
+    nop();
+    nop();
+    nop();
+
+    // 7:
+    ld_w(tmp, buf, 0);
+    crcc_w_w_w(crc, tmp, crc);
+    ld_h(tmp, buf, 4);
+    crcc_w_h_w(crc, tmp, crc);
+    ld_b(tmp, buf, 6);
+    crcc_w_b_w(crc, tmp, crc);
     b(L_exit);
 
-  bind(CRC_by64_loop);
+  align(CodeEntryAlignment);
+
+  bind(L_loop64);
     ld_d(tmp, buf, 0);
     crcc_w_d_w(crc, tmp, crc);
     ld_d(tmp, buf, 8);
@@ -3977,30 +4153,13 @@ void MacroAssembler::kernel_crc32c(Register crc, Register buf, Register len, Reg
     crcc_w_d_w(crc, tmp, crc);
     ld_d(tmp, buf, 56);
     crcc_w_d_w(crc, tmp, crc);
+    addi_w(AT, AT, -1);
     addi_d(buf, buf, 64);
-    addi_d(len, len, -64);
-    bge(len, R0, CRC_by64_loop);
-    addi_d(len, len, 64-4);
-    bge(len, R0, CRC_by4_loop);
-    addi_d(len, len, 4);
-    blt(R0, len, CRC_by1_loop);
-    b(L_exit);
-
-  bind(CRC_by4_loop);
-    ld_w(tmp, buf, 0);
-    crcc_w_w_w(crc, tmp, crc);
-    addi_d(buf, buf, 4);
-    addi_d(len, len, -4);
-    bge(len, R0, CRC_by4_loop);
-    addi_d(len, len, 4);
-    bge(R0, len, L_exit);
-
-  bind(CRC_by1_loop);
-    ld_b(tmp, buf, 0);
-    crcc_w_b_w(crc, tmp, crc);
-    addi_d(buf, buf, 1);
-    addi_d(len, len, -1);
-    blt(R0, len, CRC_by1_loop);
+    bnez(AT, L_loop64);
+    bstrpick_w(AT, len, 5, 3);
+    bnez(AT, L_loop8);
+    andi(len, len, 7);
+    bnez(len, L_small);
 
   bind(L_exit);
 }

@@ -50,7 +50,7 @@ STUBGEN_ARCH_ENTRIES_DO(DEFINE_ARCH_ENTRY, DEFINE_ARCH_ENTRY_INIT)
 address StubRoutines::crc_table_addr()    { return (address)StubRoutines::la::_crc_table; }
 address StubRoutines::crc32c_table_addr() { ShouldNotCallThis(); return nullptr; }
 
-juint StubRoutines::la::_crc_table[] =
+ATTRIBUTE_ALIGNED(4096) juint StubRoutines::la::_crc_table[] =
 {
     0x00000000UL, 0x77073096UL, 0xee0e612cUL, 0x990951baUL, 0x076dc419UL,
     0x706af48fUL, 0xe963a535UL, 0x9e6495a3UL, 0x0edb8832UL, 0x79dcb8a4UL,

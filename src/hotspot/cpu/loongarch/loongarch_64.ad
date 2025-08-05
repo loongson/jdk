@@ -988,31 +988,25 @@ bool Matcher::match_rule_supported(int opcode) {
     case Op_StrInflatedCopy:
     case Op_StrCompressedCopy:
     case Op_EncodeISOArray:
-      if (!UseLSX)
-        return false;
+      return UseLSX;
     case Op_PopCountI:
     case Op_PopCountL:
       return UsePopCountInstruction;
     case Op_FmaF:
     case Op_FmaD:
-    case Op_FmaVF:
-    case Op_FmaVD:
-      if (!UseFMA)
-        return false;
+      return UseFMA;
     case Op_CompareAndSwapB:
     case Op_CompareAndSwapS:
     case Op_CompareAndExchangeB:
     case Op_CompareAndExchangeS:
     case Op_WeakCompareAndSwapB:
     case Op_WeakCompareAndSwapS:
-      if (!UseAMCAS)
-        return false;
+      return UseAMCAS;
     case Op_GetAndSetB:
     case Op_GetAndSetS:
     case Op_GetAndAddB:
     case Op_GetAndAddS:
-      if (!UseAMBH)
-        return false;
+      return UseAMBH;
     default:
       break;
   }
@@ -1031,20 +1025,12 @@ bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType bt) {
   switch (opcode) {
     case Op_RotateRightV:
     case Op_RotateLeftV:
-      if (bt != T_INT && bt != T_LONG) {
-        return false;
-      }
-      break;
+      return (bt == T_INT || bt == T_LONG);
     case Op_MaxReductionV:
     case Op_MinReductionV:
-      if (bt == T_FLOAT || bt == T_DOUBLE) {
-        return false;
-      }
-      break;
+      return (bt != T_FLOAT && bt != T_DOUBLE);
     case Op_VectorLoadShuffle:
-      if (vlen < 4 || !UseLASX)
-        return false;
-      break;
+      return (UseLASX && vlen >= 4);
     case Op_VectorUCastB2X:
     case Op_VectorUCastS2X:
     case Op_VectorUCastI2X:
@@ -1056,13 +1042,12 @@ bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType bt) {
     case Op_VectorCastD2X:
     case Op_VectorLoadMask:
     case Op_VectorMaskCast:
-      if (!UseLASX)
-        return false;
-      break;
+      return UseLASX;
     case Op_VectorTest:
-      if (vlen * type2aelembytes(bt) < 16)
-        return false;
-      break;
+      return (vlen * type2aelembytes(bt) >= 16);
+    case Op_FmaVF:
+    case Op_FmaVD:
+      return UseFMA;
     default:
       break;
   }

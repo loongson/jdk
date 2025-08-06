@@ -22,8 +22,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2023, These
- * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2023, 2025, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -132,7 +132,7 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
 
     // ---------------- Arithmetic ----------------
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.NEG_VF, ">0"})
     public float[] vectorNeg() {
         float[] res = new float[SIZE];
@@ -143,7 +143,7 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.ABS_VF, ">0"})
     public float[] vectorAbs() {
         float[] res = new float[SIZE];
@@ -154,7 +154,7 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "avx", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "avx", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.SQRT_VF, ">0"})
     public float[] vectorSqrt() {
         float[] res = new float[SIZE];
@@ -165,7 +165,7 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.ADD_VF, ">0"})
     public float[] vectorAdd() {
         float[] res = new float[SIZE];
@@ -176,7 +176,7 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.SUB_VF, ">0"})
     public float[] vectorSub() {
         float[] res = new float[SIZE];
@@ -187,7 +187,7 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.MUL_VF, ">0"})
     public float[] vectorMul() {
         float[] res = new float[SIZE];
@@ -198,7 +198,7 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.DIV_VF, ">0"})
     public float[] vectorDiv() {
         float[] res = new float[SIZE];
@@ -209,7 +209,7 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "avx", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "avx", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.MAX_VF, ">0"})
     public float[] vectorMax() {
         float[] res = new float[SIZE];
@@ -220,7 +220,7 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "avx", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "avx", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.MIN_VF, ">0"})
     public float[] vectorMin() {
         float[] res = new float[SIZE];
@@ -237,6 +237,8 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
         counts = {IRNode.FMA_VF, ">0"})
     @IR(applyIfCPUFeature = {"rvv", "true"}, applyIf = {"UseFMA", "true"},
         counts = {IRNode.FMA_VF, ">0"})
+    @IR(applyIfCPUFeature = {"lsx", "true"}, applyIf = {"UseFMA", "true"},
+        counts = {IRNode.FMA_VF, ">0"})
     public float[] vectorMulAdd() {
         float[] res = new float[SIZE];
         for (int i = 0; i < SIZE; i++) {
@@ -252,6 +254,8 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
         counts = {IRNode.FMA_VF, ">0"})
     @IR(applyIfCPUFeature = {"rvv", "true"}, applyIf = {"UseFMA", "true"},
         counts = {IRNode.FMA_VF, ">0"})
+    @IR(applyIfCPUFeature = {"lsx", "true"}, applyIf = {"UseFMA", "true"},
+        counts = {IRNode.FMA_VF, ">0"})
     public float[] vectorMulSub1() {
         float[] res = new float[SIZE];
         for (int i = 0; i < SIZE; i++) {
@@ -266,6 +270,8 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
     @IR(applyIfCPUFeatureAnd = {"fma", "true", "avx", "true"},
         counts = {IRNode.FMA_VF, ">0"})
     @IR(applyIfCPUFeature = {"rvv", "true"}, applyIf = {"UseFMA", "true"},
+        counts = {IRNode.FMA_VF, ">0"})
+    @IR(applyIfCPUFeature = {"lsx", "true"}, applyIf = {"UseFMA", "true"},
         counts = {IRNode.FMA_VF, ">0"})
     public float[] vectorMulSub2() {
         float[] res = new float[SIZE];
@@ -284,6 +290,8 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
         counts = {IRNode.FMA_VF, ">0"})
     @IR(applyIfCPUFeature = {"rvv", "true"}, applyIf = {"UseFMA", "true"},
         counts = {IRNode.FMA_VF, ">0"})
+    @IR(applyIfCPUFeature = {"lsx", "true"}, applyIf = {"UseFMA", "true"},
+        counts = {IRNode.FMA_VF, ">0"})
     public float[] vectorNegateMulAdd1() {
         float[] res = new float[SIZE];
         for (int i = 0; i < SIZE; i++) {
@@ -301,6 +309,8 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
         counts = {IRNode.FMA_VF, ">0"})
     @IR(applyIfCPUFeature = {"rvv", "true"}, applyIf = {"UseFMA", "true"},
         counts = {IRNode.FMA_VF, ">0"})
+    @IR(applyIfCPUFeature = {"lsx", "true"}, applyIf = {"UseFMA", "true"},
+        counts = {IRNode.FMA_VF, ">0"})
     public float[] vectorNegateMulAdd2() {
         float[] res = new float[SIZE];
         for (int i = 0; i < SIZE; i++) {
@@ -315,6 +325,8 @@ public class BasicFloatOpTest extends VectorizationTestRunner {
     @IR(applyIfCPUFeatureAnd = {"fma", "true", "avx", "true"},
         counts = {IRNode.FMA_VF, ">0"})
     @IR(applyIfCPUFeature = {"rvv", "true"}, applyIf = {"UseFMA", "true"},
+        counts = {IRNode.FMA_VF, ">0"})
+    @IR(applyIfCPUFeature = {"lsx", "true"}, applyIf = {"UseFMA", "true"},
         counts = {IRNode.FMA_VF, ">0"})
     public float[] vectorNegateMulSub() {
         float[] res = new float[SIZE];

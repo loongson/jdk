@@ -9138,7 +9138,7 @@ instruct sqrtD_reg(regD dst, regD src) %{
 %}
 
 instruct sqrtF_reg(regF dst, regF src) %{
-  match(Set dst (ConvD2F (SqrtD (ConvF2D src))));
+  match(Set dst (SqrtF src));
   ins_cost(100);
   format %{ "SqrtF  $dst, $src @sqrtF_reg" %}
   ins_encode %{

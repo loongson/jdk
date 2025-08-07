@@ -47,6 +47,7 @@ enum platform_dependent_constants {
 
 class la {
   friend class StubGenerator;
+  friend class StubRoutines;
   friend class VMStructs;
 #if INCLUDE_JVMCI
   friend class JVMCIVMStructs;

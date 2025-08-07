@@ -24,8 +24,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2023, These
- * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2023, 2025, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -82,9 +82,9 @@ public class ArrayShiftOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "avx2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "avx2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
-    @IR(applyIfCPUFeatureOr = {"avx512f", "true", "zvbb", "true"},
+    @IR(applyIfCPUFeatureOr = {"avx512f", "true", "zvbb", "true", "lsx", "true"},
         counts = {IRNode.ROTATE_RIGHT_V, ">0"})
     public int[] intCombinedRotateShift() {
         int[] res = new int[SIZE];
@@ -95,9 +95,9 @@ public class ArrayShiftOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"sve", "true", "avx2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"sve", "true", "avx2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
-    @IR(applyIfCPUFeatureOr = {"avx512f", "true", "zvbb", "true"},
+    @IR(applyIfCPUFeatureOr = {"avx512f", "true", "zvbb", "true", "lsx", "true"},
         counts = {IRNode.ROTATE_RIGHT_V, ">0"})
     // Requires size to not be known at compile time, otherwise the shift
     // can get constant folded with the (iv + const) pattern from the
@@ -111,9 +111,9 @@ public class ArrayShiftOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "avx2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "avx2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
-    @IR(applyIfCPUFeatureOr = {"avx512f", "true", "zvbb", "true"},
+    @IR(applyIfCPUFeatureOr = {"avx512f", "true", "zvbb", "true", "lsx", "true"},
         counts = {IRNode.ROTATE_RIGHT_V, ">0"})
     public long[] longCombinedRotateShift() {
         long[] res = new long[SIZE];
@@ -136,11 +136,11 @@ public class ArrayShiftOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"sve", "true", "avx2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"sve", "true", "avx2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
-    @IR(applyIfCPUFeatureOr = {"avx512f", "true", "zvbb", "true"},
+    @IR(applyIfCPUFeatureOr = {"avx512f", "true", "zvbb", "true", "lsx", "true"},
         counts = {IRNode.ROTATE_RIGHT_V, ">0"})
-    @IR(applyIfCPUFeatureOr = {"sve", "true", "avx2", "true"},
+    @IR(applyIfCPUFeatureOr = {"sve", "true", "avx2", "true", "lsx", "true"},
         counts = {IRNode.POPULATE_INDEX, ">0"})
     // The unknown init/limit values make sure that the rotation does fold badly
     // like in longExplicitRotateWithPopulateIndex.
@@ -154,7 +154,7 @@ public class ArrayShiftOpTest extends VectorizationTestRunner {
 
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.RSHIFT_VI, ">0"})
     public int[] intShiftLargeDistConstant() {
         int[] res = new int[SIZE];
@@ -165,7 +165,7 @@ public class ArrayShiftOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.RSHIFT_VI, ">0"})
     public int[] intShiftLargeDistInvariant() {
         int[] res = new int[SIZE];
@@ -176,7 +176,7 @@ public class ArrayShiftOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.RSHIFT_VS, ">0"})
     public short[] shortShiftLargeDistConstant() {
         short[] res = new short[SIZE];
@@ -187,7 +187,7 @@ public class ArrayShiftOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.RSHIFT_VS, ">0"})
     public short[] shortShiftLargeDistInvariant() {
         short[] res = new short[SIZE];
@@ -198,7 +198,7 @@ public class ArrayShiftOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.LSHIFT_VL, ">0"})
     public long[] longShiftLargeDistConstant() {
         long[] res = new long[SIZE];
@@ -209,7 +209,7 @@ public class ArrayShiftOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.URSHIFT_VL, ">0"})
     public long[] longShiftLargeDistInvariant() {
         long[] res = new long[SIZE];
@@ -242,7 +242,7 @@ public class ArrayShiftOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.RSHIFT_VS, ">0"})
     public short[] vectorUnsignedShiftRight() {
         short[] res = new short[SIZE];

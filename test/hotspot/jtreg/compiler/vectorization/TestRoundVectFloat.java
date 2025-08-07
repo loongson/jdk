@@ -21,13 +21,20 @@
  * questions.
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2025, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 /**
  * @test
  * @bug 8279508
  * @summary Auto-vectorize Math.round API
  * @requires vm.compiler2.enabled
  * @requires (os.simpleArch == "x64" & vm.cpu.features ~= ".*avx.*") |
- *           (os.simpleArch == "riscv64" & vm.cpu.features ~= ".*rvv.*")
+ *           (os.simpleArch == "riscv64" & vm.cpu.features ~= ".*rvv.*") |
+ *           (os.simpleArch == "loongarch64" & vm.cpu.features ~= ".*lsx.*")
  * @library /test/lib /
  * @run driver compiler.vectorization.TestRoundVectFloat
  */
@@ -55,6 +62,9 @@ public class TestRoundVectFloat {
   @IR(applyIfPlatform = {"riscv64", "true"},
       applyIfCPUFeature = {"rvv", "true"},
       applyIf = {"MaxVectorSize", ">= 32"},
+      counts = {IRNode.ROUND_VF , " > 0 "})
+  @IR(applyIfPlatform = {"loongarch64", "true"},
+      applyIfCPUFeature = {"lsx", "true"},
       counts = {IRNode.ROUND_VF , " > 0 "})
   public void test_round_float(int[] iout, float[] finp) {
       for (int i = 0; i < finp.length; i+=1) {

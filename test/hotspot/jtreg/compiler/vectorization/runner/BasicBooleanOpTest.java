@@ -23,6 +23,12 @@
  */
 
 /*
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2025, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
+/*
  * @test
  * @summary Vectorization test on basic boolean operations
  * @requires vm.opt.StressUnstableIfTraps == null | !vm.opt.StressUnstableIfTraps
@@ -73,7 +79,7 @@ public class BasicBooleanOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         phase = CompilePhase.BEFORE_MACRO_EXPANSION,
         counts = {IRNode.AND_VB, ">0"})
     public boolean[] vectorAnd() {
@@ -85,7 +91,7 @@ public class BasicBooleanOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.OR_VB, ">0"})
     public boolean[] vectorOr() {
         boolean[] res = new boolean[SIZE];
@@ -96,7 +102,7 @@ public class BasicBooleanOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.XOR_VB, ">0"})
     public boolean[] vectorXor() {
         boolean[] res = new boolean[SIZE];

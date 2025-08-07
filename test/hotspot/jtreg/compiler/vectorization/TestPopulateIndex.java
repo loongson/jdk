@@ -22,8 +22,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2023, These
- * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2023, 2025, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -35,7 +35,7 @@
 * @requires (os.simpleArch == "x64" & vm.cpu.features ~= ".*avx2.*") |
 *           (os.simpleArch == "aarch64" & vm.cpu.features ~= ".*sve.*") |
 *           (os.simpleArch == "riscv64" & vm.cpu.features ~= ".*rvv.*") |
-*           (os.simpleArch == "loongarch64")
+*           (os.simpleArch == "loongarch64" & vm.cpu.features ~= ".*lsx.*")
 * @library /test/lib /
 * @run driver compiler.vectorization.TestPopulateIndex
 */

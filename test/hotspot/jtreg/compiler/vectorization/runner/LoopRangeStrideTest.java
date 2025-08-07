@@ -23,6 +23,12 @@
  */
 
 /*
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2025, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
+/*
  * @test
  * @summary Vectorization test on different loop ranges and strides
  * @library /test/lib /
@@ -36,7 +42,7 @@
  *                   -XX:+WhiteBoxAPI
  *                   compiler.vectorization.runner.LoopRangeStrideTest
  *
- * @requires (os.simpleArch == "x64") | (os.simpleArch == "aarch64") | (os.simpleArch == "riscv64")
+ * @requires (os.simpleArch == "x64") | (os.simpleArch == "aarch64") | (os.simpleArch == "riscv64") | (os.simpleArch == "loongarch64")
  * @requires vm.compiler2.enabled
  */
 
@@ -79,7 +85,7 @@ public class LoopRangeStrideTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] nonConstantRange() {
         int[] res = new int[SIZE];
@@ -90,7 +96,7 @@ public class LoopRangeStrideTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] crossZeroRange() {
         int[] res = new int[SIZE];
@@ -101,7 +107,7 @@ public class LoopRangeStrideTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] nonEqualTestRange() {
         int[] res = new int[SIZE];
@@ -112,7 +118,7 @@ public class LoopRangeStrideTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse4.1", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse4.1", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] shortInductionLoop() {
         int[] res = new int[SIZE];
@@ -123,7 +129,7 @@ public class LoopRangeStrideTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] whileLoop() {
         int[] res = new int[SIZE];
@@ -136,7 +142,7 @@ public class LoopRangeStrideTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] doWhileLoop() {
         int[] res = new int[SIZE];
@@ -177,7 +183,7 @@ public class LoopRangeStrideTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse4.1", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse4.1", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] countDownLoop() {
         int[] res = new int[SIZE];
@@ -198,7 +204,7 @@ public class LoopRangeStrideTest extends VectorizationTestRunner {
 
     // ---------- Stride with scale ----------
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse4.1", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse4.1", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] countupLoopWithNegScale() {
         int[] res = new int[SIZE];
@@ -209,7 +215,7 @@ public class LoopRangeStrideTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse4.1", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse4.1", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] countDownLoopWithNegScale() {
         int[] res = new int[SIZE];

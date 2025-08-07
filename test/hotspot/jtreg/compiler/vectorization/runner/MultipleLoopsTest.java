@@ -23,6 +23,12 @@
  */
 
 /*
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2025, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
+/*
  * @test
  * @summary Vectorization test on multiple loops in a method
  * @library /test/lib /
@@ -63,7 +69,7 @@ public class MultipleLoopsTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] consecutiveLoops() {
         int[] res1 = new int[SIZE];
@@ -82,7 +88,7 @@ public class MultipleLoopsTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] consecutiveLoopsNested() {
         int[] res = new int[SIZE];
@@ -98,7 +104,7 @@ public class MultipleLoopsTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse4.1", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse4.1", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] nestedLoopOuterNonCounted() {
         int i = 1;
@@ -114,7 +120,7 @@ public class MultipleLoopsTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse4.1", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse4.1", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public int[] nestedLoopIndexCompute() {
         int[] res = new int[SIZE];
@@ -127,7 +133,7 @@ public class MultipleLoopsTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
     public float reductionLoopWithAnotherReductionInput() {
         float res = 0.0F;

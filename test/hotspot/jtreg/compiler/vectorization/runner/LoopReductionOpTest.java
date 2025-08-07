@@ -22,8 +22,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2023, These
- * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2025, These
+ * modifications are Copyright (c) 2023, 2025, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -84,7 +84,7 @@ public class LoopReductionOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse3", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse3", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.LOAD_VECTOR_I, ">0",
                   IRNode.ADD_REDUCTION_V, ">0"})
     public int reductionAddSumOfArray() {
@@ -125,7 +125,7 @@ public class LoopReductionOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"sve", "true", "avx2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"sve", "true", "avx2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.LOAD_VECTOR_I, ">0",
                   IRNode.ADD_REDUCTION_V, ">0"})
     public int reductionAddSumOfMultiple() {
@@ -181,9 +181,9 @@ public class LoopReductionOpTest extends VectorizationTestRunner {
     }
 
     @Test
-    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true"},
+    @IR(applyIfCPUFeatureOr = {"asimd", "true", "sse2", "true", "rvv", "true", "lsx", "true"},
         counts = {IRNode.STORE_VECTOR, ">0"})
-    @IR(applyIfCPUFeature = {"avx2", "true"},
+    @IR(applyIfCPUFeatureOr = {"avx2", "true", "lsx", "true"},
         counts = {IRNode.ADD_REDUCTION_V, ">0"})
     @IR(applyIfPlatform = {"riscv64", "true"},
         applyIfCPUFeature = {"rvv", "true"},

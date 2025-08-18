@@ -12783,6 +12783,122 @@ instruct divV(vReg dst, vReg src1, vReg src2) %{
   ins_pipe( pipe_slow );
 %}
 
+// -------------------------------- Saturating ADD --------------------------------------
+
+instruct saddV(vReg dst, vReg src1, vReg src2) %{
+  predicate(!n->as_SaturatingVector()->is_unsigned());
+  match(Set dst (SaturatingAddV src1 src2));
+  format %{ "(x)vsadd    $dst, $src1, $src2\t# @saddV" %}
+  ins_encode %{
+    if (Matcher::vector_length_in_bytes(this) > 16) {
+      switch(Matcher::vector_element_basic_type(this)) {
+        case T_BYTE  : __ xvsadd_b($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_SHORT : __ xvsadd_h($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_INT   : __ xvsadd_w($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_LONG  : __ xvsadd_d($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        default:
+          ShouldNotReachHere();
+      }
+    } else {
+      switch(Matcher::vector_element_basic_type(this)) {
+        case T_BYTE  : __ vsadd_b($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_SHORT : __ vsadd_h($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_INT   : __ vsadd_w($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_LONG  : __ vsadd_d($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        default:
+          ShouldNotReachHere();
+      }
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct sadduV(vReg dst, vReg src1, vReg src2) %{
+  predicate(n->as_SaturatingVector()->is_unsigned());
+  match(Set dst (SaturatingAddV src1 src2));
+  format %{ "(x)vsaddu    $dst, $src1, $src2\t# @sadduV" %}
+  ins_encode %{
+    if (Matcher::vector_length_in_bytes(this) > 16) {
+      switch(Matcher::vector_element_basic_type(this)) {
+        case T_BYTE  : __ xvsadd_bu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_SHORT : __ xvsadd_hu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_INT   : __ xvsadd_wu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_LONG  : __ xvsadd_du($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        default:
+          ShouldNotReachHere();
+      }
+    } else {
+      switch(Matcher::vector_element_basic_type(this)) {
+        case T_BYTE  : __ vsadd_bu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_SHORT : __ vsadd_hu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_INT   : __ vsadd_wu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_LONG  : __ vsadd_du($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        default:
+          ShouldNotReachHere();
+      }
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+// -------------------------------- Saturating SUB --------------------------------------
+
+instruct ssubV(vReg dst, vReg src1, vReg src2) %{
+  predicate(!n->as_SaturatingVector()->is_unsigned());
+  match(Set dst (SaturatingSubV src1 src2));
+  format %{ "(x)vssub    $dst, $src1, $src2\t# @ssubV" %}
+  ins_encode %{
+    if (Matcher::vector_length_in_bytes(this) > 16) {
+      switch(Matcher::vector_element_basic_type(this)) {
+        case T_BYTE  : __ xvssub_b($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_SHORT : __ xvssub_h($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_INT   : __ xvssub_w($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_LONG  : __ xvssub_d($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        default:
+          ShouldNotReachHere();
+      }
+    } else {
+      switch(Matcher::vector_element_basic_type(this)) {
+        case T_BYTE  : __ vssub_b($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_SHORT : __ vssub_h($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_INT   : __ vssub_w($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_LONG  : __ vssub_d($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        default:
+          ShouldNotReachHere();
+      }
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct ssubuV(vReg dst, vReg src1, vReg src2) %{
+  predicate(n->as_SaturatingVector()->is_unsigned());
+  match(Set dst (SaturatingSubV src1 src2));
+  format %{ "(x)vssubu    $dst, $src1, $src2\t# @ssubuV" %}
+  ins_encode %{
+    if (Matcher::vector_length_in_bytes(this) > 16) {
+      switch(Matcher::vector_element_basic_type(this)) {
+        case T_BYTE  : __ xvssub_bu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_SHORT : __ xvssub_hu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_INT   : __ xvssub_wu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_LONG  : __ xvssub_du($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        default:
+          ShouldNotReachHere();
+      }
+    } else {
+      switch(Matcher::vector_element_basic_type(this)) {
+        case T_BYTE  : __ vssub_bu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_SHORT : __ vssub_hu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_INT   : __ vssub_wu($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        case T_LONG  : __ vssub_du($dst$$FloatRegister, $src1$$FloatRegister, $src2$$FloatRegister); break;
+        default:
+          ShouldNotReachHere();
+      }
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 // --------------------------------- ABS --------------------------------------
 
 instruct absV(vReg dst, vReg src) %{

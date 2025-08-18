@@ -845,6 +845,22 @@ class Assembler : public AbstractAssembler  {
     vsub_h_op          = 0b01110000000011001,
     vsub_w_op          = 0b01110000000011010,
     vsub_d_op          = 0b01110000000011011,
+    vsadd_b_op         = 0b01110000010001100,
+    vsadd_h_op         = 0b01110000010001101,
+    vsadd_w_op         = 0b01110000010001110,
+    vsadd_d_op         = 0b01110000010001111,
+    vssub_b_op         = 0b01110000010010000,
+    vssub_h_op         = 0b01110000010010001,
+    vssub_w_op         = 0b01110000010010010,
+    vssub_d_op         = 0b01110000010010011,
+    vsadd_bu_op        = 0b01110000010010100,
+    vsadd_hu_op        = 0b01110000010010101,
+    vsadd_wu_op        = 0b01110000010010110,
+    vsadd_du_op        = 0b01110000010010111,
+    vssub_bu_op        = 0b01110000010011000,
+    vssub_hu_op        = 0b01110000010011001,
+    vssub_wu_op        = 0b01110000010011010,
+    vssub_du_op        = 0b01110000010011011,
     vhaddw_h_b_op      = 0b01110000010101000,
     vhaddw_w_h_op      = 0b01110000010101001,
     vhaddw_d_w_op      = 0b01110000010101010,
@@ -1032,6 +1048,22 @@ class Assembler : public AbstractAssembler  {
     xvsub_h_op         = 0b01110100000011001,
     xvsub_w_op         = 0b01110100000011010,
     xvsub_d_op         = 0b01110100000011011,
+    xvsadd_b_op        = 0b01110100010001100,
+    xvsadd_h_op        = 0b01110100010001101,
+    xvsadd_w_op        = 0b01110100010001110,
+    xvsadd_d_op        = 0b01110100010001111,
+    xvssub_b_op        = 0b01110100010010000,
+    xvssub_h_op        = 0b01110100010010001,
+    xvssub_w_op        = 0b01110100010010010,
+    xvssub_d_op        = 0b01110100010010011,
+    xvsadd_bu_op       = 0b01110100010010100,
+    xvsadd_hu_op       = 0b01110100010010101,
+    xvsadd_wu_op       = 0b01110100010010110,
+    xvsadd_du_op       = 0b01110100010010111,
+    xvssub_bu_op       = 0b01110100010011000,
+    xvssub_hu_op       = 0b01110100010011001,
+    xvssub_wu_op       = 0b01110100010011010,
+    xvssub_du_op       = 0b01110100010011011,
     xvhaddw_h_b_op     = 0b01110100010101000,
     xvhaddw_w_h_op     = 0b01110100010101001,
     xvhaddw_d_w_op     = 0b01110100010101010,
@@ -2386,6 +2418,42 @@ public:
   void xvneg_h(FloatRegister xd, FloatRegister xj) { ASSERT_LASX emit_int32(insn_RR(xvneg_h_op, (int)xj->encoding(), (int)xd->encoding())); }
   void xvneg_w(FloatRegister xd, FloatRegister xj) { ASSERT_LASX emit_int32(insn_RR(xvneg_w_op, (int)xj->encoding(), (int)xd->encoding())); }
   void xvneg_d(FloatRegister xd, FloatRegister xj) { ASSERT_LASX emit_int32(insn_RR(xvneg_d_op, (int)xj->encoding(), (int)xd->encoding())); }
+
+  void  vsadd_b(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vsadd_b_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vsadd_h(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vsadd_h_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vsadd_w(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vsadd_w_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vsadd_d(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vsadd_d_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void xvsadd_b(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvsadd_b_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvsadd_h(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvsadd_h_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvsadd_w(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvsadd_w_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvsadd_d(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvsadd_d_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+
+  void  vsadd_bu(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vsadd_bu_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vsadd_hu(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vsadd_hu_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vsadd_wu(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vsadd_wu_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vsadd_du(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vsadd_du_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void xvsadd_bu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvsadd_bu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvsadd_hu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvsadd_hu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvsadd_wu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvsadd_wu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvsadd_du(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvsadd_du_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+
+  void  vssub_b(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vssub_b_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vssub_h(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vssub_h_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vssub_w(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vssub_w_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vssub_d(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vssub_d_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void xvssub_b(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvssub_b_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvssub_h(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvssub_h_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvssub_w(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvssub_w_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvssub_d(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvssub_d_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+
+  void  vssub_bu(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vssub_bu_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vssub_hu(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vssub_hu_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vssub_wu(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vssub_wu_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void  vssub_du(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vssub_du_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
+  void xvssub_bu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvssub_bu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvssub_hu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvssub_hu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvssub_wu(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvssub_wu_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
+  void xvssub_du(FloatRegister xd, FloatRegister xj, FloatRegister xk) { ASSERT_LASX emit_int32(insn_RRR(xvssub_du_op, (int)xk->encoding(), (int)xj->encoding(), (int)xd->encoding())); }
 
   void  vhaddw_h_b(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vhaddw_h_b_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }
   void  vhaddw_w_h(FloatRegister vd, FloatRegister vj, FloatRegister vk) { ASSERT_LSX  emit_int32(insn_RRR( vhaddw_w_h_op, (int)vk->encoding(), (int)vj->encoding(), (int)vd->encoding())); }

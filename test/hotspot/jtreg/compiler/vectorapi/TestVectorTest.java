@@ -22,8 +22,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2023. These
- * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2025. These
+ * modifications are Copyright (c) 2023, 2025, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -43,7 +43,7 @@ import jdk.incubator.vector.VectorMask;
  * @requires (os.simpleArch == "x64" & vm.cpu.features ~= ".*sse4.*" & (vm.opt.UseSSE == "null" | vm.opt.UseSSE > 3))
  *           | os.arch == "aarch64"
  *           | (os.arch == "riscv64" & vm.cpu.features ~= ".*rvv.*")
- *           | os.arch == "loongarch64"
+ *           | (os.arch == "loongarch64" & vm.cpu.features ~= ".*lsx.*")
  * @run driver compiler.vectorapi.TestVectorTest
  */
 public class TestVectorTest {

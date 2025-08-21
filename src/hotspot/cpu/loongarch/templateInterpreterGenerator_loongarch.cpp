@@ -1437,20 +1437,15 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
     __ st_w(t, TREG, in_bytes(JavaThread::thread_state_offset()));
   }
 
-  if (LockingMode != LM_LEGACY) {
-    // Check preemption for Object.wait()
-    Label not_preempted;
-    __ ld_d(AT, Address(TREG, JavaThread::preempt_alternate_return_offset()));
-    __ beqz(AT, not_preempted);
-    __ st_d(R0, Address(TREG, JavaThread::preempt_alternate_return_offset()));
-    __ jr(AT);
-    __ bind(native_return);
-    __ restore_after_resume(true /* is_native */);
-    __ bind(not_preempted);
-  } else {
-    // any pc will do so just use this one for LM_LEGACY to keep code together.
-    __ bind(native_return);
-  }
+  // Check preemption for Object.wait()
+  Label not_preempted;
+  __ ld_d(AT, Address(TREG, JavaThread::preempt_alternate_return_offset()));
+  __ beqz(AT, not_preempted);
+  __ st_d(R0, Address(TREG, JavaThread::preempt_alternate_return_offset()));
+  __ jr(AT);
+  __ bind(native_return);
+  __ restore_after_resume(true /* is_native */);
+  __ bind(not_preempted);
 
   __ reset_last_Java_frame(TREG, true);
 

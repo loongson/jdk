@@ -1716,7 +1716,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   // We use the same pc/oopMap repeatedly when we call out.
 
   Label native_return;
-  if (LockingMode != LM_LEGACY && method->is_object_wait0()) {
+  if (method->is_object_wait0()) {
     // For convenience we use the pc we want to resume to in case of preemption on Object.wait.
     __ set_last_Java_frame(SP, noreg, native_return);
   } else {
@@ -1760,7 +1760,6 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
   // Lock a synchronized method
   if (method->is_synchronized()) {
-    Label count;
     const int mark_word_offset = BasicLock::displaced_header_offset_in_bytes();
 
     // Get the handle (the 2nd argument)
@@ -1772,41 +1771,9 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     // Load the oop from the handle
     __ ld_d(obj_reg, oop_handle_reg, 0);
 
-    if (LockingMode == LM_MONITOR) {
-      __ b(slow_path_lock);
-    } else if (LockingMode == LM_LEGACY) {
-      // Load immediate 1 into swap_reg %T8
-      __ li(swap_reg, 1);
-
-      __ ld_d(AT, obj_reg, 0);
-      __ orr(swap_reg, swap_reg, AT);
-
-      __ st_d(swap_reg, lock_reg, mark_word_offset);
-      __ cmpxchg(Address(obj_reg, 0), swap_reg, lock_reg, AT, true, true /* acquire */, count);
-      // Test if the oopMark is an obvious stack pointer, i.e.,
-      //  1) (mark & 3) == 0, and
-      //  2) sp <= mark < mark + os::pagesize()
-      // These 3 tests can be done by evaluating the following
-      // expression: ((mark - sp) & (3 - os::vm_page_size())),
-      // assuming both stack pointer and pagesize have their
-      // least significant 2 bits clear.
-      // NOTE: the oopMark is in swap_reg %T8 as the result of cmpxchg
-
-      __ sub_d(swap_reg, swap_reg, SP);
-      __ li(AT, 3 - (int)os::vm_page_size());
-      __ andr(swap_reg , swap_reg, AT);
-      // Save the test result, for recursive case, the result is zero
-      __ st_d(swap_reg, lock_reg, mark_word_offset);
-      __ bnez(swap_reg, slow_path_lock);
-
-      __ bind(count);
-      __ inc_held_monitor_count(AT);
-    } else {
-      assert(LockingMode == LM_LIGHTWEIGHT, "must be");
-      // FIXME
-      Register tmp = T1;
-      __ lightweight_lock(lock_reg, obj_reg, swap_reg, tmp, SCR1, slow_path_lock);
-    }
+    // FIXME
+    Register tmp = T1;
+    __ lightweight_lock(lock_reg, obj_reg, swap_reg, tmp, SCR1, slow_path_lock);
 
     // Slow path will re-enter here
     __ bind(lock_done);
@@ -1906,7 +1873,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     __ st_w(AT, TREG, in_bytes(JavaThread::thread_state_offset()));
   }
 
-  if (LockingMode != LM_LEGACY && method->is_object_wait0()) {
+  if (method->is_object_wait0()) {
     // Check preemption for Object.wait()
     __ ld_d(AT, Address(TREG, JavaThread::preempt_alternate_return_offset()));
     __ beqz(AT, native_return);
@@ -1938,47 +1905,18 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     // Get locked oop from the handle we passed to jni
     __ ld_d( obj_reg, oop_handle_reg, 0);
 
-    Label done, not_recursive;
-
-    if (LockingMode == LM_LEGACY) {
-      // Simple recursive lock?
-      __ ld_d(AT, FP, lock_slot_fp_offset);
-      __ bnez(AT, not_recursive);
-      __ dec_held_monitor_count(AT);
-      __ b(done);
-    }
-
-    __ bind(not_recursive);
-
     // Must save FSF if if it is live now because cmpxchg must use it
     if (ret_type != T_FLOAT && ret_type != T_DOUBLE && ret_type != T_VOID) {
       save_native_result(masm, ret_type, stack_slots);
     }
 
-    if (LockingMode == LM_MONITOR) {
-      __ b(slow_path_unlock);
-    } else if (LockingMode == LM_LEGACY) {
-      //  get old displaced header
-      __ ld_d(T8, FP, lock_slot_fp_offset);
-      // get address of the stack lock
-      __ addi_d(lock_reg, FP, lock_slot_fp_offset);
-      // Atomic swap old header if oop still contains the stack lock
-      Label count;
-      __ cmpxchg(Address(obj_reg, 0), lock_reg, T8, AT, false, true /* acquire */, count, &slow_path_unlock);
-      __ bind(count);
-      __ dec_held_monitor_count(AT);
-    } else {
-      assert(LockingMode == LM_LIGHTWEIGHT, "");
-      __ lightweight_unlock(obj_reg, lock_reg, swap_reg, SCR1, slow_path_unlock);
-    }
+    __ lightweight_unlock(obj_reg, lock_reg, swap_reg, SCR1, slow_path_unlock);
 
     // slow path re-enters here
     __ bind(unlock_done);
     if (ret_type != T_FLOAT && ret_type != T_DOUBLE && ret_type != T_VOID) {
       restore_native_result(masm, ret_type, stack_slots);
     }
-
-    __ bind(done);
   }
   if (DTraceMethodProbes) {
     // Tell dtrace about this method exit

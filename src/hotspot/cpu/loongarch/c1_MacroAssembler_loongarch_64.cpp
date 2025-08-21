@@ -37,8 +37,6 @@
 #include "runtime/stubRoutines.hpp"
 
 int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr, Label& slow_case) {
-  const int aligned_mask = BytesPerWord -1;
-  const int hdr_offset = oopDesc::mark_offset_in_bytes();
   assert_different_registers(hdr, obj, disp_hdr);
   int null_check_offset = -1;
 
@@ -49,95 +47,19 @@ int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr
 
   null_check_offset = offset();
 
-  if (LockingMode == LM_LIGHTWEIGHT) {
-    lightweight_lock(disp_hdr, obj, hdr, SCR1, SCR2, slow_case);
-  } else if (LockingMode == LM_LEGACY) {
+  lightweight_lock(disp_hdr, obj, hdr, SCR1, SCR2, slow_case);
 
-    if (DiagnoseSyncOnValueBasedClasses != 0) {
-      load_klass(hdr, obj);
-      ld_bu(hdr, Address(hdr, Klass::misc_flags_offset()));
-      test_bit(SCR1, hdr, exact_log2(KlassFlags::_misc_is_value_based_class));
-      bnez(SCR1, slow_case);
-    }
-
-    Label done;
-    // Load object header
-    ld_d(hdr, Address(obj, hdr_offset));
-    // and mark it as unlocked
-    ori(hdr, hdr, markWord::unlocked_value);
-    // save unlocked object header into the displaced header location on the stack
-    st_d(hdr, Address(disp_hdr, 0));
-    // test if object header is still the same (i.e. unlocked), and if so, store the
-    // displaced header address in the object header - if it is not the same, get the
-    // object header instead
-    lea(SCR2, Address(obj, hdr_offset));
-    // if the object header was the same, we're done
-    cmpxchg(Address(SCR2, 0), hdr, disp_hdr, SCR1, true, true /* acquire */, done);
-    // if the object header was not the same, it is now in the hdr register
-    // => test if it is a stack pointer into the same stack (recursive locking), i.e.:
-    //
-    // 1) (hdr & aligned_mask) == 0
-    // 2) sp <= hdr
-    // 3) hdr <= sp + page_size
-    //
-    // these 3 tests can be done by evaluating the following expression:
-    //
-    // (hdr - sp) & (aligned_mask - page_size)
-    //
-    // assuming both the stack pointer and page_size have their least
-    // significant 2 bits cleared and page_size is a power of 2
-    sub_d(hdr, hdr, SP);
-    li(SCR1, aligned_mask - os::vm_page_size());
-    andr(hdr, hdr, SCR1);
-    // for recursive locking, the result is zero => save it in the displaced header
-    // location (null in the displaced hdr location indicates recursive locking)
-    st_d(hdr, Address(disp_hdr, 0));
-    // otherwise we don't care about the result and handle locking via runtime call
-    bnez(hdr, slow_case);
-
-    // done
-    bind(done);
-    inc_held_monitor_count(SCR1);
-  }
   return null_check_offset;
 }
 
 void C1_MacroAssembler::unlock_object(Register hdr, Register obj, Register disp_hdr, Label& slow_case) {
-  const int aligned_mask = BytesPerWord -1;
-  const int hdr_offset = oopDesc::mark_offset_in_bytes();
   assert(hdr != obj && hdr != disp_hdr && obj != disp_hdr, "registers must be different");
-  Label done;
-
-  if (LockingMode != LM_LIGHTWEIGHT) {
-    // load displaced header
-    ld_d(hdr, Address(disp_hdr, 0));
-    // if the loaded hdr is null we had recursive locking
-    // if we had recursive locking, we are done
-    beqz(hdr, done);
-  }
 
   // load object
   ld_d(obj, Address(disp_hdr, BasicObjectLock::obj_offset()));
   verify_oop(obj);
-  if (LockingMode == LM_LIGHTWEIGHT) {
-    lightweight_unlock(obj, hdr, SCR1, SCR2, slow_case);
-  } else if (LockingMode == LM_LEGACY) {
-    // test if object header is pointing to the displaced header, and if so, restore
-    // the displaced header in the object - if the object header is not pointing to
-    // the displaced header, get the object header instead
-    // if the object header was not pointing to the displaced header,
-    // we do unlocking via runtime call
-    if (hdr_offset) {
-      lea(SCR1, Address(obj, hdr_offset));
-      cmpxchg(Address(SCR1, 0), disp_hdr, hdr, SCR2, false, true /* acquire */, done, &slow_case);
-    } else {
-      cmpxchg(Address(obj, 0), disp_hdr, hdr, SCR2, false, true /* acquire */, done, &slow_case);
-    }
 
-    // done
-    bind(done);
-    dec_held_monitor_count(SCR1);
-  }
+  lightweight_unlock(obj, hdr, SCR1, SCR2, slow_case);
 }
 
 // Defines obj, preserves var_size_in_bytes

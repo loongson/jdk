@@ -50,7 +50,7 @@ public class LoongArch64HotSpotJVMCIBackendFactory implements HotSpotJVMCIBacken
     private static EnumSet<LoongArch64.CPUFeature> computeFeatures(LoongArch64HotSpotVMConfig config) {
         // Configure the feature set using the HotSpot flag settings.
         Map<String, Long> constants = config.getStore().getConstants();
-        return HotSpotJVMCIBackendFactory.convertFeatures(CPUFeature.class, constants, config.vmVersionFeatures, emptyMap());
+        return HotSpotJVMCIBackendFactory.convertFeatures(CPUFeature.class, constants, mask -> mask, _ -> config.vmVersionFeatures, emptyMap());
     }
 
     private static TargetDescription createTarget(LoongArch64HotSpotVMConfig config) {

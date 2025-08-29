@@ -21,6 +21,12 @@
  * questions.
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2025. These
+ * modifications are Copyright (c) 2025, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 package compiler.loopopts.superword;
 
 import compiler.lib.ir_framework.*;
@@ -60,7 +66,7 @@ public class TestMultiversionRemoveUselessSlowLoop {
                   "multiversion",              "= 8", // nothing unexpected
                   IRNode.OPAQUE_MULTIVERSIONING, "= 2"}, // Both multiversion_if are still here
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"},
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"},
         phase = CompilePhase.PHASEIDEALLOOP1)
     @IR(counts = {"pre .* multiversion_fast",  "= 2",
                   "main .* multiversion_fast", "= 1", // The first main loop is fully unrolled
@@ -69,7 +75,7 @@ public class TestMultiversionRemoveUselessSlowLoop {
                   "multiversion",              "= 7", // nothing unexpected
                   IRNode.OPAQUE_MULTIVERSIONING, "= 1"}, // The multiversion_if of the first loop was constant folded, because the main loop disappeared.
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"},
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"},
         phase = CompilePhase.PHASEIDEALLOOP_ITERATIONS)
     @IR(counts = {"pre .* multiversion_fast.*", ">= 1", // In some cases, the pre loop of the first loop also disappears because it only has a single iteration
                   "pre .* multiversion_fast.*", "<= 2", // but not in other cases the pre loop of the first loop remains.
@@ -80,7 +86,7 @@ public class TestMultiversionRemoveUselessSlowLoop {
                   "multiversion",              "<= 6", // nothing unexpected
                   IRNode.OPAQUE_MULTIVERSIONING, "= 0"}, // After loop-opts, we also constant fold the multiversion_if of the second loop, as it is unused.
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"},
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"},
         phase = CompilePhase.PRINT_IDEAL)
     public static void testIR() {
         // This loop is short, and the multiversion_fast main loop eventuall is fully unrolled.

@@ -21,6 +21,12 @@
  * questions.
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2025. These
+ * modifications are Copyright (c) 2025, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 package compiler.loopopts.superword;
 
 import compiler.lib.ir_framework.*;
@@ -455,7 +461,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "= 0",
                   IRNode.STORE_VECTOR,  "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // FAILS
     // Exit check: iv < long_limit      ->     (long)iv < long_limit
     // Thus, we have an int-iv, but a long-exit-check.
@@ -474,7 +480,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "> 0",
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testIntLoop_iv_byte(MemorySegment a) {
         for (int i = 0; i < (int)a.byteSize(); i++) {
             long adr = i;
@@ -489,7 +495,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "> 0",
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testIntLoop_longIndex_intInvar_sameAdr_byte(MemorySegment a, int invar) {
         for (int i = 0; i < (int)a.byteSize(); i++) {
             long adr = (long)(i) + (long)(invar);
@@ -504,7 +510,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "> 0",
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testIntLoop_longIndex_longInvar_sameAdr_byte(MemorySegment a, long invar) {
         for (int i = 0; i < (int)a.byteSize(); i++) {
             long adr = (long)(i) + (long)(invar);
@@ -519,7 +525,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "> 0",
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testIntLoop_longIndex_intInvar_byte(MemorySegment a, int invar) {
         for (int i = 0; i < (int)a.byteSize(); i++) {
             long adr1 = (long)(i) + (long)(invar);
@@ -535,7 +541,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "> 0",
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testIntLoop_longIndex_longInvar_byte(MemorySegment a, long invar) {
         for (int i = 0; i < (int)a.byteSize(); i++) {
             long adr1 = (long)(i) + (long)(invar);
@@ -551,7 +557,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "= 0",
                   IRNode.STORE_VECTOR,  "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // FAILS: RangeCheck cannot be eliminated because of int_index
     static Object[] testIntLoop_intIndex_intInvar_byte(MemorySegment a, int invar) {
         for (int i = 0; i < (int)a.byteSize(); i++) {
@@ -568,7 +574,7 @@ class TestMemorySegmentImpl {
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
         applyIf = {"AlignVector", "false"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testIntLoop_iv_int(MemorySegment a) {
         for (int i = 0; i < (int)a.byteSize()/4; i++ ) {
             long adr = 4L * i;
@@ -584,7 +590,7 @@ class TestMemorySegmentImpl {
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
         applyIf = {"AlignVector", "false"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testIntLoop_longIndex_intInvar_sameAdr_int(MemorySegment a, int invar) {
         for (int i = 0; i < (int)a.byteSize()/4; i++) {
             long adr = 4L * (long)(i) + 4L * (long)(invar);
@@ -600,7 +606,7 @@ class TestMemorySegmentImpl {
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
         applyIf = {"AlignVector", "false"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testIntLoop_longIndex_longInvar_sameAdr_int(MemorySegment a, long invar) {
         for (int i = 0; i < (int)a.byteSize()/4; i++) {
             long adr = 4L * (long)(i) + 4L * (long)(invar);
@@ -616,7 +622,7 @@ class TestMemorySegmentImpl {
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
         applyIf = {"AlignVector", "false"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testIntLoop_longIndex_intInvar_int(MemorySegment a, int invar) {
         for (int i = 0; i < (int)a.byteSize()/4; i++) {
             long adr1 = 4L * (long)(i) + 4L * (long)(invar);
@@ -633,7 +639,7 @@ class TestMemorySegmentImpl {
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
         applyIf = {"AlignVector", "false"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testIntLoop_longIndex_longInvar_int(MemorySegment a, long invar) {
         for (int i = 0; i < (int)a.byteSize()/4; i++) {
             long adr1 = 4L * (long)(i) + 4L * (long)(invar);
@@ -649,7 +655,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VI,        "= 0",
                   IRNode.STORE_VECTOR,  "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // FAILS: RangeCheck cannot be eliminated because of int_index
     static Object[] testIntLoop_intIndex_intInvar_int(MemorySegment a, int invar) {
         for (int i = 0; i < (int)a.byteSize()/4; i++) {
@@ -665,7 +671,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "> 0",
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testLongLoop_iv_byte(MemorySegment a) {
         for (long i = 0; i < a.byteSize(); i++) {
             long adr = i;
@@ -680,7 +686,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "> 0",
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testLongLoop_longIndex_intInvar_sameAdr_byte(MemorySegment a, int invar) {
         for (long i = 0; i < a.byteSize(); i++) {
             long adr = (long)(i) + (long)(invar);
@@ -695,7 +701,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "> 0",
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testLongLoop_longIndex_longInvar_sameAdr_byte(MemorySegment a, long invar) {
         for (long i = 0; i < a.byteSize(); i++) {
             long adr = (long)(i) + (long)(invar);
@@ -710,7 +716,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "> 0",
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testLongLoop_longIndex_intInvar_byte(MemorySegment a, int invar) {
         for (long i = 0; i < a.byteSize(); i++) {
             long adr1 = (long)(i) + (long)(invar);
@@ -726,7 +732,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "> 0",
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testLongLoop_longIndex_longInvar_byte(MemorySegment a, long invar) {
         for (long i = 0; i < a.byteSize(); i++) {
             long adr1 = (long)(i) + (long)(invar);
@@ -742,7 +748,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VB,        "= 0",
                   IRNode.STORE_VECTOR,  "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // FAILS: RangeCheck cannot be eliminated because of int_index
     static Object[] testLongLoop_intIndex_intInvar_byte(MemorySegment a, int invar) {
         for (long i = 0; i < a.byteSize(); i++) {
@@ -759,7 +765,7 @@ class TestMemorySegmentImpl {
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
         applyIf = {"AlignVector", "false"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testLongLoop_iv_int(MemorySegment a) {
         for (long i = 0; i < a.byteSize()/4; i++ ) {
             long adr = 4L * i;
@@ -775,7 +781,7 @@ class TestMemorySegmentImpl {
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
         applyIf = {"AlignVector", "false"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testLongLoop_longIndex_intInvar_sameAdr_int(MemorySegment a, int invar) {
         for (long i = 0; i < a.byteSize()/4; i++) {
             long adr = 4L * (long)(i) + 4L * (long)(invar);
@@ -791,7 +797,7 @@ class TestMemorySegmentImpl {
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
         applyIf = {"AlignVector", "false"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testLongLoop_longIndex_longInvar_sameAdr_int(MemorySegment a, long invar) {
         for (long i = 0; i < a.byteSize()/4; i++) {
             long adr = 4L * (long)(i) + 4L * (long)(invar);
@@ -807,7 +813,7 @@ class TestMemorySegmentImpl {
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIf = { "AlignVector", "false" },
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testLongLoop_longIndex_intInvar_int(MemorySegment a, int invar) {
         for (long i = 0; i < a.byteSize()/4; i++) {
             long adr1 = 4L * (long)(i) + 4L * (long)(invar);
@@ -824,7 +830,7 @@ class TestMemorySegmentImpl {
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIf = { "AlignVector", "false" },
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     static Object[] testLongLoop_longIndex_longInvar_int(MemorySegment a, long invar) {
         for (long i = 0; i < a.byteSize()/4; i++) {
             long adr1 = 4L * (long)(i) + 4L * (long)(invar);
@@ -840,7 +846,7 @@ class TestMemorySegmentImpl {
                   IRNode.ADD_VI,        "= 0",
                   IRNode.STORE_VECTOR,  "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // FAILS: RangeCheck cannot be eliminated because of int_index
     static Object[] testLongLoop_intIndex_intInvar_int(MemorySegment a, int invar) {
         for (long i = 0; i < a.byteSize()/4; i++) {

@@ -21,6 +21,12 @@
  * questions.
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2025. These
+ * modifications are Copyright (c) 2025, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 package compiler.loopopts.superword;
 
 import compiler.lib.ir_framework.*;
@@ -315,7 +321,7 @@ public class TestCompatibleUseDefTypeSize {
     @Test
     @IR(counts = {IRNode.STORE_VECTOR, "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // "inflate"  method: 1 byte -> 2 byte.
     // Java scalar code has no explicit conversion.
     // Vector code would need a conversion. We may add this in the future.
@@ -329,7 +335,7 @@ public class TestCompatibleUseDefTypeSize {
     @Test
     @IR(counts = {IRNode.STORE_VECTOR, "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // "inflate"  method: 1 byte -> 2 byte.
     // Java scalar code has no explicit conversion.
     // Vector code would need a conversion. We may add this in the future.
@@ -343,7 +349,7 @@ public class TestCompatibleUseDefTypeSize {
     @Test
     @IR(counts = {IRNode.STORE_VECTOR, "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // "deflate"  method: 2 byte -> 1 byte.
     // Java scalar code has no explicit conversion.
     // Vector code would need a conversion. We may add this in the future.
@@ -360,7 +366,7 @@ public class TestCompatibleUseDefTypeSize {
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
         applyIf = {"AlignVector", "false"}, // a[i] and a[i+1] cannot both be aligned.
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // Used to not vectorize because of "alignment boundaries".
     // Assume 64 byte vector width:
     // a[i+0:i+15] and a[i+1:i+16], each are 4 * 16 = 64 byte.
@@ -378,7 +384,7 @@ public class TestCompatibleUseDefTypeSize {
                   IRNode.STORE_VECTOR,  "> 0"},
         applyIfPlatform = {"64-bit", "true"},
         applyIf = {"AlignVector", "false"}, // a[i] and a[i+1] cannot both be aligned.
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // same as test3, but hand-unrolled
     static Object[] test4(int[] a, int[] b) {
         for (int i = 0; i < a.length-2; i+=2) {
@@ -391,7 +397,7 @@ public class TestCompatibleUseDefTypeSize {
     @Test
     @IR(counts = {IRNode.STORE_VECTOR, "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // In theory, one would expect this to be a simple 4byte -> 4byte conversion.
     // But there is a CmpF and CMove here because we check for isNaN. Plus a MoveF2I.
     //
@@ -406,7 +412,7 @@ public class TestCompatibleUseDefTypeSize {
     @Test
     @IR(counts = {IRNode.STORE_VECTOR, "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // Missing support for MoveF2I
     static Object[] test6(int[] a, float[] b) {
         for (int i = 0; i < a.length; i++) {
@@ -418,7 +424,7 @@ public class TestCompatibleUseDefTypeSize {
     @Test
     @IR(counts = {IRNode.STORE_VECTOR, "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // Missing support for MoveI2F
     static Object[] test7(int[] a, float[] b) {
         for (int i = 0; i < a.length; i++) {
@@ -430,7 +436,7 @@ public class TestCompatibleUseDefTypeSize {
     @Test
     @IR(counts = {IRNode.STORE_VECTOR, "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // Missing support for Needs CmpD, CMove and MoveD2L
     static Object[] test8(long[] a, double[] b) {
         for (int i = 0; i < a.length; i++) {
@@ -442,7 +448,7 @@ public class TestCompatibleUseDefTypeSize {
     @Test
     @IR(counts = {IRNode.STORE_VECTOR, "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // Missing support for MoveD2L
     static Object[] test9(long[] a, double[] b) {
         for (int i = 0; i < a.length; i++) {
@@ -454,7 +460,7 @@ public class TestCompatibleUseDefTypeSize {
     @Test
     @IR(counts = {IRNode.STORE_VECTOR, "= 0"},
         applyIfPlatform = {"64-bit", "true"},
-        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true"})
+        applyIfCPUFeatureOr = {"sse4.1", "true", "asimd", "true", "rvv", "true", "lsx", "true"})
     // Missing support for MoveL2D
     static Object[] test10(long[] a, double[] b) {
         for (int i = 0; i < a.length; i++) {

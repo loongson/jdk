@@ -3844,7 +3844,7 @@ void MacroAssembler::membar(Membar_mask_bits hint){
     NativeMembar *membar = (NativeMembar*)prev;
 #ifndef PRODUCT
     char buf[50];
-    snprintf(buf, sizeof(buf), "merged membar 0x%x 0x%x => 0x%x",
+    os::snprintf_checked(buf, sizeof(buf), "merged membar 0x%x 0x%x => 0x%x",
       (Ordering | membar->get_hint()), (Ordering | (~hint & 0xF)), (Ordering | (membar->get_hint() & (~hint & 0xF))));
     block_comment(buf);
 #endif

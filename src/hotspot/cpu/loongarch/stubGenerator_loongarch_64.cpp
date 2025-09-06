@@ -2993,6 +2993,34 @@ class StubGenerator: public StubCodeGenerator {
 #endif
   }
 
+  // A0 = input (float16)
+  // F0 = result (float)
+  // F1 = temporary float register
+  address generate_float16ToFloat() {
+    __ align(CodeEntryAlignment);
+    StubId stub_id = StubId::stubgen_hf2f_id;
+    StubCodeMark mark(this, stub_id);
+    address entry = __ pc();
+    BLOCK_COMMENT("Entry:");
+    __ flt16_to_flt(F0, A0, F1);
+    __ jr(RA);
+    return entry;
+  }
+
+  // F0 = input (float)
+  // A0 = result (float16)
+  // F1 = temporary float register
+  address generate_floatToFloat16() {
+    __ align(CodeEntryAlignment);
+    StubId stub_id = StubId::stubgen_f2hf_id;
+    StubCodeMark mark(this, stub_id);
+    address entry = __ pc();
+    BLOCK_COMMENT("Entry:");
+    __ flt_to_flt16(A0, F0, F1);
+    __ jr(RA);
+    return entry;
+  }
+
   address generate_method_entry_barrier() {
     __ align(CodeEntryAlignment);
     StubId stub_id = StubId::stubgen_method_entry_barrier_id;
@@ -5806,6 +5834,12 @@ static const int64_t right_3_bits = right_n_bits(3);
 
     if (UseLSX && vmIntrinsics::is_intrinsic_available(vmIntrinsics::_dcos)) {
       StubRoutines::_dcos = generate_dsin_dcos(/* isCos = */ true);
+    }
+
+    if (vmIntrinsics::is_intrinsic_available(vmIntrinsics::_float16ToFloat) &&
+        vmIntrinsics::is_intrinsic_available(vmIntrinsics::_floatToFloat16)) {
+      StubRoutines::_hf2f = generate_float16ToFloat();
+      StubRoutines::_f2hf = generate_floatToFloat16();
     }
  }
 

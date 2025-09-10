@@ -1356,11 +1356,12 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 #endif
 
   __ li(t, _thread_in_native);
-  if (os::is_MP()) {
+  if (UseAMOForOrderingStore) {
     __ addi_d(AT, TREG, in_bytes(JavaThread::thread_state_offset()));
-    __ amswap_db_w(R0, t, AT);
+    __ amswap_db_w(R0, t, AT); // as Release
   } else {
-    __ st_w(t, TREG, in_bytes(JavaThread::thread_state_offset()));
+    __ membar(Assembler::Membar_mask_bits(__ LoadStore|__ StoreStore));
+    __ st_w(t, Address(TREG, JavaThread::thread_state_offset()));
   }
 
   __ push_cont_fastpath();
@@ -1384,16 +1385,19 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 
   // change thread state
   __ li(t, _thread_in_native_trans);
-  if (os::is_MP()) {
+
+  if (UseAMOForOrderingStore) {
     __ addi_d(AT, TREG, in_bytes(JavaThread::thread_state_offset()));
-    __ amswap_db_w(R0, t, AT); // Release-Store
+    __ amswap_db_w(R0, t, AT); // as Release and AnyAny
+  } else {
+    // Force all preceding writes to be observed prior to thread state change
+    __ membar(Assembler::Membar_mask_bits(__ LoadStore|__ StoreStore));
+    __ st_w(t, Address(TREG, JavaThread::thread_state_offset()));
 
     // Force this write out before the read below
     if (!UseSystemMemoryBarrier) {
       __ membar(__ AnyAny);
     }
-  } else {
-    __ st_w(t, TREG, in_bytes(JavaThread::thread_state_offset()));
   }
 
   // check for safepoint operation in progress and/or pending suspend requests
@@ -1430,11 +1434,12 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 
   // change thread state
   __ li(t, _thread_in_Java);
-  if (os::is_MP()) {
+  if (UseAMOForOrderingStore) {
     __ addi_d(AT, TREG, in_bytes(JavaThread::thread_state_offset()));
-    __ amswap_db_w(R0, t, AT);
+    __ amswap_db_w(R0, t, AT); // as Release
   } else {
-    __ st_w(t, TREG, in_bytes(JavaThread::thread_state_offset()));
+    __ membar(Assembler::Membar_mask_bits(__ LoadStore|__ StoreStore));
+    __ st_w(t, Address(TREG, JavaThread::thread_state_offset()));
   }
 
   // Check preemption for Object.wait()

@@ -113,7 +113,7 @@ instruct g1StorePVolatile(indirect mem, mRegP src, mRegP tmp1, mRegP tmp2, mRegP
                       $tmp2$$Register /* tmp1 */,
                       $tmp3$$Register /* tmp2 */,
                       RegSet::of($mem$$Register, $src$$Register) /* preserve */);
-    __ amswap_db_d(R0, $src$$Register, as_Register($mem$$base));
+    __ amswap_db_d(R0, $src$$Register, as_Register($mem$$base)); // as Release
     write_barrier_post(masm, this,
                        $mem$$Register /* store_addr */,
                        $src$$Register /* new_val */,
@@ -169,7 +169,7 @@ instruct g1StoreNVolatile(indirect mem, mRegN src, mRegP tmp1, mRegP tmp2, mRegP
                       $tmp2$$Register /* tmp1 */,
                       $tmp3$$Register /* tmp2 */,
                       RegSet::of($mem$$Register, $src$$Register) /* preserve */);
-    __ amswap_db_w(R0, $src$$Register, as_Register($mem$$base));
+    __ amswap_db_w(R0, $src$$Register, as_Register($mem$$base)); // as Release
     if ((barrier_data() & G1C2BarrierPost) != 0) {
       if ((barrier_data() & G1C2BarrierPostNotNull) == 0) {
         __ decode_heap_oop($tmp1$$Register, $src$$Register);

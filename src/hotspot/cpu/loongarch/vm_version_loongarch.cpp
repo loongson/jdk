@@ -207,6 +207,13 @@ void VM_Version::get_processor_features() {
     warning("AMCAS{_DB}.{B/H/W/D} instructions are not available on this CPU");
     FLAG_SET_DEFAULT(UseAMCAS, false);
   }
+
+  if (supports_dbarhints()) {
+    if (FLAG_IS_DEFAULT(UseAMOForOrderingStore)) {
+      FLAG_SET_DEFAULT(UseAMOForOrderingStore, false);
+    }
+  }
+
 #ifdef COMPILER2
   int max_vector_size = 0;
   int min_vector_size = 0;

@@ -307,18 +307,20 @@ void C2_MacroAssembler::fast_unlock_lightweight(Register obj, Register box, Regi
 
     bind(not_recursive);
 
-    const Register tmp2_owner_addr = tmp2;
-
-    // Compute owner address.
-    lea(tmp2_owner_addr, Address(tmp1_monitor, ObjectMonitor::owner_offset()));
-
     // Set owner to null.
-    // Release to satisfy the JMM
-    membar(Assembler::Membar_mask_bits(MacroAssembler::LoadStore | MacroAssembler::StoreStore));
-    st_d(R0, tmp2_owner_addr, 0);
-    // We need a full fence after clearing owner to avoid stranding.
-    // StoreLoad achieves this.
-    membar(MacroAssembler::StoreLoad);
+    if (UseAMOForOrderingStore) {
+      move(AT, R0); // avoid swapping R0 with R0
+      addi_d(tmp2, tmp1_monitor, in_bytes(ObjectMonitor::owner_offset()));
+      amswap_db_d(R0, AT, tmp2); // as Release and StoreLoad
+    } else {
+      // Release to satisfy the JMM
+      membar(Assembler::Membar_mask_bits(MacroAssembler::LoadStore |
+                                         MacroAssembler::StoreStore));
+      st_d(R0, Address(tmp1_monitor, ObjectMonitor::owner_offset()));
+      // We need a full fence after clearing owner to avoid stranding.
+      // StoreLoad achieves this.
+      membar(MacroAssembler::StoreLoad);
+    }
 
     // Check if the entry_list is empty.
     ld_d(AT, Address(tmp1_monitor, ObjectMonitor::entry_list_offset()));

@@ -214,11 +214,12 @@ void DowncallLinker::StubGenerator::generate() {
 
     // State transition
     __ li(tmp1, _thread_in_native);
-    if (os::is_MP()) {
+    if (UseAMOForOrderingStore) {
       __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
-      __ amswap_db_w(R0, tmp1, tmp2);
+      __ amswap_db_w(R0, tmp1, tmp2); // as Release
     } else {
-      __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
+      __ membar(Assembler::Membar_mask_bits(__ LoadStore|__ StoreStore));
+      __ st_w(tmp1, Address(TREG, JavaThread::thread_state_offset()));
     }
   }
 
@@ -279,12 +280,16 @@ void DowncallLinker::StubGenerator::generate() {
   if (_needs_transition) {
     __ li(tmp1, _thread_in_native_trans);
 
-    // Force this write out before the read below
-    if (os::is_MP() && !UseSystemMemoryBarrier) {
+    if (UseAMOForOrderingStore) {
       __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
-      __ amswap_db_w(R0, tmp1, tmp2); // AnyAny
+      __ amswap_db_w(R0, tmp1, tmp2); // as AnyAny
     } else {
-      __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
+      __ st_w(tmp1, Address(TREG, JavaThread::thread_state_offset()));
+
+      // Force this write out before the read below
+      if (!UseSystemMemoryBarrier) {
+        __ membar(__ AnyAny);
+      }
     }
 
     __ safepoint_poll(L_safepoint_poll_slow_path, TREG, true /* at_return */, true /* acquire */, false /* in_nmethod */);
@@ -296,11 +301,12 @@ void DowncallLinker::StubGenerator::generate() {
 
     // change thread state
     __ li(tmp1, _thread_in_Java);
-    if (os::is_MP()) {
+    if (UseAMOForOrderingStore) {
       __ addi_d(tmp2, TREG, in_bytes(JavaThread::thread_state_offset()));
-      __ amswap_db_w(R0, tmp1, tmp2);
+      __ amswap_db_w(R0, tmp1, tmp2); // as Release
     } else {
-      __ st_w(tmp1, TREG, in_bytes(JavaThread::thread_state_offset()));
+      __ membar(Assembler::Membar_mask_bits(__ LoadStore|__ StoreStore));
+      __ st_w(tmp1, Address(TREG, JavaThread::thread_state_offset()));
     }
 
     __ block_comment("reguard stack check");

@@ -2257,7 +2257,7 @@ bool use_AMO(int opcode)
   case Op_StoreP:
   case Op_StoreN:
   case Op_StoreNKlass:
-    return true;
+    return UseAMOForOrderingStore;
   default:
     return false;
   }
@@ -2351,6 +2351,11 @@ bool needs_releasing_store(const Node *n)
   // assert n->is_Store();
   if (UseBarriersForVolatile) {
     // we use a normal store and dbar combination
+    return false;
+  }
+
+  if (!UseAMOForOrderingStore) {
+    // prevent AMO node generation
     return false;
   }
 

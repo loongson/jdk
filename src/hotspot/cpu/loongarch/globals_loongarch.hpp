@@ -100,6 +100,9 @@ define_pd_global(intx, InitArrayShortSize, 8*BytesPerLong);
   product(bool, UseAMCAS, false,                                            \
                 "Use AMCAS{_DB}.{B/H/W/D} instructions")                    \
                                                                             \
+  product(bool, UseAMOForOrderingStore, true,                               \
+                "Use AMSWAP_DB instead of DBAR and STORE sequence")         \
+                                                                            \
   product(bool, UseBarriersForVolatile, false,                              \
           "Use memory barriers to implement volatile accesses")             \
                                                                             \

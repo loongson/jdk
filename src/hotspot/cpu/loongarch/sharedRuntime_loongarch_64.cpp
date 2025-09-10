@@ -1738,12 +1738,13 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   __ addi_d(A0, TREG, in_bytes(JavaThread::jni_environment_offset()));
 
   // Now set thread in native
-  __ addi_d(AT, R0, _thread_in_native);
-  if (os::is_MP()) {
+  __ li(AT, _thread_in_native);
+  if (UseAMOForOrderingStore) {
     __ addi_d(T4, TREG, in_bytes(JavaThread::thread_state_offset()));
-    __ amswap_db_w(R0, AT, T4);
+    __ amswap_db_w(R0, AT, T4); // as Release
   } else {
-    __ st_w(AT, TREG, in_bytes(JavaThread::thread_state_offset()));
+    __ membar(Assembler::Membar_mask_bits(__ LoadStore|__ StoreStore));
+    __ st_w(AT, Address(TREG, JavaThread::thread_state_offset()));
   }
 
   // do the call
@@ -1766,14 +1767,18 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   //     VM thread changes sync state to synchronizing and suspends threads for GC.
   //     Thread A is resumed to finish this native method, but doesn't block here since it
   //     didn't see any synchronization is progress, and escapes.
-  __ addi_d(AT, R0, _thread_in_native_trans);
+  __ li(AT, _thread_in_native_trans);
 
-  // Force this write out before the read below
-  if (os::is_MP() && UseSystemMemoryBarrier) {
+  if (UseAMOForOrderingStore) {
     __ addi_d(T4, TREG, in_bytes(JavaThread::thread_state_offset()));
-    __ amswap_db_w(R0, AT, T4); // AnyAny
+    __ amswap_db_w(R0, AT, T4); // as AnyAny
   } else {
-    __ st_w(AT, TREG, in_bytes(JavaThread::thread_state_offset()));
+    __ st_w(AT, Address(TREG, JavaThread::thread_state_offset()));
+
+    // Force this write out before the read below
+    if (!UseSystemMemoryBarrier) {
+      __ membar(__ AnyAny);
+    }
   }
 
   // check for safepoint operation in progress and/or pending suspend requests
@@ -1816,12 +1821,13 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   }
 
   // change thread state
-  __ addi_d(AT, R0, _thread_in_Java);
-  if (os::is_MP()) {
+  __ li(AT, _thread_in_Java);
+  if (UseAMOForOrderingStore) {
     __ addi_d(T4, TREG, in_bytes(JavaThread::thread_state_offset()));
-    __ amswap_db_w(R0, AT, T4);
+    __ amswap_db_w(R0, AT, T4); // as Release
   } else {
-    __ st_w(AT, TREG, in_bytes(JavaThread::thread_state_offset()));
+    __ membar(Assembler::Membar_mask_bits(__ LoadStore|__ StoreStore));
+    __ st_w(AT, Address(TREG, JavaThread::thread_state_offset()));
   }
 
   if (method->is_object_wait0()) {

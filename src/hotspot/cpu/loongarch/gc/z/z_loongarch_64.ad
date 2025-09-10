@@ -141,7 +141,7 @@ instruct zStorePVolatile(indirect mem, mRegP src, mRegP tmp1, mRegP tmp2)
     Address ref_addr = Address($mem$$Register);
     __ block_comment("zStorePVolatile");
     z_store_barrier(masm, this, ref_addr, $src$$Register, $tmp1$$Register, $tmp2$$Register, false /* is_atomic */);
-    __ amswap_db_d(R0, $tmp1$$Register, as_Register($mem$$base));
+    __ amswap_db_d(R0, $tmp1$$Register, as_Register($mem$$base)); // as Release
   %}
   ins_pipe(pipe_slow);
 %}

@@ -154,7 +154,6 @@ void TemplateTable::patch_bytecode(Bytecodes::Code bc, Register bc_reg,
         __ lea(tmp_reg, Address(tmp_reg, in_bytes(ResolvedFieldEntry::put_code_offset())));
       }
       // Load-acquire the bytecode to match store-release in ResolvedFieldEntry::fill_in()
-      __ membar(MacroAssembler::AnyAny);
       __ ld_bu(tmp_reg, Address(tmp_reg, 0));
       __ membar(Assembler::Membar_mask_bits(__ LoadLoad | __ LoadStore));
       __ addi_d(bc_reg, R0, bc);
@@ -2197,7 +2196,6 @@ void TemplateTable::resolve_cache_and_index_for_method(int byte_no,
       break;
   }
   // Load-acquire the bytecode to match store-release in InterpreterRuntime
-  __ membar(MacroAssembler::AnyAny);
   __ ld_bu(temp, Address(temp, 0));
   __ membar(Assembler::Membar_mask_bits(__ LoadLoad | __ LoadStore));
   // is resolved?
@@ -2251,7 +2249,6 @@ void TemplateTable::resolve_cache_and_index_for_field(int byte_no,
     __ lea(temp, Address(Rcache, in_bytes(ResolvedFieldEntry::put_code_offset())));
   }
   // Load-acquire the bytecode to match store-release in ResolvedFieldEntry::fill_in()
-  __ membar(MacroAssembler::AnyAny);
   __ ld_bu(temp, Address(temp, 0));
   __ membar(Assembler::Membar_mask_bits(__ LoadLoad | __ LoadStore));
   __ li(AT, (int) code);  // have we resolved this bytecode?

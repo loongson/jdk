@@ -168,7 +168,7 @@
      );
 
 template<size_t byte_size>
-struct Atomic::PlatformAdd {
+struct AtomicAccess::PlatformAdd {
   template<typename D, typename I>
   D fetch_then_add(D volatile* dest, I add_value, atomic_memory_order order) const;
 
@@ -180,7 +180,7 @@ struct Atomic::PlatformAdd {
 
 template<>
 template<typename D, typename I>
-inline D Atomic::PlatformAdd<4>::fetch_then_add(D volatile* dest, I add_value,
+inline D AtomicAccess::PlatformAdd<4>::fetch_then_add(D volatile* dest, I add_value,
                                                atomic_memory_order order) const {
   STATIC_ASSERT(4 == sizeof(I));
   STATIC_ASSERT(4 == sizeof(D));
@@ -208,7 +208,7 @@ inline D Atomic::PlatformAdd<4>::fetch_then_add(D volatile* dest, I add_value,
 
 template<>
 template<typename D, typename I>
-inline D Atomic::PlatformAdd<8>::fetch_then_add(D volatile* dest, I add_value,
+inline D AtomicAccess::PlatformAdd<8>::fetch_then_add(D volatile* dest, I add_value,
                                                atomic_memory_order order) const {
   STATIC_ASSERT(8 == sizeof(I));
   STATIC_ASSERT(8 == sizeof(D));
@@ -236,7 +236,7 @@ inline D Atomic::PlatformAdd<8>::fetch_then_add(D volatile* dest, I add_value,
 
 template<>
 template<typename T>
-inline T Atomic::PlatformXchg<4>::operator()(T volatile* dest,
+inline T AtomicAccess::PlatformXchg<4>::operator()(T volatile* dest,
                                              T exchange_value,
                                              atomic_memory_order order) const {
   STATIC_ASSERT(4 == sizeof(T));
@@ -264,7 +264,7 @@ inline T Atomic::PlatformXchg<4>::operator()(T volatile* dest,
 
 template<>
 template<typename T>
-inline T Atomic::PlatformXchg<8>::operator()(T volatile* dest,
+inline T AtomicAccess::PlatformXchg<8>::operator()(T volatile* dest,
                                              T exchange_value,
                                              atomic_memory_order order) const {
   STATIC_ASSERT(8 == sizeof(T));
@@ -291,11 +291,11 @@ inline T Atomic::PlatformXchg<8>::operator()(T volatile* dest,
 }
 
 template<>
-struct Atomic::PlatformCmpxchg<1> : Atomic::CmpxchgByteUsingInt {};
+struct AtomicAccess::PlatformCmpxchg<1> : AtomicAccess::CmpxchgByteUsingInt {};
 
 template<>
 template<typename T>
-inline T Atomic::PlatformCmpxchg<4>::operator()(T volatile* dest,
+inline T AtomicAccess::PlatformCmpxchg<4>::operator()(T volatile* dest,
                                                 T compare_value,
                                                 T exchange_value,
                                                 atomic_memory_order order) const {
@@ -392,7 +392,7 @@ inline T Atomic::PlatformCmpxchg<4>::operator()(T volatile* dest,
 
 template<>
 template<typename T>
-inline T Atomic::PlatformCmpxchg<8>::operator()(T volatile* dest,
+inline T AtomicAccess::PlatformCmpxchg<8>::operator()(T volatile* dest,
                                                 T compare_value,
                                                 T exchange_value,
                                                 atomic_memory_order order) const {
@@ -488,35 +488,35 @@ inline T Atomic::PlatformCmpxchg<8>::operator()(T volatile* dest,
 }
 
 template<size_t byte_size>
-struct Atomic::PlatformOrderedLoad<byte_size, X_ACQUIRE>
+struct AtomicAccess::PlatformOrderedLoad<byte_size, X_ACQUIRE>
 {
   template <typename T>
   T operator()(const volatile T* p) const { T data; __atomic_load(const_cast<T*>(p), &data, __ATOMIC_ACQUIRE); return data; }
 };
 
 template<>
-struct Atomic::PlatformOrderedStore<4, RELEASE_X>
+struct AtomicAccess::PlatformOrderedStore<4, RELEASE_X>
 {
   template <typename T>
   void operator()(volatile T* p, T v) const { xchg(p, v, memory_order_release); }
 };
 
 template<>
-struct Atomic::PlatformOrderedStore<8, RELEASE_X>
+struct AtomicAccess::PlatformOrderedStore<8, RELEASE_X>
 {
   template <typename T>
   void operator()(volatile T* p, T v) const { xchg(p, v, memory_order_release); }
 };
 
 template<>
-struct Atomic::PlatformOrderedStore<4, RELEASE_X_FENCE>
+struct AtomicAccess::PlatformOrderedStore<4, RELEASE_X_FENCE>
 {
   template <typename T>
   void operator()(volatile T* p, T v) const { xchg(p, v, memory_order_conservative); }
 };
 
 template<>
-struct Atomic::PlatformOrderedStore<8, RELEASE_X_FENCE>
+struct AtomicAccess::PlatformOrderedStore<8, RELEASE_X_FENCE>
 {
   template <typename T>
   void operator()(volatile T* p, T v) const { xchg(p, v, memory_order_conservative); }

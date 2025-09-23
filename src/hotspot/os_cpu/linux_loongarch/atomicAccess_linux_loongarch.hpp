@@ -23,12 +23,12 @@
  *
  */
 
-#ifndef OS_CPU_LINUX_LOONGARCH_ATOMIC_LINUX_LOONGARCH_HPP
-#define OS_CPU_LINUX_LOONGARCH_ATOMIC_LINUX_LOONGARCH_HPP
+#ifndef OS_CPU_LINUX_LOONGARCH_ATOMICACCESS_LINUX_LOONGARCH_HPP
+#define OS_CPU_LINUX_LOONGARCH_ATOMICACCESS_LINUX_LOONGARCH_HPP
 
 #include "runtime/vm_version.hpp"
 
-// Implementation of class atomic
+// Implementation of class AtomicAccess
 
 #define AMCAS_MACRO asm volatile (                                          \
       ".ifndef _ASM_ASMMACRO_                                         \n\t" \
@@ -522,4 +522,4 @@ struct AtomicAccess::PlatformOrderedStore<8, RELEASE_X_FENCE>
   void operator()(volatile T* p, T v) const { xchg(p, v, memory_order_conservative); }
 };
 
-#endif // OS_CPU_LINUX_LOONGARCH_ATOMIC_LINUX_LOONGARCH_HPP
+#endif // OS_CPU_LINUX_LOONGARCH_ATOMICACCESS_LINUX_LOONGARCH_HPP

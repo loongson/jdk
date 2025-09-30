@@ -386,6 +386,10 @@ void VM_Version::get_processor_features() {
     }
   }
 
+  if (FLAG_IS_DEFAULT(UseBASE64Intrinsics)) {
+    FLAG_SET_DEFAULT(UseBASE64Intrinsics, true);
+  }
+
   if (UseLSX) {
       if (FLAG_IS_DEFAULT(UseChaCha20Intrinsics)) {
           UseChaCha20Intrinsics = true;

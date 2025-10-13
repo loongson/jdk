@@ -671,8 +671,8 @@ void SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm,
                                             int comp_args_on_stack,
                                             const BasicType *sig_bt,
                                             const VMRegPair *regs,
-                                            AdapterHandlerEntry* handler) {
-  address i2c_entry = __ pc();
+                                            address entry_address[AdapterBlob::ENTRY_COUNT]) {
+  entry_address[AdapterBlob::I2C] = __ pc();
 
   __ block_comment("gen_i2c_adapter");
   gen_i2c_adapter(masm, total_args_passed, comp_args_on_stack, sig_bt, regs);
@@ -686,7 +686,7 @@ void SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm,
   // from the interpreter, the interpreter will restore our SP (lest the
   // compiled code, which relies solely on SP and not FP, get sick).
 
-  address c2i_unverified_entry = __ pc();
+  entry_address[AdapterBlob::C2I_Unverified] = __ pc();
   Label skip_fixup;
   {
     __ block_comment("c2i_unverified_entry {");
@@ -706,10 +706,11 @@ void SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm,
     __ jmp(ic_miss, relocInfo::runtime_call_type);
     __ block_comment("} c2i_unverified_entry");
   }
-  address c2i_entry = __ pc();
+
+  entry_address[AdapterBlob::C2I] = __ pc();
 
   // Class initialization barrier for static methods
-  address c2i_no_clinit_check_entry = nullptr;
+  entry_address[AdapterBlob::C2I_No_Clinit_Check] = nullptr;
   if (VM_Version::supports_fast_class_init_checks()) {
     Label L_skip_barrier;
     address handle_wrong_method = SharedRuntime::get_handle_wrong_method_stub();
@@ -725,7 +726,7 @@ void SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm,
     __ jmp(handle_wrong_method, relocInfo::runtime_call_type);
 
     __ bind(L_skip_barrier);
-    c2i_no_clinit_check_entry = __ pc();
+    entry_address[AdapterBlob::C2I_No_Clinit_Check] = __ pc();
   }
 
   BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
@@ -734,8 +735,6 @@ void SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm,
 
   __ block_comment("gen_c2i_adapter");
   gen_c2i_adapter(masm, total_args_passed, comp_args_on_stack, sig_bt, regs, skip_fixup);
-
-  handler->set_entry_points(i2c_entry, c2i_entry, c2i_unverified_entry, c2i_no_clinit_check_entry);
   return;
 }
 

@@ -36,27 +36,27 @@
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
 
-int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register disp_hdr, Label& slow_case) {
-  assert_different_registers(hdr, obj, disp_hdr);
+int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register basic_lock, Label& slow_case) {
+  assert_different_registers(hdr, obj, basic_lock);
   int null_check_offset = -1;
 
   verify_oop(obj);
 
   // save object being locked into the BasicObjectLock
-  st_d(obj, Address(disp_hdr, BasicObjectLock::obj_offset()));
+  st_d(obj, Address(basic_lock, BasicObjectLock::obj_offset()));
 
   null_check_offset = offset();
 
-  lightweight_lock(disp_hdr, obj, hdr, SCR1, SCR2, slow_case);
+  lightweight_lock(basic_lock, obj, hdr, SCR1, SCR2, slow_case);
 
   return null_check_offset;
 }
 
-void C1_MacroAssembler::unlock_object(Register hdr, Register obj, Register disp_hdr, Label& slow_case) {
-  assert(hdr != obj && hdr != disp_hdr && obj != disp_hdr, "registers must be different");
+void C1_MacroAssembler::unlock_object(Register hdr, Register obj, Register basic_lock, Label& slow_case) {
+  assert_different_registers(hdr, obj, basic_lock);
 
   // load object
-  ld_d(obj, Address(disp_hdr, BasicObjectLock::obj_offset()));
+  ld_d(obj, Address(basic_lock, BasicObjectLock::obj_offset()));
   verify_oop(obj);
 
   lightweight_unlock(obj, hdr, SCR1, SCR2, slow_case);

@@ -1759,8 +1759,6 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
   // Lock a synchronized method
   if (method->is_synchronized()) {
-    const int mark_word_offset = BasicLock::displaced_header_offset_in_bytes();
-
     // Get the handle (the 2nd argument)
     __ move(oop_handle_reg, A1);
 

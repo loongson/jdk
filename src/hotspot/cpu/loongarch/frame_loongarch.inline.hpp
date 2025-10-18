@@ -111,8 +111,6 @@ inline void frame::init(intptr_t* ptr_sp, intptr_t* ptr_fp, address pc) {
 }
 
 inline void frame::setup(address pc) {
-  adjust_unextended_sp();
-
   address original_pc = get_deopt_original_pc();
   if (original_pc != nullptr) {
     _pc = original_pc;
@@ -212,7 +210,6 @@ inline frame::frame(intptr_t* ptr_sp, intptr_t* ptr_fp) {
   // value.
 
   _cb = CodeCache::find_blob(_pc);
-  adjust_unextended_sp();
 
   address original_pc = get_deopt_original_pc();
   if (original_pc != nullptr) {

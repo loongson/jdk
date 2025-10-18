@@ -1265,10 +1265,6 @@ bool Matcher::use_asm_for_ldiv_by_con( jlong divisor ) {
   return false;
 }
 
-const RegMask Matcher::method_handle_invoke_SP_save_mask() {
-  return FP_REG_mask();
-}
-
 int CallStaticJavaDirectNode::compute_padding(int current_offset) const {
   const uintx m = alignment_required() - 1;
   return mask_bits(current_offset + m, ~m) - current_offset;

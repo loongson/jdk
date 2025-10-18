@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2001, 2015, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2018, 2024, Loongson Technology. All rights reserved.
+ * Copyright (c) 2018, 2025, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -75,24 +75,6 @@ public class LOONGARCH64Frame extends Frame {
   private LOONGARCH64Frame() {
   }
 
-  private void adjustForDeopt() {
-    if ( pc != null) {
-      // Look for a deopt pc and if it is deopted convert to original pc
-      CodeBlob cb = VM.getVM().getCodeCache().findBlob(pc);
-      if (cb != null && cb.isJavaMethod()) {
-        NMethod nm = (NMethod) cb;
-        if (pc.equals(nm.deoptHandlerBegin())) {
-          if (Assert.ASSERTS_ENABLED) {
-            Assert.that(this.getUnextendedSP() != null, "null SP in Java frame");
-          }
-          // adjust pc if frame is deoptimized.
-          pc = this.getUnextendedSP().getAddressAt(nm.origPCOffset());
-          deoptimized = true;
-        }
-      }
-    }
-  }
-
   private void initFrame(Address raw_sp, Address raw_fp, Address pc, Address raw_unextendedSp, Address live_bcp) {
      this.raw_sp = raw_sp;
      this.raw_fp = raw_fp;
@@ -107,7 +89,6 @@ public class LOONGARCH64Frame extends Frame {
         this.pc = pc;
      }
      this.live_bcp = live_bcp;
-     adjustUnextendedSP();
 
      // Frame must be fully constructed before this call
      adjustForDeopt();
@@ -323,24 +304,6 @@ public class LOONGARCH64Frame extends Frame {
       Assert.that(map.getIncludeArgumentOops(), "should be set by clear");
     }
     return fr;
-  }
-
-  //------------------------------------------------------------------------------
-  // frame::adjust_unextended_sp
-  private void adjustUnextendedSP() {
-    // On loongarch, sites calling method handle intrinsics and lambda forms are treated
-    // as any other call site. Therefore, no special action is needed when we are
-    // returning to any of these call sites.
-
-    CodeBlob cb = cb();
-    NMethod senderNm = (cb == null) ? null : cb.asNMethodOrNull();
-    if (senderNm != null) {
-      // If the sender PC is a deoptimization point, get the original PC.
-      if (senderNm.isDeoptEntry(getPC()) ||
-          senderNm.isDeoptMhEntry(getPC())) {
-        // DEBUG_ONLY(verifyDeoptriginalPc(senderNm, raw_unextendedSp));
-      }
-    }
   }
 
   private Frame senderForInterpreterFrame(LOONGARCH64RegisterMap map) {

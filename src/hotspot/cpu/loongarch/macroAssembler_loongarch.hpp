@@ -129,9 +129,6 @@ class MacroAssembler: public Assembler {
   void push_cont_fastpath(Register java_thread = TREG);
   void pop_cont_fastpath(Register java_thread = TREG);
 
-  void inc_held_monitor_count(Register tmp);
-  void dec_held_monitor_count(Register tmp);
-
   void flt_to_flt16(Register dst, FloatRegister src, FloatRegister tmp) {
     vfcvt_h_s(tmp, src, src);
     vpickve2gr_h(dst, tmp, 0);

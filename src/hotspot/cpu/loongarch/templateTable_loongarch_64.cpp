@@ -2183,7 +2183,7 @@ void TemplateTable::resolve_cache_and_index_for_method(int byte_no,
   assert_different_registers(Rcache, index, temp);
   assert(byte_no == f1_byte || byte_no == f2_byte, "byte_no out of range");
 
-  Label resolved, clinit_barrier_slow;
+  Label L_clinit_barrier_slow, L_done;
 
   Bytecodes::Code code = bytecode();
 
@@ -2203,11 +2203,20 @@ void TemplateTable::resolve_cache_and_index_for_method(int byte_no,
   // is resolved?
   int i = (int)code;
   __ addi_d(temp, temp, -i);
-  __ beq(temp, R0, resolved);
+
+  // Class initialization barrier for static methods
+  if (VM_Version::supports_fast_class_init_checks() && bytecode() == Bytecodes::_invokestatic) {
+    __ bnez(temp, L_clinit_barrier_slow);  // have we resolved this bytecode?
+    __ ld_d(temp, Address(Rcache, in_bytes(ResolvedMethodEntry::method_offset())));
+    __ load_method_holder(temp, temp);
+    __ clinit_barrier(temp, AT, &L_done, /*L_slow_path*/ nullptr);
+    __ bind(L_clinit_barrier_slow);
+  } else {
+    __ beqz(temp, L_done);  // have we resolved this bytecode?
+  }
 
   // resolve first time through
   // Class initialization barrier slow path lands here as well.
-  __ bind(clinit_barrier_slow);
   address entry = CAST_FROM_FN_PTR(address, InterpreterRuntime::resolve_from_cache);
 
   __ li(temp, i);
@@ -2215,14 +2224,7 @@ void TemplateTable::resolve_cache_and_index_for_method(int byte_no,
 
   // Update registers with resolved info
   __ load_method_entry(Rcache, index);
-  __ bind(resolved);
-
-  // Class initialization barrier for static methods
-  if (VM_Version::supports_fast_class_init_checks() && bytecode() == Bytecodes::_invokestatic) {
-    __ ld_d(temp, Address(Rcache, in_bytes(ResolvedMethodEntry::method_offset())));
-    __ load_method_holder(temp, temp);
-    __ clinit_barrier(temp, AT, nullptr, &clinit_barrier_slow);
-  }
+  __ bind(L_done);
 }
 //END: LA
 
@@ -2232,13 +2234,13 @@ void TemplateTable::resolve_cache_and_index_for_field(int byte_no,
   const Register temp = SCR2;
   assert_different_registers(Rcache, index, temp);
 
-  Label resolved;
+  Label L_clinit_barrier_slow, L_done;
 
   Bytecodes::Code code = bytecode();
   switch (code) {
-  case Bytecodes::_nofast_getfield: code = Bytecodes::_getfield; break;
-  case Bytecodes::_nofast_putfield: code = Bytecodes::_putfield; break;
-  default: break;
+    case Bytecodes::_nofast_getfield: code = Bytecodes::_getfield; break;
+    case Bytecodes::_nofast_putfield: code = Bytecodes::_putfield; break;
+    default: break;
   }
 
   assert(byte_no == f1_byte || byte_no == f2_byte, "byte_no out of range");
@@ -2253,16 +2255,29 @@ void TemplateTable::resolve_cache_and_index_for_field(int byte_no,
   __ ld_bu(temp, Address(temp, 0));
   __ membar(Assembler::Membar_mask_bits(__ LoadLoad | __ LoadStore));
   __ li(AT, (int) code);  // have we resolved this bytecode?
-  __ beq(temp, AT, resolved);
+
+  // Class initialization barrier for static fields
+  if (VM_Version::supports_fast_class_init_checks() &&
+      (bytecode() == Bytecodes::_getstatic || bytecode() == Bytecodes::_putstatic)) {
+    const Register field_holder = temp;
+
+    __ bne(temp, AT, L_clinit_barrier_slow);
+    __ ld_d(field_holder, Address(Rcache, in_bytes(ResolvedFieldEntry::field_holder_offset())));
+    __ clinit_barrier(field_holder, AT, &L_done, /*L_slow_path*/ nullptr);
+    __ bind(L_clinit_barrier_slow);
+  } else {
+    __ beq(temp, AT, L_done);
+  }
 
   // resolve first time through
+  // Class initialization barrier slow path lands here as well.
   address entry = CAST_FROM_FN_PTR(address, InterpreterRuntime::resolve_from_cache);
   __ li(temp, (int) code);
   __ call_VM(noreg, entry, temp);
 
   // Update registers with resolved info
   __ load_field_entry(Rcache, index);
-  __ bind(resolved);
+  __ bind(L_done);
 }
 
 void TemplateTable::load_resolved_field_entry(Register obj,

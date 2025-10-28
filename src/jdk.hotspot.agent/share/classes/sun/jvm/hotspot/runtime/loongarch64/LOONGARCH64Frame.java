@@ -243,7 +243,13 @@ public class LOONGARCH64Frame extends Frame {
     }
 
     if (cb != null) {
-      return cb.isUpcallStub() ? senderForUpcallStub(map, (UpcallStub)cb) : senderForCompiledFrame(map, cb);
+      if (cb.isUpcallStub()) {
+        return senderForUpcallStub(map, (UpcallStub)cb);
+      } else if (cb.isContinuationStub()) {
+        return senderForContinuationStub(map, cb);
+      } else {
+        return senderForCompiledFrame(map, cb);
+      }
     }
 
     // Must be native-compiled frame, i.e. the marshaling code for native
@@ -327,6 +333,16 @@ public class LOONGARCH64Frame extends Frame {
 
   private void updateMapWithSavedLink(RegisterMap map, Address savedFPAddr) {
     map.setLocation(fp, savedFPAddr);
+  }
+
+  private Frame senderForContinuationStub(LOONGARCH64RegisterMap map, CodeBlob cb) {
+    var contEntry = map.getThread().getContEntry();
+
+    Address senderSP = contEntry.getEntrySP();
+    Address senderPC = contEntry.getEntryPC();
+    Address senderFP = contEntry.getEntryFP();
+
+    return new LOONGARCH64Frame(senderSP, senderFP, senderPC);
   }
 
   private Frame senderForCompiledFrame(LOONGARCH64RegisterMap map, CodeBlob cb) {

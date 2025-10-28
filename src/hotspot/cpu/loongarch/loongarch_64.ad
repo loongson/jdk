@@ -893,33 +893,33 @@ void reg_mask_init() {
   _PTR_HAS_S6_REG_mask = _ALL_REG_mask;
 
   if (UseCompressedOops && (CompressedOops::base() != nullptr)) {
-    _ANY_REG32_mask.Remove(OptoReg::as_OptoReg(r28->as_VMReg()));
-    _ANY_REG_mask.SUBTRACT(_S5_LONG_REG_mask);
-    _PTR_REG_mask.SUBTRACT(_S5_LONG_REG_mask);
+    _ANY_REG32_mask.remove(OptoReg::as_OptoReg(r28->as_VMReg()));
+    _ANY_REG_mask.subtract(_S5_LONG_REG_mask);
+    _PTR_REG_mask.subtract(_S5_LONG_REG_mask);
   }
 
   // FP(r22) is not allocatable when PreserveFramePointer is on
   if (PreserveFramePointer) {
-    _ANY_REG32_mask.Remove(OptoReg::as_OptoReg(r22->as_VMReg()));
-    _ANY_REG_mask.SUBTRACT(_FP_REG_mask);
-    _PTR_REG_mask.SUBTRACT(_FP_REG_mask);
+    _ANY_REG32_mask.remove(OptoReg::as_OptoReg(r22->as_VMReg()));
+    _ANY_REG_mask.subtract(_FP_REG_mask);
+    _PTR_REG_mask.subtract(_FP_REG_mask);
   }
 
 #if INCLUDE_ZGC || INCLUDE_SHENANDOAHGC
   if (UseZGC || UseShenandoahGC) {
-    _ANY_REG32_mask.Remove(OptoReg::as_OptoReg(r16->as_VMReg()));
-    _ANY_REG_mask.SUBTRACT(_T4_LONG_REG_mask);
-    _PTR_REG_mask.SUBTRACT(_T4_LONG_REG_mask);
+    _ANY_REG32_mask.remove(OptoReg::as_OptoReg(r16->as_VMReg()));
+    _ANY_REG_mask.subtract(_T4_LONG_REG_mask);
+    _PTR_REG_mask.subtract(_T4_LONG_REG_mask);
   }
 #endif
 
   _NO_CR_REG_mask = _PTR_REG_mask;
-  _NO_CR_REG_mask.SUBTRACT(_T0_LONG_REG_mask);
+  _NO_CR_REG_mask.subtract(_T0_LONG_REG_mask);
 
   _NO_FP_REG_mask = _PTR_REG_mask;
-  _NO_FP_REG_mask.Remove(OptoReg::as_OptoReg(r22->as_VMReg()));
+  _NO_FP_REG_mask.remove(OptoReg::as_OptoReg(r22->as_VMReg()));
 
-  _PTR_HAS_S6_REG_mask.OR(_S6_LONG_REG_mask);
+  _PTR_HAS_S6_REG_mask.or_with(_S6_LONG_REG_mask);
 }
 
 void PhaseOutput::pd_perform_mach_node_analysis() {
@@ -1248,7 +1248,7 @@ bool Matcher::is_spillable_arg( int reg ) {
 
 uint Matcher::int_pressure_limit()
 {
-  uint default_intpresssure = _ANY_REG32_mask.Size() - 1;
+  uint default_intpresssure = _ANY_REG32_mask.size() - 1;
 
   if (!PreserveFramePointer) {
     default_intpresssure--;
@@ -1258,7 +1258,7 @@ uint Matcher::int_pressure_limit()
 
 uint Matcher::float_pressure_limit()
 {
-  return (FLOATPRESSURE == -1) ? _FLT_REG_mask.Size() : FLOATPRESSURE;
+  return (FLOATPRESSURE == -1) ? _FLT_REG_mask.size() : FLOATPRESSURE;
 }
 
 bool Matcher::use_asm_for_ldiv_by_con( jlong divisor ) {

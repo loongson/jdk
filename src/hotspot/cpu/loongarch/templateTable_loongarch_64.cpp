@@ -126,6 +126,7 @@ static void do_oop_load(InterpreterMacroAssembler* _masm,
 void TemplateTable::patch_bytecode(Bytecodes::Code bc, Register bc_reg,
                                    Register tmp_reg, bool load_bc_into_bc_reg/*=true*/,
                                    int byte_no) {
+  assert_different_registers(bc_reg, tmp_reg);
   if (!RewriteBytecodes)  return;
   Label L_patch_done;
 
@@ -194,7 +195,11 @@ void TemplateTable::patch_bytecode(Bytecodes::Code bc, Register bc_reg,
   __ bind(L_okay);
 #endif
 
-  // patch bytecode
+  // Patch bytecode with release store to coordinate with ResolvedFieldEntry loads
+  // in fast bytecode codelets. load_field_entry has a memory barrier that gains
+  // the needed ordering, together with control dependency on entering the fast codelet
+  // itself.
+  __ membar(Assembler::Membar_mask_bits(__ LoadStore | __ StoreStore));
   __ st_b(bc_reg, at_bcp(0));
   __ bind(L_patch_done);
 }
@@ -3054,6 +3059,7 @@ void TemplateTable::fast_storefield(TosState state) {
   __ load_field_entry(T3, T2);
   // T2: field offset, T3: field holder, T1: flags
   load_resolved_field_entry(T3, T3, noreg, T2, T1);
+  __ verify_field_offset(T2);
 
   Label Done;
   {
@@ -3145,6 +3151,8 @@ void TemplateTable::fast_accessfield(TosState state) {
 
   // replace index with field offset from cache entry
   __ load_sized_value(T2, Address(T3, in_bytes(ResolvedFieldEntry::field_offset_offset())), sizeof(int), true /*is_signed*/);
+  __ verify_field_offset(T2);
+
   __ ld_bu(T1, Address(T3, in_bytes(ResolvedFieldEntry::flags_offset())));
 
   // FSR: object
@@ -3205,7 +3213,9 @@ void TemplateTable::fast_xaccess(TosState state) {
   __ ld_d(T1, aaddress(0));
   // access constant pool cache
   __ load_field_entry(T3, T2, 2);
+
   __ load_sized_value(T2, Address(T3, in_bytes(ResolvedFieldEntry::field_offset_offset())), sizeof(int), true /*is_signed*/);
+  __ verify_field_offset(T2);
 
   // make sure exception is reported in correct bcp range (getfield is
   // next instruction)

@@ -127,6 +127,8 @@ class InterpreterMacroAssembler: public MacroAssembler {
   void load_field_entry(Register cache, Register index, int bcp_offset = 1);
   void load_method_entry(Register cache, Register index, int bcp_offset = 1);
 
+  void verify_field_offset(Register reg) NOT_DEBUG_RETURN;
+
   // load cpool->resolved_references(index);
   void load_resolved_reference_at_index(Register result, Register index, Register tmp);
 

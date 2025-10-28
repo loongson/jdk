@@ -353,6 +353,17 @@ void InterpreterMacroAssembler::load_method_entry(Register cache, Register index
   add_d(cache, cache, index);
 }
 
+#ifdef ASSERT
+void InterpreterMacroAssembler::verify_field_offset(Register reg) {
+  // Verify the field offset is not in the header, implicitly checks for 0
+  Label L;
+  li(AT, oopDesc::base_offset_in_bytes());
+  bge(reg, AT, L);
+  stop("bad field offset");
+  bind(L);
+}
+#endif
+
 // Load object from cpool->resolved_references(index)
 void InterpreterMacroAssembler::load_resolved_reference_at_index(
                                            Register result, Register index, Register tmp) {

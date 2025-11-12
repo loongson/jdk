@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2022, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -54,29 +54,35 @@ final public class LinuxLOONGARCH64CFrame extends BasicCFrame {
       return fp;
    }
 
+   @Override
    public CFrame sender(ThreadProxy thread) {
-      LOONGARCH64ThreadContext context = (LOONGARCH64ThreadContext) thread.getContext();
-      Address sp = context.getRegisterAsAddress(LOONGARCH64ThreadContext.SP);
-      Address nextFP;
-      Address nextPC;
+      return sender(thread, null, null);
+   }
 
-      if ((fp == null) || fp.lessThan(sp)) {
-        return null;
+   @Override
+   public CFrame sender(ThreadProxy thread, Address nextFP, Address nextPC) {
+      // Check fp
+      // Skip if both nextFP and nextPC are given - do not need to load from fp.
+      if (nextFP == null && nextPC == null) {
+        if (fp == null) {
+          return null;
+        }
+
+        // Check alignment of fp
+        if (dbg.getAddressValue(fp) % (2 * ADDRESS_SIZE) != 0) {
+          return null;
+        }
       }
 
-      try {
+      if (nextFP == null) {
         nextFP = fp.getAddressAt(-2 * ADDRESS_SIZE);
-      } catch (Exception e) {
-        return null;
       }
       if (nextFP == null) {
         return null;
       }
 
-      try {
-        nextPC  = fp.getAddressAt(-1 * ADDRESS_SIZE);
-      } catch (Exception e) {
-        return null;
+      if (nextPC == null) {
+        nextPC = fp.getAddressAt(-1 * ADDRESS_SIZE);
       }
       if (nextPC == null) {
         return null;

@@ -828,26 +828,10 @@ class HandlerImpl {
 
  public:
 
-  static int emit_exception_handler(C2_MacroAssembler *masm);
   static int emit_deopt_handler(C2_MacroAssembler* masm);
 
-  static uint size_exception_handler() {
-    // NativeCall instruction size is the same as NativeJump.
-    // exception handler starts out as jump and can be patched to
-    // a call be deoptimization.  (4932387)
-    // Note that this value is also credited (in output.cpp) to
-    // the size of the code section.
-    int size = NativeFarCall::instruction_size;
-    const uintx m = 16 - 1;
-    return mask_bits(size + m, ~m);
-    //return round_to(size, 16);
-  }
-
   static uint size_deopt_handler() {
-    int size = NativeFarCall::instruction_size;
-    const uintx m = 16 - 1;
-    return mask_bits(size + m, ~m);
-    //return round_to(size, 16);
+    return 3 * 4; // patchable_call + b, 3 instructions
   }
 };
 
@@ -933,28 +917,6 @@ int MachNode::compute_padding(int current_offset) const {
   return 0;
 }
 
-// Emit exception handler code.
-// Stuff framesize into a register and call a VM stub routine.
-int HandlerImpl::emit_exception_handler(C2_MacroAssembler* masm) {
-  // Note that the code buffer's insts_mark is always relative to insts.
-  // That's why we must use the macroassembler to generate a handler.
-  address base = __ start_a_stub(size_exception_handler());
-  if (base == nullptr) {
-    ciEnv::current()->record_failure("CodeCache is full");
-    return 0;  // CodeBuffer::expand failed
-  }
-
-  int offset = __ offset();
-
-  __ block_comment("; emit_exception_handler");
-
-  __ relocate(relocInfo::runtime_call_type);
-  __ patchable_jump((address)OptoRuntime::exception_blob()->entry_point());
-  assert(__ offset() - offset <= (int) size_exception_handler(), "overflow");
-  __ end_a_stub();
-  return offset;
-}
-
 // Emit deopt handler code.
 int HandlerImpl::emit_deopt_handler(C2_MacroAssembler* masm) {
   // Note that the code buffer's insts_mark is always relative to insts.
@@ -969,11 +931,20 @@ int HandlerImpl::emit_deopt_handler(C2_MacroAssembler* masm) {
 
   __ block_comment("; emit_deopt_handler");
 
+  Label start;
+  __ bind(start);
+
   __ relocate(relocInfo::runtime_call_type);
   __ patchable_call(SharedRuntime::deopt_blob()->unpack());
+
+  int entry_offset = __ offset();
+  __ b(start);
+
   assert(__ offset() - offset <= (int) size_deopt_handler(), "overflow");
+  assert(__ offset() - entry_offset >= NativePostCallNop::first_check_size,
+         "out of bounds read in post-call NOP check");
   __ end_a_stub();
-  return offset;
+  return entry_offset;
 }
 
 

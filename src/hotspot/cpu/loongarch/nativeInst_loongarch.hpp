@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -492,10 +492,16 @@ inline NativeCallTrampolineStub* nativeCallTrampolineStub_at(address addr) {
 
 class NativePostCallNop: public NativeInstruction {
 public:
+  enum LOONGARCH_specific_constants {
+    // The two parts should be checked separately to prevent out of bounds access in
+    // case the return address points to the deopt handler stub code entry point
+    // which could be at the end of page.
+    first_check_size = BytesPerInstWord
+  };
 
   bool check() const {
     // nop; ori R0, xx, xx; ori R0, xx, xx;
-    return is_nop() && ((uint_at(4) & 0xffc0001f) == 0x03800000);
+    return is_nop() && ((uint_at(first_check_size) & 0xffc0001f) == 0x03800000);
   }
 
   bool decode(int32_t& oopmap_slot, int32_t& cb_offset) const {

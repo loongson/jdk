@@ -2106,23 +2106,6 @@ void SharedRuntime::generate_deopt_blob() {
   Register unroll = S7;
   // Prolog for non exception case!
 
-  // We have been called from the deopt handler of the deoptee.
-  //
-  // deoptee:
-  //                      ...
-  //                      call X
-  //                      ...
-  //  deopt_handler:      call_deopt_stub
-  //  cur. return pc  --> ...
-  //
-  // So currently RA points behind the call in the deopt handler.
-  // We adjust it such that it points to the start of the deopt handler.
-  // The return_pc has been stored in the frame of the deoptee and
-  // will replace the address of the deopt_handler in the call
-  // to Deoptimization::fetch_unroll_info below.
-
-  // HandlerImpl::size_deopt_handler()
-  __ addi_d(RA, RA, - NativeFarCall::instruction_size);
   // Save everything in sight.
   map = reg_save.save_live_registers(masm, additional_words, &frame_size_in_words);
   // Normal deoptimization

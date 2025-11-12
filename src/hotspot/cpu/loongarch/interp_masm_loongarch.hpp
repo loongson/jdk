@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -50,6 +50,7 @@ class InterpreterMacroAssembler: public MacroAssembler {
   virtual void call_VM_base(Register oop_result,
                             Register java_thread,
                             Register last_java_sp,
+                            Label*   return_pc,
                             address  entry_point,
                             int number_of_arguments,
                             bool check_exceptions);
@@ -58,12 +59,27 @@ class InterpreterMacroAssembler: public MacroAssembler {
   void dispatch_base(TosState state, address* table, bool verifyoop = true, bool generate_poll = false);
 
  public:
+  // Use for vthread preemption
   void call_VM_preemptable(Register oop_result,
                            address entry_point,
-                           Register arg_1);
+                           Register arg_1,
+                           bool check_exceptions = true);
+
+  void call_VM_preemptable(Register oop_result,
+                           address entry_point,
+                           Register arg_1,
+                           Register arg_2,
+                           bool check_exceptions = true);
 
   void restore_after_resume(bool is_native);
 
+ private:
+  void call_VM_preemptable_helper(Register oop_result,
+                                  address entry_point,
+                                  int number_of_arguments,
+                                  bool check_exceptions);
+
+ public:
   void jump_to_entry(address entry);
   // narrow int return value
   void narrow(Register result);

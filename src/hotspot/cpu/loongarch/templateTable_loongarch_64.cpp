@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2223,7 +2223,7 @@ void TemplateTable::resolve_cache_and_index_for_method(int byte_no,
   address entry = CAST_FROM_FN_PTR(address, InterpreterRuntime::resolve_from_cache);
 
   __ li(temp, i);
-  __ call_VM(NOREG, entry, temp);
+  __ call_VM_preemptable(noreg, entry, temp);
 
   // Update registers with resolved info
   __ load_method_entry(Rcache, index);
@@ -2275,7 +2275,7 @@ void TemplateTable::resolve_cache_and_index_for_field(int byte_no,
   // Class initialization barrier slow path lands here as well.
   address entry = CAST_FROM_FN_PTR(address, InterpreterRuntime::resolve_from_cache);
   __ li(temp, (int) code);
-  __ call_VM(noreg, entry, temp);
+  __ call_VM_preemptable(noreg, entry, temp);
 
   // Update registers with resolved info
   __ load_field_entry(Rcache, index);
@@ -3700,7 +3700,7 @@ void TemplateTable::_new() {
   __ bind(slow_case);
   __ get_constant_pool(A1);
   __ get_unsigned_2_byte_index_at_bcp(A2, 1);
-  call_VM(FSR, CAST_FROM_FN_PTR(address, InterpreterRuntime::_new), A1, A2);
+  __ call_VM_preemptable(FSR, CAST_FROM_FN_PTR(address, InterpreterRuntime::_new), A1, A2);
 
   // continue
   __ bind(done);

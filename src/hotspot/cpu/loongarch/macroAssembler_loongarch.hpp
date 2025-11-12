@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -85,6 +85,7 @@ class MacroAssembler: public Assembler {
     Register oop_result,               // where an oop-result ends up if any; use noreg otherwise
     Register java_thread,              // the thread if computed before     ; use noreg otherwise
     Register last_java_sp,             // to set up last_Java_frame in stubs; use noreg otherwise
+    Label*   return_pc,                // to set up last_Java_frame; use nullptr otherwise
     address  entry_point,              // the entry point
     int      number_of_arguments,      // the number of arguments (w/o thread) to pop after the call
     bool     check_exceptions          // whether to check for pending exceptions after return
@@ -527,6 +528,11 @@ class MacroAssembler: public Assembler {
   void decrement(Register reg, int imm);
   void increment(Address addr, int imm = 1);
   void decrement(Address addr, int imm = 1);
+
+  void incrementw(Register reg, int imm);
+  void decrementw(Register reg, int imm);
+  void incrementw(Address addr, int imm = 1);
+  void decrementw(Address addr, int imm = 1);
 
   // Helper functions for statistics gathering.
   void atomic_inc32(address counter_addr, int inc, Register tmp_reg1, Register tmp_reg2);

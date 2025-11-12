@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2017, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2017, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -706,6 +706,32 @@ void MacroAssembler::decrement(Address addr, int imm) {
   increment(addr, -imm);
 }
 
+void MacroAssembler::incrementw(Register reg, int imm) {
+  if (!imm) return;
+  if (is_simm(imm, 12)) {
+    addi_w(reg, reg, imm);
+  } else {
+    li(AT, imm);
+    add_w(reg, reg, AT);
+  }
+}
+
+void MacroAssembler::decrementw(Register reg, int imm) {
+  incrementw(reg, -imm);
+}
+
+void MacroAssembler::incrementw(Address addr, int imm) {
+  if (!imm) return;
+  assert(is_simm(imm, 12), "must be");
+  ld_w(AT, addr);
+  addi_w(AT, AT, imm);
+  st_w(AT, addr);
+}
+
+void MacroAssembler::decrementw(Address addr, int imm) {
+  incrementw(addr, -imm);
+}
+
 void MacroAssembler::call_VM(Register oop_result,
                              address entry_point,
                              bool check_exceptions) {
@@ -750,7 +776,7 @@ void MacroAssembler::call_VM(Register oop_result,
                              address entry_point,
                              int number_of_arguments,
                              bool check_exceptions) {
-  call_VM_base(oop_result, NOREG, last_java_sp, entry_point, number_of_arguments, check_exceptions);
+  call_VM_base(oop_result, NOREG, last_java_sp, nullptr, entry_point, number_of_arguments, check_exceptions);
 }
 
 void MacroAssembler::call_VM(Register oop_result,
@@ -789,13 +815,10 @@ void MacroAssembler::call_VM(Register oop_result,
   call_VM(oop_result, last_java_sp, entry_point, 3, check_exceptions);
 }
 
-static bool is_preemptable(address entry_point) {
-  return entry_point == CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter);
-}
-
 void MacroAssembler::call_VM_base(Register oop_result,
                                   Register java_thread,
                                   Register last_java_sp,
+                                  Label*   return_pc,
                                   address  entry_point,
                                   int      number_of_arguments,
                                   bool     check_exceptions) {
@@ -818,12 +841,7 @@ void MacroAssembler::call_VM_base(Register oop_result,
   // set last Java frame before call
   Label before_call;
   bind(before_call);
-  if (is_preemptable(entry_point)) {
-    // skip setting last_pc since we already set it to desired value.
-    set_last_Java_frame(last_java_sp, FP, noreg);
-  } else {
-    set_last_Java_frame(java_thread, last_java_sp, FP, before_call);
-  }
+  set_last_Java_frame(java_thread, last_java_sp, FP, return_pc != nullptr ? *return_pc : before_call);
 
   // do the call
   move(A0, java_thread);
@@ -872,7 +890,7 @@ void MacroAssembler::call_VM_helper(Register oop_result, address entry_point, in
   //we also reserve space for java_thread here
   assert(StackAlignmentInBytes == 16, "must be");
   bstrins_d(SP, R0, 3, 0);
-  call_VM_base(oop_result, NOREG, V0, entry_point, number_of_arguments, check_exceptions);
+  call_VM_base(oop_result, NOREG, V0, nullptr, entry_point, number_of_arguments, check_exceptions);
 }
 
 void MacroAssembler::call_VM_leaf(address entry_point, int number_of_arguments) {

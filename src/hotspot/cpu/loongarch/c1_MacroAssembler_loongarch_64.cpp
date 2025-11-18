@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,7 +47,7 @@ int C1_MacroAssembler::lock_object(Register hdr, Register obj, Register basic_lo
 
   null_check_offset = offset();
 
-  lightweight_lock(basic_lock, obj, hdr, SCR1, SCR2, slow_case);
+  fast_lock(basic_lock, obj, hdr, SCR1, SCR2, slow_case);
 
   return null_check_offset;
 }
@@ -59,7 +59,7 @@ void C1_MacroAssembler::unlock_object(Register hdr, Register obj, Register basic
   ld_d(obj, Address(basic_lock, BasicObjectLock::obj_offset()));
   verify_oop(obj);
 
-  lightweight_unlock(obj, hdr, SCR1, SCR2, slow_case);
+  fast_unlock(obj, hdr, SCR1, SCR2, slow_case);
 }
 
 // Defines obj, preserves var_size_in_bytes

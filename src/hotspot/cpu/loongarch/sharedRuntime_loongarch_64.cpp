@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1724,7 +1724,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
     // FIXME
     Register tmp = T1;
-    __ lightweight_lock(lock_reg, obj_reg, swap_reg, tmp, SCR1, slow_path_lock);
+    __ fast_lock(lock_reg, obj_reg, swap_reg, tmp, SCR1, slow_path_lock);
 
     // Slow path will re-enter here
     __ bind(lock_done);
@@ -1859,7 +1859,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       save_native_result(masm, ret_type, stack_slots);
     }
 
-    __ lightweight_unlock(obj_reg, lock_reg, swap_reg, SCR1, slow_path_unlock);
+    __ fast_unlock(obj_reg, lock_reg, swap_reg, SCR1, slow_path_unlock);
 
     // slow path re-enters here
     __ bind(unlock_done);

@@ -4796,12 +4796,12 @@ void MacroAssembler::double_move(VMRegPair src, VMRegPair dst, Register tmp) {
   }
 }
 
-// Implements lightweight-locking.
+// Implements fast-locking.
 //
 //  - obj: the object to be locked
 //  - tmp1, tmp2, tmp3: temporary registers, will be destroyed
 //  - slow: branched to if locking fails
-void MacroAssembler::lightweight_lock(Register basic_lock, Register obj, Register tmp1, Register tmp2, Register tmp3, Label& slow) {
+void MacroAssembler::fast_lock(Register basic_lock, Register obj, Register tmp1, Register tmp2, Register tmp3, Label& slow) {
   assert_different_registers(basic_lock, obj, tmp1, tmp2, tmp3);
 
   Label _push, _tmp;
@@ -4858,12 +4858,12 @@ void MacroAssembler::lightweight_lock(Register basic_lock, Register obj, Registe
   st_w(top, Address(TREG, JavaThread::lock_stack_top_offset()));
 }
 
-// Implements lightweight-unlocking.
+// Implements fast-unlocking.
 //
 // - obj: the object to be unlocked
 // - tmp1, tmp2, tmp3: temporary registers
 // - slow: branched to if unlocking fails
-void MacroAssembler::lightweight_unlock(Register obj, Register tmp1, Register tmp2, Register tmp3, Label& slow) {
+void MacroAssembler::fast_unlock(Register obj, Register tmp1, Register tmp2, Register tmp3, Label& slow) {
   assert_different_registers(obj, tmp1, tmp2, tmp3);
 
 #ifdef ASSERT
@@ -4909,7 +4909,7 @@ void MacroAssembler::lightweight_unlock(Register obj, Register tmp1, Register tm
   Label not_unlocked;
   test_bit(t, mark, exact_log2(markWord::unlocked_value));
   beqz(t, not_unlocked);
-  stop("lightweight_unlock already unlocked");
+  stop("fast_unlock already unlocked");
   bind(not_unlocked);
 #endif
 

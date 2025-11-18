@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,10 +40,10 @@
 #define BLOCK_COMMENT(str) block_comment(str)
 #endif
 
-void C2_MacroAssembler::fast_lock_lightweight(Register obj, Register box,
-                                              Register flag, Register tmp1,
-                                              Register tmp2, Register tmp3,
-                                              Register tmp4) {
+void C2_MacroAssembler::fast_lock(Register obj, Register box,
+                                  Register flag, Register tmp1,
+                                  Register tmp2, Register tmp3,
+                                  Register tmp4) {
   assert_different_registers(obj, box, flag, tmp1, tmp2, tmp3, tmp4);
 
   // Handle inflated monitor.
@@ -69,7 +69,7 @@ void C2_MacroAssembler::fast_lock_lightweight(Register obj, Register box,
   const Register tmp1_mark = tmp1;
   const Register tmp3_t = tmp3;
 
-  { // Lightweight locking
+  { // Fast locking
 
     // Push lock to the lock stack and finish successfully. MUST branch to with flag != 0
     Label push;
@@ -198,7 +198,7 @@ void C2_MacroAssembler::fast_lock_lightweight(Register obj, Register box,
   // C2 uses the value of flag (0 vs !0) to determine the continuation.
 }
 
-void C2_MacroAssembler::fast_unlock_lightweight(Register obj, Register box, Register flag, Register tmp1, Register tmp2, Register tmp3) {
+void C2_MacroAssembler::fast_unlock(Register obj, Register box, Register flag, Register tmp1, Register tmp2, Register tmp3) {
   assert_different_registers(obj, box, tmp1, tmp2, tmp3, flag, AT);
 
   // Handle inflated monitor.
@@ -213,7 +213,7 @@ void C2_MacroAssembler::fast_unlock_lightweight(Register obj, Register box, Regi
   const Register tmp3_t = tmp3;
 
   move(flag, R0);
-  { // Lightweight unlock
+  { // Fast unlock
     Label push_and_slow_path;
 
     // Check if obj is top of lock-stack.

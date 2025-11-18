@@ -11166,32 +11166,32 @@ instruct storeSSD(stackSlotD dst, regD src)
   ins_pipe( fpu_store );
 %}
 
-instruct cmpFastLockLightweight(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box,
-                                no_CR_mRegP tmp1, no_CR_mRegP tmp2,
-                                no_CR_mRegP tmp3, no_CR_mRegP tmp4) %{
+instruct cmpFastLock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box,
+                     no_CR_mRegP tmp1, no_CR_mRegP tmp2,
+                     no_CR_mRegP tmp3, no_CR_mRegP tmp4) %{
   match(Set cr (FastLock object box));
   effect(TEMP tmp1, TEMP tmp2, TEMP tmp3, TEMP tmp4);
 
-  format %{ "FASTLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3, $tmp4 #@ cmpFastLockLightweight" %}
+  format %{ "FASTLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3, $tmp4 #@ cmpFastLock" %}
 
   ins_encode %{
-    __ fast_lock_lightweight($object$$Register, $box$$Register,
-                             $cr$$Register, $tmp1$$Register,
-                             $tmp2$$Register, $tmp3$$Register,
-                             $tmp4$$Register);
+    __ fast_lock($object$$Register, $box$$Register,
+                 $cr$$Register, $tmp1$$Register,
+                 $tmp2$$Register, $tmp3$$Register,
+                 $tmp4$$Register);
   %}
 
   ins_pipe( pipe_slow );
 %}
 
-instruct cmpFastUnlockLightweight(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2, no_CR_mRegP tmp3) %{
+instruct cmpFastUnlock(FlagsReg cr, no_CR_mRegP object, no_CR_mRegP box, no_CR_mRegP tmp1, no_CR_mRegP tmp2, no_CR_mRegP tmp3) %{
   match(Set cr (FastUnlock object box));
   effect(TEMP tmp1, TEMP tmp2, TEMP tmp3);
 
-  format %{ "FASTUNLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3 #@ cmpFastUnlockLightweight" %}
+  format %{ "FASTUNLOCK $cr <-- $object, $box, $tmp1, $tmp2, $tmp3 #@ cmpFastUnlock" %}
 
   ins_encode %{
-    __ fast_unlock_lightweight($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register, $tmp3$$Register);
+    __ fast_unlock($object$$Register, $box$$Register, $cr$$Register, $tmp1$$Register, $tmp2$$Register, $tmp3$$Register);
   %}
 
   ins_pipe( pipe_slow );

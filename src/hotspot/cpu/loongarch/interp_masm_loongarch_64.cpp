@@ -925,7 +925,7 @@ void InterpreterMacroAssembler::lock_object(Register lock_reg) {
   // Load object pointer into scr_reg
   ld_d(scr_reg, Address(lock_reg, BasicObjectLock::obj_offset()));
 
-  lightweight_lock(lock_reg, scr_reg, tmp_reg, SCR1, SCR2, slow_case);
+  fast_lock(lock_reg, scr_reg, tmp_reg, SCR1, SCR2, slow_case);
   b(done);
 
   bind(slow_case);
@@ -965,7 +965,7 @@ void InterpreterMacroAssembler::unlock_object(Register lock_reg) {
   // free entry
   st_d(R0, Address(lock_reg, BasicObjectLock::obj_offset()));
 
-  lightweight_unlock(scr_reg, hdr_reg, tmp_reg, SCR1, slow_case);
+  fast_unlock(scr_reg, hdr_reg, tmp_reg, SCR1, slow_case);
   b(done);
 
   bind(slow_case);

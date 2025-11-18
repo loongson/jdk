@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2034,7 +2034,7 @@ class StubGenerator: public StubCodeGenerator {
       __ bind(post);
       __ pop(RegSet::of(A1, A2));
 
-      bs->arraycopy_epilogue(_masm, decorators, is_oop, A1, A2, T1, RegSet());
+      bs->arraycopy_epilogue(_masm, decorators, is_oop, A1, A2, T1);
 
       __ pop(RegSet::of(RA));
       __ move(A0, R0);
@@ -2330,7 +2330,6 @@ class StubGenerator: public StubCodeGenerator {
     const Register ckval       = A4; // super_klass
 
     RegSet wb_pre_saved_regs = RegSet::range(A0, A4);
-    RegSet wb_post_saved_regs = RegSet::of(count);
 
     // Registers used as temps (S0, S1, S2, S3 are save-on-entry)
     const Register copied_oop  = S0; // actual oop copied
@@ -2446,7 +2445,7 @@ class StubGenerator: public StubCodeGenerator {
 
     __ bind(L_do_card_marks);
 
-    bs->arraycopy_epilogue(_masm, decorators, is_oop, start_to, count_save, tmp2, wb_post_saved_regs);
+    bs->arraycopy_epilogue(_masm, decorators, is_oop, start_to, count_save, tmp2);
 
     __ bind(L_done_pop);
     __ pop(RegSet::of(S0, S1, S2, S3) + RA);

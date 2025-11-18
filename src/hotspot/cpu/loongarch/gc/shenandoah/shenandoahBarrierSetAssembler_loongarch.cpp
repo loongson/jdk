@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018, 2021, Red Hat, Inc. All rights reserved.
- * Copyright (c) 2022, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2022, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -78,9 +78,9 @@ void ShenandoahBarrierSetAssembler::arraycopy_prologue(MacroAssembler* masm, Dec
 }
 
 void ShenandoahBarrierSetAssembler::arraycopy_epilogue(MacroAssembler* masm, DecoratorSet decorators, bool is_oop,
-                                                       Register start, Register count, Register tmp, RegSet saved_regs) {
+                                                       Register start, Register count, Register tmp) {
   if (ShenandoahCardBarrier && is_oop) {
-    gen_write_ref_array_post_barrier(masm, decorators, start, count, tmp, saved_regs);
+    gen_write_ref_array_post_barrier(masm, decorators, start, count, tmp);
   }
 }
 
@@ -631,7 +631,7 @@ void ShenandoahBarrierSetAssembler::cmpxchg_oop(MacroAssembler* masm,
 }
 
 void ShenandoahBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembler* masm, DecoratorSet decorators,
-                                                                     Register start, Register count, Register tmp, RegSet saved_regs) {
+                                                                     Register start, Register count, Register tmp) {
   assert(ShenandoahCardBarrier, "Did you mean to enable ShenandoahCardBarrier?");
 
   Label L_loop, L_done;

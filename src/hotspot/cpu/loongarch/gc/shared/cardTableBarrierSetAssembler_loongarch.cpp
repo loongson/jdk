@@ -49,10 +49,9 @@ void CardTableBarrierSetAssembler::arraycopy_prologue(MacroAssembler* masm, Deco
 }
 
 void CardTableBarrierSetAssembler::arraycopy_epilogue(MacroAssembler* masm, DecoratorSet decorators, bool is_oop,
-                                                      Register start, Register count, Register tmp,
-                                                      RegSet saved_regs) {
+                                                      Register start, Register count, Register tmp) {
   if (is_oop) {
-    gen_write_ref_array_post_barrier(masm, decorators, start, count, tmp, saved_regs);
+    gen_write_ref_array_post_barrier(masm, decorators, start, count, tmp);
   }
 }
 
@@ -66,8 +65,7 @@ void CardTableBarrierSetAssembler::store_at(MacroAssembler* masm, DecoratorSet d
 }
 
 void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembler* masm, DecoratorSet decorators,
-                                                                    Register addr, Register count, Register tmp,
-                                                                    RegSet saved_regs) {
+                                                                    Register addr, Register count, Register tmp) {
   BarrierSet *bs = BarrierSet::barrier_set();
   CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
   CardTable* ct = ctbs->card_table();

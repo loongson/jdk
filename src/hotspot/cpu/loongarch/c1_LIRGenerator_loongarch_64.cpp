@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1103,11 +1103,11 @@ void LIRGenerator::do_Convert(Convert* x) {
   switch (x->op()) {
     case Bytecodes::_f2i:
     case Bytecodes::_f2l:
-      __ convert(x->op(), conv_input, conv_result, nullptr, new_register(T_FLOAT));
+      __ convert(x->op(), conv_input, conv_result, new_register(T_FLOAT));
       break;
     case Bytecodes::_d2i:
     case Bytecodes::_d2l:
-      __ convert(x->op(), conv_input, conv_result, nullptr, new_register(T_DOUBLE));
+      __ convert(x->op(), conv_input, conv_result, new_register(T_DOUBLE));
       break;
     default:
       __ convert(x->op(), conv_input, conv_result);

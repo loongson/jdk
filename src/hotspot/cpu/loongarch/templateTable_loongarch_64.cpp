@@ -3176,7 +3176,7 @@ void TemplateTable::fast_accessfield(TosState state) {
       __ access_load_at(T_INT, IN_HEAP, FSR, Address(FSR), noreg, noreg);
       break;
     case Bytecodes::_fast_lgetfield:
-      __ stop("should not be rewritten");
+      __ access_load_at(T_LONG, IN_HEAP, FSR, Address(FSR), noreg, noreg);
       break;
     case Bytecodes::_fast_fgetfield:
       __ access_load_at(T_FLOAT, IN_HEAP, noreg, Address(FSR), noreg, noreg);

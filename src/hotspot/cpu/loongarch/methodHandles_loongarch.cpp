@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -391,7 +391,7 @@ void MethodHandles::generate_method_handle_dispatch(MacroAssembler* _masm,
       __ access_load_at(T_ADDRESS, IN_HEAP, temp2_index, member_vmindex, noreg, noreg);
       if (VerifyMethodHandles) {
         Label L_index_ok;
-        __ blt(R0, temp2_index, L_index_ok);
+        __ bge(temp2_index, R0, L_index_ok);
         __ STOP("no virtual index");
         __ BIND(L_index_ok);
       }

@@ -24,8 +24,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2025. These
- * modifications are Copyright (c) 2021, 2025, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2026. These
+ * modifications are Copyright (c) 2021, 2026, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -2356,8 +2356,11 @@ bool os::Linux::query_accurate_process_memory_info(os::Linux::accurate_meminfo_t
 }
 
 int os::Linux::sched_active_processor_count() {
-  if (OSContainer::is_containerized())
-    return OSContainer::active_processor_count();
+  if (OSContainer::is_containerized()) {
+    int count = -1;
+    OSContainer::active_processor_count(count);
+    return count;
+  }
   return os::Linux::active_processor_count();
 }
 

@@ -2091,9 +2091,6 @@ void SharedRuntime::generate_deopt_blob() {
   MacroAssembler* masm  = new MacroAssembler( & buffer);
   int frame_size_in_words;
   OopMap* map = nullptr;
-  // Account for the extra args we place on the stack
-  // by the time we call fetch_unroll_info
-  const int additional_words = 2; // deopt kind, thread
 
   OopMapSet *oop_maps = new OopMapSet();
   RegisterSaver reg_save(COMPILER2_OR_JVMCI != 0);
@@ -2107,7 +2104,7 @@ void SharedRuntime::generate_deopt_blob() {
   // Prolog for non exception case!
 
   // Save everything in sight.
-  map = reg_save.save_live_registers(masm, additional_words, &frame_size_in_words);
+  map = reg_save.save_live_registers(masm, 0, &frame_size_in_words);
   // Normal deoptimization
   __ li(reason, Deoptimization::Unpack_deopt);
   __ b(cont);
@@ -2124,7 +2121,7 @@ void SharedRuntime::generate_deopt_blob() {
   // return address is the pc describes what bci to do re-execute at
 
   // No need to update map as each call to save_live_registers will produce identical oopmap
-  (void) reg_save.save_live_registers(masm, additional_words, &frame_size_in_words);
+  (void) reg_save.save_live_registers(masm, 0, &frame_size_in_words);
   __ li(reason, Deoptimization::Unpack_reexecute);
   __ b(cont);
 
@@ -2142,8 +2139,7 @@ void SharedRuntime::generate_deopt_blob() {
     uncommon_trap_offset = __ pc() - start;
 
     // Save everything in sight.
-    (void) reg_save.save_live_registers(masm, additional_words, &frame_size_in_words);
-    __ addi_d(SP, SP, -additional_words * wordSize);
+    (void) reg_save.save_live_registers(masm, 0, &frame_size_in_words);
     // fetch_unroll_info needs to call last_java_frame()
     Label retaddr;
     __ set_last_Java_frame(NOREG, NOREG, retaddr);
@@ -2158,7 +2154,6 @@ void SharedRuntime::generate_deopt_blob() {
     __ call((address)Deoptimization::uncommon_trap, relocInfo::runtime_call_type);
     __ bind(retaddr);
     oop_maps->add_gc_map( __ pc()-start, map->deep_copy());
-    __ addi_d(SP, SP, additional_words * wordSize);
 
     __ reset_last_Java_frame(false);
 
@@ -2189,7 +2184,7 @@ void SharedRuntime::generate_deopt_blob() {
   // available now because loading it from memory would destroy registers.
   // Save everything in sight.
   // No need to update map as each call to save_live_registers will produce identical oopmap
-  (void) reg_save.save_live_registers(masm, additional_words, &frame_size_in_words);
+  (void) reg_save.save_live_registers(masm, 0, &frame_size_in_words);
 
   // Now it is safe to overwrite any register
   // store the correct deoptimization type
@@ -2216,22 +2211,27 @@ void SharedRuntime::generate_deopt_blob() {
 
   // Call C code.  Need thread and this frame, but NOT official VM entry
   // crud.  We cannot block on this call, no GC can happen.
+  //
+  // UnrollBlock* fetch_unroll_info(JavaThread* thread)
 
-  __ move(c_rarg0, TREG);
-  __ move(c_rarg1, reason); // exec_mode
-  __ addi_d(SP, SP, -additional_words * wordSize);
+  // fetch_unroll_info needs to call last_java_frame().
 
   Label retaddr;
   __ set_last_Java_frame(NOREG, NOREG, retaddr);
+#ifdef ASSERT
+  { Label L;
+    __ ld_d(AT, Address(TREG, JavaThread::last_Java_fp_offset()));
+    __ beqz(AT, L);
+    __ stop("SharedRuntime::generate_deopt_blob: last_Java_fp not cleared");
+    __ bind(L);
+  }
+#endif // ASSERT
 
-  // Call fetch_unroll_info().  Need thread and this frame, but NOT official VM entry - cannot block on
-  // this call, no GC can happen.  Call should capture return values.
-
-  // TODO: confirm reloc
+  __ move(c_rarg0, TREG);
+  __ move(c_rarg1, reason); // exec_mode
   __ call(CAST_FROM_FN_PTR(address, Deoptimization::fetch_unroll_info), relocInfo::runtime_call_type);
   __ bind(retaddr);
   oop_maps->add_gc_map(__ pc() - start, map);
-  __ addi_d(SP, SP, additional_words * wordSize);
 
   __ reset_last_Java_frame(false);
 
@@ -2346,7 +2346,7 @@ void SharedRuntime::generate_deopt_blob() {
   __ ld_d(AT, pcs, 0);      // frame_pcs[number_of_frames] = Interpreter::deopt_entry(vtos, 0);
   __ push2(AT, FP);
   __ addi_d(FP, SP, 2 * wordSize);
-  __ addi_d(SP, SP, -(frame_size_in_words - 2 - additional_words) * wordSize);
+  __ addi_d(SP, SP, -(frame_size_in_words - 2) * wordSize);
 
   // Restore frame locals after moving the frame
   __ st_d(V0, SP, reg_save.v0_offset());
@@ -2358,7 +2358,6 @@ void SharedRuntime::generate_deopt_blob() {
   // this call, no GC can happen.
   __ move(A1, reason);  // exec_mode
   __ move(A0, TREG);  // thread
-  __ addi_d(SP, SP, (-additional_words) *wordSize);
 
   // set last_Java_sp, last_Java_fp
   Label L;
@@ -2380,11 +2379,11 @@ void SharedRuntime::generate_deopt_blob() {
   __ reset_last_Java_frame(true);
 
   // Collect return values
-  __ ld_d(V0, SP, reg_save.v0_offset() + (additional_words + 1) * wordSize);
-  __ ld_d(V1, SP, reg_save.v1_offset() + (additional_words + 1) * wordSize);
+  __ ld_d(V0, SP, reg_save.v0_offset() + 1 * wordSize);
+  __ ld_d(V1, SP, reg_save.v1_offset() + 1 * wordSize);
   // Pop float stack and store in local
-  __ fld_d(F0, SP, reg_save.fpr0_offset() + (additional_words + 1) * wordSize);
-  __ fld_d(F1, SP, reg_save.fpr1_offset() + (additional_words + 1) * wordSize);
+  __ fld_d(F0, SP, reg_save.fpr0_offset() + 1 * wordSize);
+  __ fld_d(F1, SP, reg_save.fpr1_offset() + 1 * wordSize);
 
   // Push a float or double return value if necessary.
   __ leave();
@@ -2419,8 +2418,6 @@ VMReg SharedRuntime::thread_register() {
 SafepointBlob* SharedRuntime::generate_handler_blob(StubId id, address call_ptr) {
   assert(is_polling_page_id(id), "expected a polling page stub id");
 
-  // Account for thread arg in our frame
-  const int additional_words = 0;
   int frame_size_in_words;
 
   assert (StubRoutines::forward_exception_entry() != nullptr, "must be generated before");
@@ -2439,7 +2436,7 @@ SafepointBlob* SharedRuntime::generate_handler_blob(StubId id, address call_ptr)
   bool cause_return = (id == StubId::shared_polling_page_return_handler_id);
   RegisterSaver reg_save(id == StubId::shared_polling_page_vectors_safepoint_handler_id /* save_vectors */);
 
-  map = reg_save.save_live_registers(masm, additional_words, &frame_size_in_words);
+  map = reg_save.save_live_registers(masm, 0, &frame_size_in_words);
 
   // The following is basically a call_VM. However, we need the precise
   // address of the call in order to generate an oopmap. Hence, we do all the

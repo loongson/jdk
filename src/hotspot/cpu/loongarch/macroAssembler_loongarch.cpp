@@ -864,7 +864,7 @@ void MacroAssembler::call_VM_base(Register oop_result,
   // discard thread and arguments
   ld_d(SP, Address(java_thread, JavaThread::last_Java_sp_offset()));
   // reset last Java frame
-  reset_last_Java_frame(java_thread, false);
+  reset_last_Java_frame(java_thread, true);
 
   check_and_handle_popframe(java_thread);
   check_and_handle_earlyret(java_thread);

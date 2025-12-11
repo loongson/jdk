@@ -3364,7 +3364,7 @@ class StubGenerator: public StubCodeGenerator {
   // Inputs:
   //   A0        - source byte array address
   //   A1        - destination byte array address
-  //   A2        - K (key) in little endian int array
+  //   A2        - sessionKe (key) in little endian int array
   //   A3        - r vector byte array address
   //   A4        - input length
   //
@@ -3668,7 +3668,7 @@ class StubGenerator: public StubCodeGenerator {
   // Inputs:
   //   A0        - source byte array address
   //   A1        - destination byte array address
-  //   A2        - K (key) in little endian int array
+  //   A2        - sessionKd (key) in little endian int array
   //   A3        - r vector byte array address
   //   A4        - input length
   //

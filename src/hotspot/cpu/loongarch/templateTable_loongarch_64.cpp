@@ -300,9 +300,7 @@ void TemplateTable::ldc(LdcType type) {
   // get type
   __ add_d(AT, T1, T2);
   __ ld_b(T1, AT, tags_offset);
-  if(os::is_MP()) {
-    __ membar(Assembler::Membar_mask_bits(__ LoadLoad|__ LoadStore));
-  }
+  __ membar(Assembler::Membar_mask_bits(__ LoadLoad | __ LoadStore));
   //now T1 is the tag
 
   // unresolved class - get the resolved class
@@ -3620,9 +3618,7 @@ void TemplateTable::_new() {
   const int tags_offset = Array<u1>::base_offset_in_bytes();
   __ add_d(T1, T1, A2);
   __ ld_b(AT, T1, tags_offset);
-  if(os::is_MP()) {
-    __ membar(Assembler::Membar_mask_bits(__ LoadLoad|__ LoadStore));
-  }
+  __ membar(Assembler::Membar_mask_bits(__ LoadLoad | __ LoadStore));
   __ addi_d(AT, AT, -(int)JVM_CONSTANT_Class);
   __ bnez(AT, slow_case);
 
@@ -3746,9 +3742,7 @@ void TemplateTable::checkcast() {
   // See if bytecode has already been quicked
   __ add_d(AT, T1, T2);
   __ ld_b(AT, AT, Array<u1>::base_offset_in_bytes());
-  if(os::is_MP()) {
-    __ membar(Assembler::Membar_mask_bits(__ LoadLoad|__ LoadStore));
-  }
+  __ membar(Assembler::Membar_mask_bits(__ LoadLoad | __ LoadStore));
   __ addi_d(AT, AT, - (int)JVM_CONSTANT_Class);
   __ beq(AT, R0, quicked);
 
@@ -3810,9 +3804,7 @@ void TemplateTable::instanceof() {
   // quicked
   __ add_d(AT, T1, T2);
   __ ld_b(AT, AT, Array<u1>::base_offset_in_bytes());
-  if(os::is_MP()) {
-    __ membar(Assembler::Membar_mask_bits(__ LoadLoad|__ LoadStore));
-  }
+  __ membar(Assembler::Membar_mask_bits(__ LoadLoad | __ LoadStore));
   __ addi_d(AT, AT, - (int)JVM_CONSTANT_Class);
   __ beq(AT, R0, quicked);
 

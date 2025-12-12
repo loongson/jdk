@@ -5936,9 +5936,7 @@ instruct membar_volatile() %{
 
   format %{ "MEMBAR-volatile" %}
   ins_encode %{
-    if( !os::is_MP() ) return;     // Not needed on single CPU
     __ membar(__ StoreLoad);
-
   %}
   ins_pipe( pipe_serial );
 %}

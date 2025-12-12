@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -107,9 +107,7 @@ void CompiledDirectCall::set_stub_to_clean(static_stub_Relocation* static_stub) 
 void CompiledDirectCall::verify() {
   // Verify call.
   _call->verify();
-  if (os::is_MP()) {
-    _call->verify_alignment();
-  }
+  _call->verify_alignment();
 
   // Verify stub.
   address stub = find_stub();

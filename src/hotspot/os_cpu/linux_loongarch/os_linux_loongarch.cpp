@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -79,8 +79,7 @@
 #define REG_BCP 23
 
 NOINLINE address os::current_stack_pointer() {
-  register void *sp __asm__ ("$r3");
-  return (address) sp;
+  return (address)__builtin_frame_address(0);
 }
 
 char* os::non_memory_address_word() {

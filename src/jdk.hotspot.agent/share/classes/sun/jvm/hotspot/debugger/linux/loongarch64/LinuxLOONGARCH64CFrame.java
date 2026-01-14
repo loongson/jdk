@@ -30,11 +30,14 @@ import sun.jvm.hotspot.debugger.linux.*;
 import sun.jvm.hotspot.debugger.cdbg.*;
 import sun.jvm.hotspot.debugger.cdbg.basic.*;
 import sun.jvm.hotspot.debugger.loongarch64.*;
+import sun.jvm.hotspot.runtime.*;
+import sun.jvm.hotspot.runtime.loongarch64.*;
 
 final public class LinuxLOONGARCH64CFrame extends BasicCFrame {
    // package/class internals only
-   public LinuxLOONGARCH64CFrame(LinuxDebugger dbg, Address fp, Address pc) {
+   public LinuxLOONGARCH64CFrame(LinuxDebugger dbg, Address sp, Address fp, Address pc) {
       super(dbg.getCDebugger());
+      this.sp = sp;
       this.fp = fp;
       this.pc = pc;
       this.dbg = dbg;
@@ -56,11 +59,11 @@ final public class LinuxLOONGARCH64CFrame extends BasicCFrame {
 
    @Override
    public CFrame sender(ThreadProxy thread) {
-      return sender(thread, null, null);
+      return sender(thread, null, null, null);
    }
 
    @Override
-   public CFrame sender(ThreadProxy thread, Address nextFP, Address nextPC) {
+   public CFrame sender(ThreadProxy thread, Address nextSP, Address nextFP, Address nextPC) {
       // Check fp
       // Skip if both nextFP and nextPC are given - do not need to load from fp.
       if (nextFP == null && nextPC == null) {
@@ -72,6 +75,13 @@ final public class LinuxLOONGARCH64CFrame extends BasicCFrame {
         if (dbg.getAddressValue(fp) % (2 * ADDRESS_SIZE) != 0) {
           return null;
         }
+      }
+
+      if (nextSP == null) {
+        nextSP = fp.getAddressAt(0 * ADDRESS_SIZE);
+      }
+      if (nextSP == null) {
+        return null;
       }
 
       if (nextFP == null) {
@@ -88,11 +98,17 @@ final public class LinuxLOONGARCH64CFrame extends BasicCFrame {
         return null;
       }
 
-      return new LinuxLOONGARCH64CFrame(dbg, nextFP, nextPC);
+      return new LinuxLOONGARCH64CFrame(dbg, nextSP, nextFP, nextPC);
+   }
+
+   @Override
+   public Frame toFrame() {
+      return new LOONGARCH64Frame(sp, fp, pc);
    }
 
    private static final int ADDRESS_SIZE = 8;
    private Address pc;
+   private Address sp;
    private Address fp;
    private LinuxDebugger dbg;
 }

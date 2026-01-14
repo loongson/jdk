@@ -24,8 +24,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2022, These
- * modifications are Copyright (c) 2019, 2022, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2026, These
+ * modifications are Copyright (c) 2019, 2026, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -96,11 +96,13 @@ class LinuxCDebugger implements CDebugger {
        return LinuxAMD64CFrame.getTopFrame(dbg, sp, pc, context);
     } else if (cpu.equals("loongarch64")) {
        LOONGARCH64ThreadContext context = (LOONGARCH64ThreadContext) thread.getContext();
+       Address sp = context.getRegisterAsAddress(LOONGARCH64ThreadContext.SP);
+       if (sp == null) return null;
        Address fp = context.getRegisterAsAddress(LOONGARCH64ThreadContext.FP);
        if (fp == null) return null;
        Address pc  = context.getRegisterAsAddress(LOONGARCH64ThreadContext.PC);
        if (pc == null) return null;
-       return new LinuxLOONGARCH64CFrame(dbg, fp, pc);
+       return new LinuxLOONGARCH64CFrame(dbg, sp, fp, pc);
     }  else if (cpu.equals("ppc64")) {
         PPC64ThreadContext context = (PPC64ThreadContext) thread.getContext();
         Address sp = context.getRegisterAsAddress(PPC64ThreadContext.SP);

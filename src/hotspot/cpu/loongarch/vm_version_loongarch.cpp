@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -60,61 +60,53 @@ class VM_Version_StubGenerator: public StubCodeGenerator {
 
     address start = __ pc();
 
-    __ enter();
-    __ push(AT);
-    __ push(T5);
+    __ cpucfg(AT, R0);
+    __ st_w(AT, Address(c_rarg0, VM_Version::cpucfg_info_id0_offset()));
 
-    __ li(AT, (long)0);
-    __ cpucfg(T5, AT);
-    __ st_w(T5, A0, in_bytes(VM_Version::Loongson_Cpucfg_id0_offset()));
+    __ li(AT, 0x1);
+    __ cpucfg(AT, AT);
+    __ st_w(AT, Address(c_rarg0, VM_Version::cpucfg_info_id1_offset()));
 
-    __ li(AT, 1);
-    __ cpucfg(T5, AT);
-    __ st_w(T5, A0, in_bytes(VM_Version::Loongson_Cpucfg_id1_offset()));
+    __ li(AT, 0x2);
+    __ cpucfg(AT, AT);
+    __ st_w(AT, Address(c_rarg0, VM_Version::cpucfg_info_id2_offset()));
 
-    __ li(AT, 2);
-    __ cpucfg(T5, AT);
-    __ st_w(T5, A0, in_bytes(VM_Version::Loongson_Cpucfg_id2_offset()));
+    __ li(AT, 0x3);
+    __ cpucfg(AT, AT);
+    __ st_w(AT, Address(c_rarg0, VM_Version::cpucfg_info_id3_offset()));
 
-    __ li(AT, 3);
-    __ cpucfg(T5, AT);
-    __ st_w(T5, A0, in_bytes(VM_Version::Loongson_Cpucfg_id3_offset()));
+    __ li(AT, 0x4);
+    __ cpucfg(AT, AT);
+    __ st_w(AT, Address(c_rarg0, VM_Version::cpucfg_info_id4_offset()));
 
-    __ li(AT, 4);
-    __ cpucfg(T5, AT);
-    __ st_w(T5, A0, in_bytes(VM_Version::Loongson_Cpucfg_id4_offset()));
+    __ li(AT, 0x5);
+    __ cpucfg(AT, AT);
+    __ st_w(AT, Address(c_rarg0, VM_Version::cpucfg_info_id5_offset()));
 
-    __ li(AT, 5);
-    __ cpucfg(T5, AT);
-    __ st_w(T5, A0, in_bytes(VM_Version::Loongson_Cpucfg_id5_offset()));
+    __ li(AT, 0x6);
+    __ cpucfg(AT, AT);
+    __ st_w(AT, Address(c_rarg0, VM_Version::cpucfg_info_id6_offset()));
 
-    __ li(AT, 6);
-    __ cpucfg(T5, AT);
-    __ st_w(T5, A0, in_bytes(VM_Version::Loongson_Cpucfg_id6_offset()));
+    __ li(AT, 0x10);
+    __ cpucfg(AT, AT);
+    __ st_w(AT, Address(c_rarg0, VM_Version::cpucfg_info_id10_offset()));
 
-    __ li(AT, 10);
-    __ cpucfg(T5, AT);
-    __ st_w(T5, A0, in_bytes(VM_Version::Loongson_Cpucfg_id10_offset()));
+    __ li(AT, 0x11);
+    __ cpucfg(AT, AT);
+    __ st_w(AT, Address(c_rarg0, VM_Version::cpucfg_info_id11_offset()));
 
-    __ li(AT, 11);
-    __ cpucfg(T5, AT);
-    __ st_w(T5, A0, in_bytes(VM_Version::Loongson_Cpucfg_id11_offset()));
+    __ li(AT, 0x12);
+    __ cpucfg(AT, AT);
+    __ st_w(AT, Address(c_rarg0, VM_Version::cpucfg_info_id12_offset()));
 
-    __ li(AT, 12);
-    __ cpucfg(T5, AT);
-    __ st_w(T5, A0, in_bytes(VM_Version::Loongson_Cpucfg_id12_offset()));
+    __ li(AT, 0x13);
+    __ cpucfg(AT, AT);
+    __ st_w(AT, Address(c_rarg0, VM_Version::cpucfg_info_id13_offset()));
 
-    __ li(AT, 13);
-    __ cpucfg(T5, AT);
-    __ st_w(T5, A0, in_bytes(VM_Version::Loongson_Cpucfg_id13_offset()));
+    __ li(AT, 0x14);
+    __ cpucfg(AT, AT);
+    __ st_w(AT, Address(c_rarg0, VM_Version::cpucfg_info_id14_offset()));
 
-    __ li(AT, 14);
-    __ cpucfg(T5, AT);
-    __ st_w(T5, A0, in_bytes(VM_Version::Loongson_Cpucfg_id14_offset()));
-
-    __ pop(T5);
-    __ pop(AT);
-    __ leave();
     __ jr(RA);
 #   undef __
     return start;

@@ -28,30 +28,24 @@
 
 // Included in runtime/prefetch.inline.hpp
 
-inline void Prefetch::read (const void *loc, intx interval) {
-// According to previous and present SPECjbb2015 score,
-// comment prefetch is better than if (interval >= 0) prefetch branch.
-// So choose comment prefetch as the base line.
-#if 0
-  __asm__ __volatile__ (
-                        "       preld  0, %[__loc] \n"
-                        :
-                        : [__loc] "m"( *((address)loc + interval) )
-                        : "memory"
-                        );
-#endif
+inline void Prefetch::read(const void *loc, intx interval) {
+  if (interval >= 0) {
+    __asm__ __volatile__ (
+      "preld 0, %0"
+      :
+      : "m"(((const_address)loc)[interval])
+    );
+  }
 }
 
 inline void Prefetch::write(void *loc, intx interval) {
-// Ditto
-#if 0
-  __asm__ __volatile__ (
-                        "       preld  8, %[__loc] \n"
-                        :
-                        : [__loc] "m"( *((address)loc + interval) )
-                        : "memory"
-                        );
-#endif
+  if (interval >= 0) {
+    __asm__ __volatile__ (
+      "preld 8, %0"
+      :
+      : "m"(((const_address)loc)[interval])
+    );
+  }
 }
 
 #endif // OS_CPU_LINUX_LOONGARCH_PREFETCH_LINUX_LOONGARCH_INLINE_HPP

@@ -2208,7 +2208,8 @@ void TemplateTable::resolve_cache_and_index_for_method(int byte_no,
   __ addi_d(temp, temp, -i);
 
   // Class initialization barrier for static methods
-  if (VM_Version::supports_fast_class_init_checks() && bytecode() == Bytecodes::_invokestatic) {
+  if (bytecode() == Bytecodes::_invokestatic) {
+    assert(VM_Version::supports_fast_class_init_checks(), "sanity");
     __ bnez(temp, L_clinit_barrier_slow);  // have we resolved this bytecode?
     __ ld_d(temp, Address(Rcache, in_bytes(ResolvedMethodEntry::method_offset())));
     __ load_method_holder(temp, temp);
@@ -2259,8 +2260,8 @@ void TemplateTable::resolve_cache_and_index_for_field(int byte_no,
   __ li(AT, (int) code);  // have we resolved this bytecode?
 
   // Class initialization barrier for static fields
-  if (VM_Version::supports_fast_class_init_checks() &&
-      (bytecode() == Bytecodes::_getstatic || bytecode() == Bytecodes::_putstatic)) {
+  if (bytecode() == Bytecodes::_getstatic || bytecode() == Bytecodes::_putstatic) {
+    assert(VM_Version::supports_fast_class_init_checks(), "sanity");
     const Register field_holder = temp;
 
     __ bne(temp, AT, L_clinit_barrier_slow);

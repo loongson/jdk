@@ -711,23 +711,21 @@ void SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm,
 
   // Class initialization barrier for static methods
   entry_address[AdapterBlob::C2I_No_Clinit_Check] = nullptr;
-  if (VM_Version::supports_fast_class_init_checks()) {
-    Label L_skip_barrier;
-    address handle_wrong_method = SharedRuntime::get_handle_wrong_method_stub();
+  assert(VM_Version::supports_fast_class_init_checks(), "sanity");
+  Label L_skip_barrier;
+  address handle_wrong_method = SharedRuntime::get_handle_wrong_method_stub();
 
-    { // Bypass the barrier for non-static methods
-      __ ld_hu(AT, Address(Rmethod, Method::access_flags_offset()));
-      __ test_bit(AT, AT, exact_log2(JVM_ACC_STATIC));
-      __ beqz(AT, L_skip_barrier); // non-static
-    }
+  // Bypass the barrier for non-static methods
+  __ ld_hu(AT, Address(Rmethod, Method::access_flags_offset()));
+  __ test_bit(AT, AT, exact_log2(JVM_ACC_STATIC));
+  __ beqz(AT, L_skip_barrier); // non-static
 
-    __ load_method_holder(T4, Rmethod);
-    __ clinit_barrier(T4, AT, &L_skip_barrier);
-    __ jmp(handle_wrong_method, relocInfo::runtime_call_type);
+  __ load_method_holder(T4, Rmethod);
+  __ clinit_barrier(T4, AT, &L_skip_barrier);
+  __ jmp(handle_wrong_method, relocInfo::runtime_call_type);
 
-    __ bind(L_skip_barrier);
-    entry_address[AdapterBlob::C2I_No_Clinit_Check] = __ pc();
-  }
+  __ bind(L_skip_barrier);
+  entry_address[AdapterBlob::C2I_No_Clinit_Check] = __ pc();
 
   BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
   __ block_comment("c2i_entry_barrier");
@@ -1488,7 +1486,8 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
 
   int vep_offset = ((intptr_t)__ pc()) - start;
 
-  if (VM_Version::supports_fast_class_init_checks() && method->needs_clinit_barrier()) {
+  if (method->needs_clinit_barrier()) {
+    assert(VM_Version::supports_fast_class_init_checks(), "sanity");
     Label L_skip_barrier;
     address handle_wrong_method = SharedRuntime::get_handle_wrong_method_stub();
     __ mov_metadata(T4, method->method_holder()); // InstanceKlass*

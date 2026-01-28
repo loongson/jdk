@@ -2410,9 +2410,10 @@ bool os::Linux::query_accurate_process_memory_info(os::Linux::accurate_meminfo_t
 
 int os::Linux::sched_active_processor_count() {
   if (OSContainer::is_containerized()) {
-    int count = -1;
-    OSContainer::active_processor_count(count);
-    return count;
+    double cpu_quota = -1.0;
+    OSContainer::active_processor_count(cpu_quota);
+    int active_cpus = ceil(cpu_quota);
+    return active_cpus;
   }
   return os::Linux::active_processor_count();
 }

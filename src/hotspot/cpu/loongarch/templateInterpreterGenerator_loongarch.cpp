@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1047,6 +1047,10 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   __ addi_d(LVP, LVP, (-1) * wordSize);
   __ add_d(LVP, LVP, SP);
 
+  // Padding between locals and fixed part of activation frame to ensure
+  // SP is always 16-byte aligned.
+  assert(StackAlignmentInBytes == 16, "must be");
+  __ bstrins_d(SP, R0, 3, 0);
 
   // add 2 zero-initialized slots for native calls
   // 1 slot for native oop temp offset (setup via runtime)
@@ -1688,6 +1692,11 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
 
     __ bind(exit);
   }
+
+  // Padding between locals and fixed part of activation frame to ensure
+  // SP is always 16-byte aligned.
+  assert(StackAlignmentInBytes == 16, "must be");
+  __ bstrins_d(SP, R0, 3, 0);
 
   // And the base dispatch table
   __ get_dispatch();

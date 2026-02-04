@@ -66,19 +66,11 @@ void CardTableBarrierSetAssembler::store_at(MacroAssembler* masm, DecoratorSet d
 
 void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembler* masm, DecoratorSet decorators,
                                                                     Register addr, Register count, Register tmp) {
-  BarrierSet *bs = BarrierSet::barrier_set();
-  CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
-  CardTable* ct = ctbs->card_table();
-  assert(sizeof(*ct->byte_map_base()) == sizeof(jbyte), "adjust this code");
-  intptr_t disp = (intptr_t) ct->byte_map_base();
-
   Label L_loop, L_done;
   const Register end = count;
   assert_different_registers(addr, end);
 
-  __ beq(count, R0, L_done); // zero count - nothing to do
-
-  __ li(tmp, disp);
+  __ beqz(count, L_done); // zero count - nothing to do
 
   __ lea(end, Address(addr, count, TIMES_OOP, 0));  // end == addr+count*oop_size
   __ addi_d(end, end, -BytesPerHeapOop); // end - 1 to make inclusive
@@ -86,6 +78,7 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
   __ srli_d(end, end, CardTable::card_shift());
   __ sub_d(end, end, addr); // end --> cards count
 
+  __ load_byte_map_base(tmp);
   __ add_d(addr, addr, tmp);
 
   __ BIND(L_loop);

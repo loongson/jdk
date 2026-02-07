@@ -79,8 +79,9 @@
 #define REG_BCP 23
 
 NOINLINE address os::current_stack_pointer() {
-  register void *sp __asm__ ("$r3");
-  return (address) sp;
+  register void *sp __asm__("r3");
+  asm volatile("" : "=r"(sp));
+  return (address)sp;
 }
 
 char* os::non_memory_address_word() {

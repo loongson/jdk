@@ -42,7 +42,7 @@ define_pd_global(size_t, CodeCacheSegmentSize,   64 COMPILER1_AND_COMPILER2_PRES
 
 // Ideally, this should be cache line size,
 // which keeps code end data on separate lines.
-define_pd_global(intx, CodeEntryAlignment,       64);
+define_pd_global(uint, CodeEntryAlignment,       64);
 define_pd_global(intx, OptoLoopAlignment,        16);
 define_pd_global(intx, InlineSmallCode,          2000);
 

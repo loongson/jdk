@@ -3320,7 +3320,7 @@ void TemplateTable::invokevirtual_helper(Register index,
   __ load_klass(T2, recv);
 
   // profile this call
-  __ profile_virtual_call(T2, T0, T1);
+  __ profile_virtual_call(T2, T0);
 
   // get target Method & entry point
   __ lookup_virtual_method(T2, index, method);
@@ -3475,7 +3475,7 @@ void TemplateTable::invokeinterface(int byte_no) {
 
   // profile this call
   __ restore_bcp();
-  __ profile_virtual_call(T1, T0, FSR);
+  __ profile_virtual_call(T1, T0);
 
   // Get declaring interface class from method, and itable index
   __ load_method_holder(T2, Rmethod);

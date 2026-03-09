@@ -453,6 +453,30 @@ void ShenandoahBarrierSetAssembler::try_resolve_jobject_in_native(MacroAssembler
   __ bind(done);
 }
 
+#ifdef COMPILER2
+void ShenandoahBarrierSetAssembler::try_resolve_weak_handle_in_c2(MacroAssembler *masm, Register obj,
+                                                                  Register tmp, Label& slow_path) {
+  assert_different_registers(obj, tmp);
+
+  Label done;
+
+  // Resolve weak handle using the standard implementation.
+  BarrierSetAssembler::try_resolve_weak_handle_in_c2(masm, obj, tmp, slow_path);
+
+  // Check if the reference is null, and if it is, take the fast path.
+  __ beqz(obj, done);
+
+  Address gc_state(TREG, ShenandoahThreadLocalData::gc_state_offset());
+  __ ld_bu(tmp, gc_state);
+
+  // Check if the heap is under weak-reference/roots processing, in
+  // which case we need to take the slow path.
+  __ test_bit(tmp, tmp, ShenandoahHeap::WEAK_ROOTS_BITPOS);
+  __ bnez(tmp, slow_path);
+  __ bind(done);
+}
+#endif
+
 // Special Shenandoah CAS implementation that handles false negatives due
 // to concurrent evacuation.  The service is more complex than a
 // traditional CAS operation because the CAS operation is intended to

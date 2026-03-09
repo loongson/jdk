@@ -79,6 +79,9 @@ public:
                         Address dst, Register val, Register tmp1, Register tmp2, Register tmp3);
   virtual void try_resolve_jobject_in_native(MacroAssembler* masm, Register jni_env,
                                              Register obj, Register tmp, Label& slowpath);
+#ifdef COMPILER2
+  virtual void try_resolve_weak_handle_in_c2(MacroAssembler* masm, Register obj, Register tmp, Label& slow_path);
+#endif
   void cmpxchg_oop(MacroAssembler* masm, Address mem, Register expected, Register new_val,
                    bool acquire, bool is_cae, Register result);
 };

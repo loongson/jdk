@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -824,6 +824,26 @@ void ZBarrierSetAssembler::try_resolve_jobject_in_native(MacroAssembler* masm,
 
   BLOCK_COMMENT("} ZBarrierSetAssembler::try_resolve_jobject_in_native");
 }
+
+#ifdef COMPILER2
+void ZBarrierSetAssembler::try_resolve_weak_handle_in_c2(MacroAssembler* masm, Register obj, Register tmp, Label& slow_path) {
+  BLOCK_COMMENT("ZBarrierSetAssembler::try_resolve_weak_handle_in_c2 {");
+
+  // Resolve weak handle using the standard implementation.
+  BarrierSetAssembler::try_resolve_weak_handle_in_c2(masm, obj, tmp, slow_path);
+
+  // Check if the oop is bad, in which case we need to take the slow path.
+  __ relocate(barrier_Relocation::spec(), ZBarrierRelocationFormatMarkBadMask);
+  __ patchable_li16(tmp, barrier_Relocation::unpatched);
+  __ andr(tmp, obj, tmp);
+  __ bnez(tmp, slow_path);
+
+  // Oop is okay, so we uncolor it.
+  __ srli_d(obj, obj, ZPointerLoadShift);
+
+  BLOCK_COMMENT("} ZBarrierSetAssembler::try_resolve_weak_handle_in_c2");
+}
+#endif
 
 static uint16_t patch_barrier_relocation_value(int format) {
   switch (format) {

@@ -1735,52 +1735,60 @@ void C2_MacroAssembler::reduce_ins_v(FloatRegister vec1, FloatRegister vec2, Flo
   switch (type) {
     case T_BYTE:
       switch (opcode) {
-        case Op_AddReductionVI: vadd_b(vec1, vec2, vec3); break;
-        case Op_MulReductionVI: vmul_b(vec1, vec2, vec3); break;
-        case Op_MaxReductionV:  vmax_b(vec1, vec2, vec3); break;
-        case Op_MinReductionV:  vmin_b(vec1, vec2, vec3); break;
-        case Op_AndReductionV:  vand_v(vec1, vec2, vec3); break;
-        case Op_OrReductionV:    vor_v(vec1, vec2, vec3); break;
-        case Op_XorReductionV:  vxor_v(vec1, vec2, vec3); break;
+        case Op_AddReductionVI:  vadd_b(vec1, vec2, vec3); break;
+        case Op_MulReductionVI:  vmul_b(vec1, vec2, vec3); break;
+        case Op_MaxReductionV:   vmax_b(vec1, vec2, vec3); break;
+        case Op_MinReductionV:   vmin_b(vec1, vec2, vec3); break;
+        case Op_UMaxReductionV: vmax_bu(vec1, vec2, vec3); break;
+        case Op_UMinReductionV: vmin_bu(vec1, vec2, vec3); break;
+        case Op_AndReductionV:   vand_v(vec1, vec2, vec3); break;
+        case Op_OrReductionV:     vor_v(vec1, vec2, vec3); break;
+        case Op_XorReductionV:   vxor_v(vec1, vec2, vec3); break;
         default:
           ShouldNotReachHere();
       }
       break;
     case T_SHORT:
       switch (opcode) {
-        case Op_AddReductionVI: vadd_h(vec1, vec2, vec3); break;
-        case Op_MulReductionVI: vmul_h(vec1, vec2, vec3); break;
-        case Op_MaxReductionV:  vmax_h(vec1, vec2, vec3); break;
-        case Op_MinReductionV:  vmin_h(vec1, vec2, vec3); break;
-        case Op_AndReductionV:  vand_v(vec1, vec2, vec3); break;
-        case Op_OrReductionV:    vor_v(vec1, vec2, vec3); break;
-        case Op_XorReductionV:  vxor_v(vec1, vec2, vec3); break;
+        case Op_AddReductionVI:  vadd_h(vec1, vec2, vec3); break;
+        case Op_MulReductionVI:  vmul_h(vec1, vec2, vec3); break;
+        case Op_MaxReductionV:   vmax_h(vec1, vec2, vec3); break;
+        case Op_MinReductionV:   vmin_h(vec1, vec2, vec3); break;
+        case Op_UMaxReductionV: vmax_hu(vec1, vec2, vec3); break;
+        case Op_UMinReductionV: vmin_hu(vec1, vec2, vec3); break;
+        case Op_AndReductionV:   vand_v(vec1, vec2, vec3); break;
+        case Op_OrReductionV:     vor_v(vec1, vec2, vec3); break;
+        case Op_XorReductionV:   vxor_v(vec1, vec2, vec3); break;
         default:
           ShouldNotReachHere();
       }
       break;
     case T_INT:
       switch (opcode) {
-        case Op_AddReductionVI: vadd_w(vec1, vec2, vec3); break;
-        case Op_MulReductionVI: vmul_w(vec1, vec2, vec3); break;
-        case Op_MaxReductionV:  vmax_w(vec1, vec2, vec3); break;
-        case Op_MinReductionV:  vmin_w(vec1, vec2, vec3); break;
-        case Op_AndReductionV:  vand_v(vec1, vec2, vec3); break;
-        case Op_OrReductionV:    vor_v(vec1, vec2, vec3); break;
-        case Op_XorReductionV:  vxor_v(vec1, vec2, vec3); break;
+        case Op_AddReductionVI:  vadd_w(vec1, vec2, vec3); break;
+        case Op_MulReductionVI:  vmul_w(vec1, vec2, vec3); break;
+        case Op_MaxReductionV:   vmax_w(vec1, vec2, vec3); break;
+        case Op_MinReductionV:   vmin_w(vec1, vec2, vec3); break;
+        case Op_UMaxReductionV: vmax_wu(vec1, vec2, vec3); break;
+        case Op_UMinReductionV: vmin_wu(vec1, vec2, vec3); break;
+        case Op_AndReductionV:   vand_v(vec1, vec2, vec3); break;
+        case Op_OrReductionV:     vor_v(vec1, vec2, vec3); break;
+        case Op_XorReductionV:   vxor_v(vec1, vec2, vec3); break;
         default:
           ShouldNotReachHere();
       }
       break;
     case T_LONG:
       switch (opcode) {
-        case Op_AddReductionVL: vadd_d(vec1, vec2, vec3); break;
-        case Op_MulReductionVL: vmul_d(vec1, vec2, vec3); break;
-        case Op_MaxReductionV:  vmax_d(vec1, vec2, vec3); break;
-        case Op_MinReductionV:  vmin_d(vec1, vec2, vec3); break;
-        case Op_AndReductionV:  vand_v(vec1, vec2, vec3); break;
-        case Op_OrReductionV:    vor_v(vec1, vec2, vec3); break;
-        case Op_XorReductionV:  vxor_v(vec1, vec2, vec3); break;
+        case Op_AddReductionVL:  vadd_d(vec1, vec2, vec3); break;
+        case Op_MulReductionVL:  vmul_d(vec1, vec2, vec3); break;
+        case Op_MaxReductionV:   vmax_d(vec1, vec2, vec3); break;
+        case Op_MinReductionV:   vmin_d(vec1, vec2, vec3); break;
+        case Op_UMaxReductionV: vmax_du(vec1, vec2, vec3); break;
+        case Op_UMinReductionV: vmin_du(vec1, vec2, vec3); break;
+        case Op_AndReductionV:   vand_v(vec1, vec2, vec3); break;
+        case Op_OrReductionV:     vor_v(vec1, vec2, vec3); break;
+        case Op_XorReductionV:   vxor_v(vec1, vec2, vec3); break;
         default:
           ShouldNotReachHere();
       }
@@ -1880,32 +1888,41 @@ void C2_MacroAssembler::reduce(Register dst, Register src, FloatRegister vsrc, F
     }
   }
 
-  switch (type) {
-    case T_BYTE:  vpickve2gr_b(dst, tmp1, 0); break;
-    case T_SHORT: vpickve2gr_h(dst, tmp1, 0); break;
-    case T_INT:   vpickve2gr_w(dst, tmp1, 0); break;
-    case T_LONG:  vpickve2gr_d(dst, tmp1, 0); break;
-    default:
-      ShouldNotReachHere();
+  if (opcode != Op_UMaxReductionV && opcode != Op_UMinReductionV) {
+    switch (type) {
+      case T_BYTE:  vpickve2gr_b(dst, tmp1, 0); break;
+      case T_SHORT: vpickve2gr_h(dst, tmp1, 0); break;
+      case T_INT:   vpickve2gr_w(dst, tmp1, 0); break;
+      case T_LONG:  vpickve2gr_d(dst, tmp1, 0); break;
+      default:
+        ShouldNotReachHere();
+    }
+  } else {
+    switch (type) {
+      case T_BYTE:  vpickve2gr_bu(dst, tmp1, 0); break;
+      case T_SHORT: vpickve2gr_hu(dst, tmp1, 0); break;
+      case T_INT:   vpickve2gr_wu(dst, tmp1, 0); break;
+      case T_LONG:  vpickve2gr_du(dst, tmp1, 0); break;
+      default:
+        ShouldNotReachHere();
+    }
   }
-  if (opcode == Op_MaxReductionV) {
-    slt(AT, dst, src);
-    masknez(dst, dst, AT);
-    maskeqz(AT, src, AT);
-    orr(dst, dst, AT);
-  } else if (opcode == Op_MinReductionV) {
-    slt(AT, src, dst);
+
+  if (opcode == Op_MaxReductionV || opcode == Op_UMaxReductionV ||
+      opcode == Op_MinReductionV || opcode == Op_UMinReductionV) {
+    switch (opcode) {
+      case Op_MaxReductionV:   slt(AT, dst, src); break;
+      case Op_MinReductionV:   slt(AT, src, dst); break;
+      case Op_UMaxReductionV: sltu(AT, dst, src); break;
+      case Op_UMinReductionV: sltu(AT, src, dst); break;
+      default:
+        ShouldNotReachHere();
+    }
     masknez(dst, dst, AT);
     maskeqz(AT, src, AT);
     orr(dst, dst, AT);
   } else {
     reduce_ins_r(dst, dst, src, type, opcode);
-  }
-  switch (type) {
-    case T_BYTE:  ext_w_b(dst, dst); break;
-    case T_SHORT: ext_w_h(dst, dst); break;
-    default:
-      break;
   }
 }
 

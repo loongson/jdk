@@ -21,6 +21,12 @@
  * questions.
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2026. These
+ * modifications are Copyright (c) 2026, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 package compiler.vectorapi;
 
 import compiler.lib.generators.*;
@@ -140,7 +146,7 @@ public class VectorUMinMaxReductionTest {
 
     @Test
     @IR(counts = {IRNode.UMIN_REDUCTION_V, "= 1"},
-        applyIfCPUFeature = {"asimd", "true"})
+        applyIfCPUFeatureOr = {"asimd", "true","lsx", "true"})
     public static void testByteUMin() {
         byte got = ByteVector.fromArray(B_SPECIES, ba, 0).reduceLanes(VectorOperators.UMIN);
         verifyByte(B_SPECIES, got, BYTE_UMIN_IDENTITY, VectorMath::minUnsigned, false);
@@ -148,7 +154,7 @@ public class VectorUMinMaxReductionTest {
 
     @Test
     @IR(counts = {IRNode.UMAX_REDUCTION_V, "= 1"},
-        applyIfCPUFeature = {"asimd", "true"})
+        applyIfCPUFeatureOr = {"asimd", "true","lsx", "true"})
     public static void testByteUMax() {
         byte got = ByteVector.fromArray(B_SPECIES, ba, 0).reduceLanes(VectorOperators.UMAX);
         verifyByte(B_SPECIES, got, BYTE_UMAX_IDENTITY, VectorMath::maxUnsigned, false);
@@ -178,7 +184,7 @@ public class VectorUMinMaxReductionTest {
 
     @Test
     @IR(counts = {IRNode.UMIN_REDUCTION_V, "= 1"},
-        applyIfCPUFeature = {"asimd", "true"})
+        applyIfCPUFeatureOr = {"asimd", "true","lsx", "true"})
     public static void testShortUMin() {
         short got = ShortVector.fromArray(S_SPECIES, sa, 0).reduceLanes(VectorOperators.UMIN);
         verifyShort(S_SPECIES, got, SHORT_UMIN_IDENTITY, VectorMath::minUnsigned, false);
@@ -186,7 +192,7 @@ public class VectorUMinMaxReductionTest {
 
     @Test
     @IR(counts = {IRNode.UMAX_REDUCTION_V, "= 1"},
-        applyIfCPUFeature = {"asimd", "true"})
+        applyIfCPUFeatureOr = {"asimd", "true","lsx", "true"})
     public static void testShortUMax() {
         short got = ShortVector.fromArray(S_SPECIES, sa, 0).reduceLanes(VectorOperators.UMAX);
         verifyShort(S_SPECIES, got, SHORT_UMAX_IDENTITY, VectorMath::maxUnsigned, false);
@@ -216,7 +222,7 @@ public class VectorUMinMaxReductionTest {
 
     @Test
     @IR(counts = {IRNode.UMIN_REDUCTION_V, "= 1"},
-        applyIfCPUFeature = {"asimd", "true"})
+        applyIfCPUFeatureOr = {"asimd", "true","lsx", "true"})
     public static void testIntUMin() {
         int got = IntVector.fromArray(I_SPECIES, ia, 0).reduceLanes(VectorOperators.UMIN);
         verifyInt(I_SPECIES, got, INT_UMIN_IDENTITY, VectorMath::minUnsigned, false);
@@ -224,7 +230,7 @@ public class VectorUMinMaxReductionTest {
 
     @Test
     @IR(counts = {IRNode.UMAX_REDUCTION_V, "= 1"},
-        applyIfCPUFeature = {"asimd", "true"})
+        applyIfCPUFeatureOr = {"asimd", "true","lsx", "true"})
     public static void testIntUMax() {
         int got = IntVector.fromArray(I_SPECIES, ia, 0).reduceLanes(VectorOperators.UMAX);
         verifyInt(I_SPECIES, got, INT_UMAX_IDENTITY, VectorMath::maxUnsigned, false);
@@ -254,7 +260,7 @@ public class VectorUMinMaxReductionTest {
 
     @Test
     @IR(counts = {IRNode.UMIN_REDUCTION_V, "= 1"},
-        applyIfCPUFeature = {"asimd", "true"})
+        applyIfCPUFeatureOr = {"asimd", "true","lsx", "true"})
     public static void testLongUMin() {
         long got = LongVector.fromArray(L_SPECIES, la, 0).reduceLanes(VectorOperators.UMIN);
         verifyLong(L_SPECIES, got, LONG_UMIN_IDENTITY, VectorMath::minUnsigned, false);
@@ -262,7 +268,7 @@ public class VectorUMinMaxReductionTest {
 
     @Test
     @IR(counts = {IRNode.UMAX_REDUCTION_V, "= 1"},
-        applyIfCPUFeature = {"asimd", "true"})
+        applyIfCPUFeatureOr = {"asimd", "true","lsx", "true"})
     public static void testLongUMax() {
         long got = LongVector.fromArray(L_SPECIES, la, 0).reduceLanes(VectorOperators.UMAX);
         verifyLong(L_SPECIES, got, LONG_UMAX_IDENTITY, VectorMath::maxUnsigned, false);

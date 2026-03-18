@@ -14090,6 +14090,8 @@ instruct reduceV(mRegI dst, mRegI src, vReg vsrc, vReg tmp1, vReg tmp2) %{
   match(Set dst (MulReductionVI src vsrc));
   match(Set dst (MaxReductionV  src vsrc));
   match(Set dst (MinReductionV  src vsrc));
+  match(Set dst (UMaxReductionV src vsrc));
+  match(Set dst (UMinReductionV src vsrc));
   match(Set dst (AndReductionV  src vsrc));
   match(Set dst (OrReductionV   src vsrc));
   match(Set dst (XorReductionV  src vsrc));
@@ -14107,6 +14109,8 @@ instruct reduceVL(mRegL dst, mRegL src, vReg vsrc, vReg tmp1, vReg tmp2) %{
   match(Set dst (MulReductionVL src vsrc));
   match(Set dst (MaxReductionV  src vsrc));
   match(Set dst (MinReductionV  src vsrc));
+  match(Set dst (UMaxReductionV src vsrc));
+  match(Set dst (UMinReductionV src vsrc));
   match(Set dst (AndReductionV  src vsrc));
   match(Set dst (OrReductionV   src vsrc));
   match(Set dst (XorReductionV  src vsrc));

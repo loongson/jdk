@@ -1191,10 +1191,9 @@ const RegMask& Matcher::divL_proj_mask() {
 const RegMask& Matcher::modL_proj_mask() {
   return T2_LONG_REG_mask();
 }
-// Return whether or not this register is ever used as an argument.  This
-// function is used on startup to build the trampoline stubs in generateOptoStub.
-// Registers not mentioned will be killed by the VM call in the trampoline, and
-// arguments in those registers not be available to the callee.
+
+#ifdef ASSERT
+// Return whether or not this register is ever used as an argument.
 bool Matcher::can_be_java_arg( int reg ) {
   // Refer to: [sharedRuntime_loongarch_64.cpp] SharedRuntime::java_calling_convention()
   if (    reg == T0_num || reg == T0_H_num
@@ -1220,10 +1219,7 @@ bool Matcher::can_be_java_arg( int reg ) {
 
   return false;
 }
-
-bool Matcher::is_spillable_arg( int reg ) {
-  return can_be_java_arg(reg);
-}
+#endif
 
 uint Matcher::int_pressure_limit()
 {
@@ -2531,12 +2527,6 @@ frame %{
   sync_stack_slots(2);
 
   frame_pointer(SP);
-
-  // Interpreter stores its frame pointer in a register which is
-  // stored to the stack by I2CAdaptors.
-  // I2CAdaptors convert from interpreted java to compiled java.
-
-  interpreter_frame_pointer(FP);
 
   // generate Matcher::stack_alignment
   stack_alignment(StackAlignmentInBytes);  //wordSize = sizeof(char*);

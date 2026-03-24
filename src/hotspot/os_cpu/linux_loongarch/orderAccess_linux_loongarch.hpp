@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,8 +25,6 @@
 
 #ifndef OS_CPU_LINUX_LOONGARCH_ORDERACCESS_LINUX_LOONGARCH_HPP
 #define OS_CPU_LINUX_LOONGARCH_ORDERACCESS_LINUX_LOONGARCH_HPP
-
-#include "runtime/os.hpp"
 
 // Included in orderAccess.hpp header file.
 

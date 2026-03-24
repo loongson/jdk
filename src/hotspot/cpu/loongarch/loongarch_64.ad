@@ -5906,6 +5906,20 @@ instruct membar_release_lock()
   ins_pipe( empty );
 %}
 
+instruct membar_storeload() %{
+  match(MemBarStoreLoad);
+  ins_cost(400);
+
+  format %{ "MEMBAR-storeload" %}
+
+  ins_encode %{
+    __ block_comment("membar_storeload");
+    __ membar(__ StoreLoad);
+  %}
+
+  ins_pipe(pipe_serial);
+%}
+
 instruct unnecessary_membar_volatile() %{
   predicate(unnecessary_volatile(n));
   match(MemBarVolatile);
@@ -5965,6 +5979,18 @@ instruct unnecessary_same_addr_load_fence() %{
     __ block_comment("MEMBAR @ same_addr_load_fence (elided)");
   %}
   ins_pipe( empty );
+%}
+
+instruct membar_full() %{
+  match(MemBarFull);
+  ins_cost(400);
+
+  format %{ "MEMBAR-full" %}
+  ins_encode %{
+    __ block_comment("membar_full");
+    __ membar(__ AnyAny);
+  %}
+  ins_pipe(pipe_serial);
 %}
 
 //----------Move Instructions--------------------------------------------------

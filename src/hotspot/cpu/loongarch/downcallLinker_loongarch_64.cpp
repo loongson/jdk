@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020, Red Hat, Inc. All rights reserved.
- * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -142,10 +142,10 @@ void DowncallLinker::StubGenerator::generate() {
 
   bool should_save_return_value = !_needs_return_buffer;
   RegSpiller out_reg_spiller(_output_registers);
-  int spill_offset = -1;
+  int out_spill_offset = -1;
 
   if (should_save_return_value) {
-    spill_offset = 0;
+    out_spill_offset = 0;
     // spill area can be shared with shadow space and out args,
     // since they are only used before the call,
     // and spill area is only used after.
@@ -170,6 +170,9 @@ void DowncallLinker::StubGenerator::generate() {
   // FP-> |                     |
   //      |---------------------| = frame_bottom_offset = frame_size
   //      | (optional)          |
+  //      | in_reg_spiller area |
+  //      |---------------------|
+  //      | (optional)          |
   //      | capture state buf   |
   //      |---------------------| = StubLocations::CAPTURED_STATE_BUFFER
   //      | (optional)          |
@@ -182,6 +185,18 @@ void DowncallLinker::StubGenerator::generate() {
   VMStorage shuffle_reg = as_VMStorage(S0);
   GrowableArray<VMStorage> out_regs = ForeignGlobals::replace_place_holders(_input_registers, locs);
   ArgumentShuffle arg_shuffle(filtered_java_regs, out_regs, shuffle_reg);
+
+  // Need to spill for state capturing runtime call.
+  // The area spilled into is distinct from the capture state buffer.
+  RegSpiller in_reg_spiller(out_regs);
+  int in_spill_offset = -1;
+  if (_captured_state_mask != 0) {
+    // The spill area cannot be shared with the out_spill since
+    // spilling needs to happen before the call. Allocate a new
+    // region in the stack for this spill space.
+    in_spill_offset = allocated_frame_size;
+    allocated_frame_size += in_reg_spiller.spill_size_bytes();
+  }
 
 #ifndef PRODUCT
   LogTarget(Trace, foreign, downcall) lt;
@@ -231,6 +246,20 @@ void DowncallLinker::StubGenerator::generate() {
   arg_shuffle.generate(_masm, shuffle_reg, 0, _abi._shadow_space_bytes);
   __ block_comment("} argument shuffle");
 
+  if (_captured_state_mask != 0) {
+    assert(in_spill_offset != -1, "must be");
+    __ block_comment("{ load initial thread local");
+    in_reg_spiller.generate_spill(_masm, in_spill_offset);
+
+    // Copy the contents of the capture state buffer into thread local
+    __ ld_d(c_rarg0, Address(SP, locs.data_offset(StubLocations::CAPTURED_STATE_BUFFER)));
+    __ li(c_rarg1, _captured_state_mask);
+    __ call(CAST_FROM_FN_PTR(address, DowncallLinker::capture_state_pre), relocInfo::runtime_call_type);
+
+    in_reg_spiller.generate_fill(_masm, in_spill_offset);
+    __ block_comment("} load initial thread local");
+  }
+
   __ jalr(as_Register(locs.get(StubLocations::TARGET_ADDRESS)));
   // this call is assumed not to have killed rthread
 
@@ -257,15 +286,15 @@ void DowncallLinker::StubGenerator::generate() {
     __ block_comment("{ save thread local");
 
     if (should_save_return_value) {
-      out_reg_spiller.generate_spill(_masm, spill_offset);
+      out_reg_spiller.generate_spill(_masm, out_spill_offset);
     }
 
     __ ld_d(c_rarg0, Address(SP, locs.data_offset(StubLocations::CAPTURED_STATE_BUFFER)));
     __ li(c_rarg1, _captured_state_mask);
-    __ call(CAST_FROM_FN_PTR(address, DowncallLinker::capture_state), relocInfo::runtime_call_type);
+    __ call(CAST_FROM_FN_PTR(address, DowncallLinker::capture_state_post), relocInfo::runtime_call_type);
 
     if (should_save_return_value) {
-      out_reg_spiller.generate_fill(_masm, spill_offset);
+      out_reg_spiller.generate_fill(_masm, out_spill_offset);
     }
 
     __ block_comment("} save thread local");
@@ -329,7 +358,7 @@ void DowncallLinker::StubGenerator::generate() {
 
     if (should_save_return_value) {
       // Need to save the native result registers around any runtime calls.
-      out_reg_spiller.generate_spill(_masm, spill_offset);
+      out_reg_spiller.generate_spill(_masm, out_spill_offset);
     }
 
     __ move(c_rarg0, TREG);
@@ -337,7 +366,7 @@ void DowncallLinker::StubGenerator::generate() {
     __ call(CAST_FROM_FN_PTR(address, JavaThread::check_special_condition_for_native_trans), relocInfo::runtime_call_type);
 
     if (should_save_return_value) {
-      out_reg_spiller.generate_fill(_masm, spill_offset);
+      out_reg_spiller.generate_fill(_masm, out_spill_offset);
     }
 
     __ b(L_after_safepoint_poll);
@@ -349,13 +378,13 @@ void DowncallLinker::StubGenerator::generate() {
     __ bind(L_reguard);
 
     if (should_save_return_value) {
-      out_reg_spiller.generate_spill(_masm, spill_offset);
+      out_reg_spiller.generate_spill(_masm, out_spill_offset);
     }
 
     __ call(CAST_FROM_FN_PTR(address, SharedRuntime::reguard_yellow_pages),relocInfo::runtime_call_type);
 
     if (should_save_return_value) {
-      out_reg_spiller.generate_fill(_masm, spill_offset);
+      out_reg_spiller.generate_fill(_masm, out_spill_offset);
     }
 
     __ b(L_after_reguard);

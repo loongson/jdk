@@ -23,11 +23,18 @@
  *
  */
 
+/*
+ * This file has been modified by Loongson Technology in 2026, These
+ * modifications are Copyright (c) 2026, Loongson Technology, and are made
+ * available on the same license terms set forth above.
+ */
+
 package sun.jvm.hotspot.runtime;
 
 import sun.jvm.hotspot.debugger.*;
 import sun.jvm.hotspot.runtime.aarch64.*;
 import sun.jvm.hotspot.runtime.amd64.*;
+import sun.jvm.hotspot.runtime.loongarch64.*;
 import sun.jvm.hotspot.runtime.ppc64.*;
 import sun.jvm.hotspot.runtime.riscv64.*;
 import sun.jvm.hotspot.types.*;
@@ -55,6 +62,7 @@ public abstract class ContinuationEntry extends VMObject {
             case "amd64"   -> VMObjectFactory.newObject(AMD64ContinuationEntry.class, addr);
             case "aarch64" -> VMObjectFactory.newObject(AARCH64ContinuationEntry.class, addr);
             case "riscv64" -> VMObjectFactory.newObject(RISCV64ContinuationEntry.class, addr);
+            case "loongarch64" -> VMObjectFactory.newObject(LOONGARCH64ContinuationEntry.class, addr);
             case "ppc64" -> VMObjectFactory.newObject(PPC64ContinuationEntry.class, addr);
             default -> throw new UnsupportedPlatformException("Continuation is not yet implemented.");
         };

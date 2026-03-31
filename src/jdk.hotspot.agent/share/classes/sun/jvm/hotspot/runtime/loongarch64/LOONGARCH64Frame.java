@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2001, 2015, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2018, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2018, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -179,6 +179,11 @@ public class LOONGARCH64Frame extends Frame {
   public Address getSP() { return raw_sp; }
   public Address getID() { return raw_sp; }
 
+  @Override
+  public void setSP(Address newSP) {
+    raw_sp = newSP;
+  }
+
   // FIXME: not implemented yet (should be done for Solaris/LOONGARCH)
   public boolean isSignalHandlerFrameDbg() { return false; }
   public int     getSignalNumberDbg()      { return 0;     }
@@ -245,9 +250,7 @@ public class LOONGARCH64Frame extends Frame {
     if (cb != null) {
       if (cb.isUpcallStub()) {
         return senderForUpcallStub(map, (UpcallStub)cb);
-      } else if (cb.isContinuationStub()) {
-        return senderForContinuationStub(map, cb);
-      } else {
+      } else if (cb.getFrameSize() > 0) {
         return senderForCompiledFrame(map, cb);
       }
     }
@@ -335,16 +338,6 @@ public class LOONGARCH64Frame extends Frame {
     map.setLocation(fp, savedFPAddr);
   }
 
-  private Frame senderForContinuationStub(LOONGARCH64RegisterMap map, CodeBlob cb) {
-    var contEntry = map.getThread().getContEntry();
-
-    Address senderSP = contEntry.getEntrySP();
-    Address senderPC = contEntry.getEntryPC();
-    Address senderFP = contEntry.getEntryFP();
-
-    return new LOONGARCH64Frame(senderSP, senderFP, senderPC);
-  }
-
   private Frame senderForCompiledFrame(LOONGARCH64RegisterMap map, CodeBlob cb) {
     if (DEBUG) {
       System.out.println("senderForCompiledFrame");
@@ -385,6 +378,22 @@ public class LOONGARCH64Frame extends Frame {
       // for it so we must fill in its location as if there was an oopmap entry
       // since if our caller was compiled code there could be live jvm state in it.
       updateMapWithSavedLink(map, savedFPAddr);
+    }
+
+    if (Continuation.isReturnBarrierEntry(senderPC)) {
+      // We assume WalkContinuation is "WalkContinuation::skip".
+      // It is same with c'tor arguments of RegisterMap in frame::next_frame().
+      //
+      // HotSpot code in cpu/loongarch/frame_loongarch.inline.hpp:
+      //
+      //   if (Continuation::is_return_barrier_entry(sender_pc)) {
+      //     if (map->walk_cont()) { // about to walk into an h-stack
+      //       return Continuation::top_frame(*this, map);
+      //     } else {
+      //       return Continuation::continuation_bottom_sender(map->thread(), *this, l_sender_sp);
+      //     }
+      //   }
+      return Continuation.continuationBottomSender(map.getThread(), this, senderSP);
     }
 
     return new LOONGARCH64Frame(senderSP, savedFPAddr.getAddressAt(0), senderPC);

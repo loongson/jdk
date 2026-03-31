@@ -1236,10 +1236,6 @@ uint Matcher::float_pressure_limit()
   return (FLOATPRESSURE == -1) ? _FLT_REG_mask.size() : FLOATPRESSURE;
 }
 
-bool Matcher::use_asm_for_ldiv_by_con( jlong divisor ) {
-  return false;
-}
-
 int CallStaticJavaDirectNode::compute_padding(int current_offset) const {
   const uintx m = alignment_required() - 1;
   return mask_bits(current_offset + m, ~m) - current_offset;

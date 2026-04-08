@@ -80,14 +80,13 @@ void MethodHandles::verify_ref_kind(MacroAssembler* _masm, int ref_kind, Registe
   __ andr(temp, temp, AT);
   __ li(AT, ref_kind);
   __ beq(temp, AT, L);
-  { char* buf = NEW_C_HEAP_ARRAY(char, 100, mtInternal);
-    jio_snprintf(buf, 100, "verify_ref_kind expected %x", ref_kind);
-    if (ref_kind == JVM_REF_invokeVirtual ||
-        ref_kind == JVM_REF_invokeSpecial)
-      // could do this for all ref_kinds, but would explode assembly code size
-      trace_method_handle(_masm, buf);
-    __ STOP(buf);
+  const char* msg = ref_kind_to_verify_msg(ref_kind);
+  if (ref_kind == JVM_REF_invokeVirtual ||
+      ref_kind == JVM_REF_invokeSpecial) {
+    // could do this for all ref_kinds, but would explode assembly code size
+    trace_method_handle(_masm, msg);
   }
+  __ STOP(msg);
   BLOCK_COMMENT("} verify_ref_kind");
   __ bind(L);
 }

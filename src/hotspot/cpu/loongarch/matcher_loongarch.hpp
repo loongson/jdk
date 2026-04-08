@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2021, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -74,7 +74,6 @@
   }
 
   static bool narrow_klass_use_complex_address() {
-    assert(UseCompressedClassPointers, "only for compressed klass code");
     return false;
   }
 

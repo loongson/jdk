@@ -55,18 +55,6 @@ NEEDS_CLEANUP // remove this definitions?
 #define __ _masm->
 
 static void select_different_registers(Register preserve, Register extra,
-                                       Register &tmp1, Register &tmp2) {
-  if (tmp1 == preserve) {
-    assert_different_registers(tmp1, tmp2, extra);
-    tmp1 = extra;
-  } else if (tmp2 == preserve) {
-    assert_different_registers(tmp1, tmp2, extra);
-    tmp2 = extra;
-  }
-  assert_different_registers(preserve, tmp1, tmp2);
-}
-
-static void select_different_registers(Register preserve, Register extra,
                                        Register &tmp1, Register &tmp2,
                                        Register &tmp3) {
   if (tmp1 == preserve) {
@@ -1247,12 +1235,9 @@ void LIR_Assembler::emit_typecheck_helper(LIR_OpTypeCheck *op, Label* success,
   } else if (obj == klass_RInfo) {
     klass_RInfo = dst;
   }
-  if (k->is_loaded() && !UseCompressedClassPointers) {
-    select_different_registers(obj, dst, k_RInfo, klass_RInfo);
-  } else {
-    Rtmp1 = op->tmp3()->as_register();
-    select_different_registers(obj, dst, k_RInfo, klass_RInfo, Rtmp1);
-  }
+
+  Rtmp1 = op->tmp3()->as_register();
+  select_different_registers(obj, dst, k_RInfo, klass_RInfo, Rtmp1);
 
   assert_different_registers(obj, k_RInfo, klass_RInfo);
 
@@ -2538,12 +2523,9 @@ void LIR_Assembler::emit_arraycopy(LIR_OpArrayCopy* op) {
       if (UseCompactObjectHeaders) {
         __ load_narrow_klass_compact(tmp, src);
         __ load_narrow_klass_compact(SCR1, dst);
-      } else if (UseCompressedClassPointers) {
+      } else {
         __ ld_wu(tmp, src_klass_addr);
         __ ld_wu(SCR1, dst_klass_addr);
-      } else {
-        __ ld_d(tmp, src_klass_addr);
-        __ ld_d(SCR1, dst_klass_addr);
       }
       __ bne_far(tmp, SCR1, *stub->entry());
     } else {
@@ -2676,9 +2658,7 @@ void LIR_Assembler::emit_arraycopy(LIR_OpArrayCopy* op) {
     // but not necessarily exactly of type default_type.
     Label known_ok, halt;
     __ mov_metadata(tmp, default_type->constant_encoding());
-    if (UseCompressedClassPointers) {
-      __ encode_klass_not_null(tmp);
-    }
+    __ encode_klass_not_null(tmp);
 
     if (basic_type != T_OBJECT) {
       __ cmp_klass_compressed(dst, tmp, SCR1, halt, false);

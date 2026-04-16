@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -201,3 +201,9 @@ ATTRIBUTE_ALIGNED(64) jfloat StubRoutines::la::_round_float_imm[] = {
 ATTRIBUTE_ALIGNED(64) jdouble StubRoutines::la::_round_double_imm[] = {
   -0.5d, 0.49999999999999994d // magic number for ties
 };
+
+#if INCLUDE_CDS
+// nothing to do for loongarch
+void StubRoutines::init_AOTAddressTable() {
+}
+#endif // INCLUDE_CDS

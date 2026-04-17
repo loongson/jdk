@@ -31,7 +31,7 @@
 
 class CardTableBarrierSetAssembler: public BarrierSetAssembler {
 protected:
-  void store_check(MacroAssembler* masm, Register obj, Register tmp);
+  void store_check(MacroAssembler* masm, Register obj, Register tmp1, Register tmp2);
 
   virtual void gen_write_ref_array_pre_barrier(MacroAssembler* masm, DecoratorSet decorators,
                                                Register addr, Register count, RegSet saved_regs) {}

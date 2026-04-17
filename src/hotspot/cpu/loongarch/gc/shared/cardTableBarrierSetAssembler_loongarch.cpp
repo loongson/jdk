@@ -90,23 +90,27 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 }
 
 // Does a store check for the oop in register obj.
-void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register obj, Register tmp) {
-  assert_different_registers(obj, tmp, SCR1);
+void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register obj, Register tmp1, Register tmp2) {
+  precond(tmp1 != noreg);
+  precond(tmp2 != noreg);
+  assert_different_registers(obj, tmp1, tmp2);
+  BarrierSet* bs = BarrierSet::barrier_set();
+  assert(bs->kind() == BarrierSet::CardTableBarrierSet, "Wrong barrier set kind");
 
   __ srli_d(obj, obj, CardTable::card_shift());
 
-  __ load_byte_map_base(tmp);
-
   assert(CardTable::dirty_card_val() == 0, "must be");
+
+  __ load_byte_map_base(tmp1);
 
   if (UseCondCardMark) {
     Label L_already_dirty;
-    __ ldx_b(SCR1, obj, tmp);
-    __ beqz(SCR1, L_already_dirty);
-    __ stx_b(R0, obj, tmp);
+    __ ldx_b(tmp2, obj, tmp1);
+    __ beqz(tmp2, L_already_dirty);
+    __ stx_b(R0, obj, tmp1);
     __ bind(L_already_dirty);
   } else {
-    __ stx_b(R0, obj, tmp);
+    __ stx_b(R0, obj, tmp1);
   }
 }
 
@@ -122,10 +126,10 @@ void CardTableBarrierSetAssembler::oop_store_at(MacroAssembler* masm, DecoratorS
   if (needs_post_barrier) {
     // flatten object address if needed
     if (!precise || (dst.index() == noreg && dst.disp() == 0)) {
-      store_check(masm, dst.base(), tmp1);
+      store_check(masm, dst.base(), tmp1, tmp2);
     } else {
-      __ lea(tmp1, dst);
-      store_check(masm, tmp1, tmp2);
+      __ lea(tmp3, dst);
+      store_check(masm, tmp3, tmp1, tmp2);
     }
   }
 }

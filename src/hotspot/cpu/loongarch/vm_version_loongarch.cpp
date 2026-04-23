@@ -361,10 +361,6 @@ void VM_Version::get_processor_features() {
     FLAG_SET_DEFAULT(UseSHA3Intrinsics, false);
   }
 
-  if (!(UseSHA1Intrinsics || UseSHA256Intrinsics || UseSHA3Intrinsics || UseSHA512Intrinsics)) {
-    FLAG_SET_DEFAULT(UseSHA, false);
-  }
-
   if (FLAG_IS_DEFAULT(UseMD5Intrinsics)) {
     FLAG_SET_DEFAULT(UseMD5Intrinsics, true);
   }

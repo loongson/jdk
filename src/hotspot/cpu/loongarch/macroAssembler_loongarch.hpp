@@ -654,12 +654,12 @@ class MacroAssembler: public Assembler {
   void pop_call_clobbered_registers() {
     pop_call_clobbered_registers_except(RegSet());
   }
-  void push(RegSet regs) { if (regs.bits()) push(regs.bits()); }
-  void pop(RegSet regs) { if (regs.bits()) pop(regs.bits()); }
-  void push_fpu(FloatRegSet regs) { if (regs.bits()) push_fpu(regs.bits()); }
-  void pop_fpu(FloatRegSet regs) { if (regs.bits()) pop_fpu(regs.bits()); }
-  void push_vp(FloatRegSet regs) { if (regs.bits()) push_vp(regs.bits()); }
-  void pop_vp(FloatRegSet regs) { if (regs.bits()) pop_vp(regs.bits()); }
+  int push(RegSet regset);
+  int pop(RegSet regset);
+  int push_fpu(FloatRegSet regset);
+  int pop_fpu(FloatRegSet regset);
+  int push_vp(FloatRegSet regset);
+  int pop_vp(FloatRegSet regset);
 
   void li(Register rd, jlong value);
   void li(Register rd, address addr) { li(rd, (long)addr); }
@@ -830,13 +830,6 @@ class MacroAssembler: public Assembler {
 #endif
 
 private:
-  void push(unsigned int bitset);
-  void pop(unsigned int bitset);
-  void push_fpu(unsigned int bitset);
-  void pop_fpu(unsigned int bitset);
-  void push_vp(unsigned int bitset);
-  void pop_vp(unsigned int bitset);
-
   // Check the current thread doesn't need a cross modify fence.
   void verify_cross_modify_fence_not_required() PRODUCT_RETURN;
   void generate_kernel_sin(FloatRegister x, bool iyIsOne, address dsin_coef);

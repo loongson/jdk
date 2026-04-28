@@ -52,6 +52,7 @@
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
 #include "utilities/globalDefinitions.hpp"
+#include "utilities/integerCast.hpp"
 #include "utilities/macros.hpp"
 
 #ifdef COMPILER2
@@ -2018,7 +2019,11 @@ void MacroAssembler::pop2(Register reg1, Register reg2) {
   addi_d(SP, SP, 16);
 }
 
-void MacroAssembler::push(unsigned int bitset) {
+int MacroAssembler::push(RegSet regset) {
+  if (regset.bits() == 0) {
+    return 0;
+  }
+  auto bitset = integer_cast<unsigned int>(regset.bits());
   unsigned char regs[31];
   int count = 0;
 
@@ -2032,9 +2037,15 @@ void MacroAssembler::push(unsigned int bitset) {
   addi_d(SP, SP, -align_up(count, 2) * wordSize);
   for (int i = 0; i < count; i ++)
     st_d(as_Register(regs[i]), SP, i * wordSize);
+
+  return count;
 }
 
-void MacroAssembler::pop(unsigned int bitset) {
+int MacroAssembler::pop(RegSet regset) {
+  if (regset.bits() == 0) {
+    return 0;
+  }
+  auto bitset = integer_cast<unsigned int>(regset.bits());
   unsigned char regs[31];
   int count = 0;
 
@@ -2048,14 +2059,17 @@ void MacroAssembler::pop(unsigned int bitset) {
   for (int i = 0; i < count; i ++)
     ld_d(as_Register(regs[i]), SP, i * wordSize);
   addi_d(SP, SP, align_up(count, 2) * wordSize);
+
+  return count;
 }
 
-void MacroAssembler::push_fpu(unsigned int bitset) {
+int MacroAssembler::push_fpu(FloatRegSet regset) {
+  if (regset.bits() == 0) {
+    return 0;
+  }
+  auto bitset = integer_cast<unsigned int>(regset.bits());
   unsigned char regs[32];
   int count = 0;
-
-  if (bitset == 0)
-    return;
 
   for (int reg = 0; reg <= 31; reg++) {
     if (1 & bitset)
@@ -2066,14 +2080,17 @@ void MacroAssembler::push_fpu(unsigned int bitset) {
   addi_d(SP, SP, -align_up(count, 2) * wordSize);
   for (int i = 0; i < count; i++)
     fst_d(as_FloatRegister(regs[i]), SP, i * wordSize);
+
+  return count;
 }
 
-void MacroAssembler::pop_fpu(unsigned int bitset) {
+int MacroAssembler::pop_fpu(FloatRegSet regset) {
+  if (regset.bits() == 0) {
+    return 0;
+  }
+  auto bitset = integer_cast<unsigned int>(regset.bits());
   unsigned char regs[32];
   int count = 0;
-
-  if (bitset == 0)
-    return;
 
   for (int reg = 0; reg <= 31; reg++) {
     if (1 & bitset)
@@ -2084,6 +2101,8 @@ void MacroAssembler::pop_fpu(unsigned int bitset) {
   for (int i = 0; i < count; i++)
     fld_d(as_FloatRegister(regs[i]), SP, i * wordSize);
   addi_d(SP, SP, align_up(count, 2) * wordSize);
+
+  return count;
 }
 
 static int vpr_offset(int off) {
@@ -2097,12 +2116,13 @@ static int vpr_offset(int off) {
   return off * slots_per_vpr * VMRegImpl::stack_slot_size;
 }
 
-void MacroAssembler::push_vp(unsigned int bitset) {
+int MacroAssembler::push_vp(FloatRegSet regset) {
+  if (regset.bits() == 0) {
+    return 0;
+  }
+  auto bitset = integer_cast<unsigned int>(regset.bits());
   unsigned char regs[32];
   int count = 0;
-
-  if (bitset == 0)
-    return;
 
   for (int reg = 0; reg <= 31; reg++) {
     if (1 & bitset)
@@ -2119,14 +2139,17 @@ void MacroAssembler::push_vp(unsigned int bitset) {
     else if (UseLSX)
       vst(as_FloatRegister(regs[i]), SP, off);
   }
+
+  return count;
 }
 
-void MacroAssembler::pop_vp(unsigned int bitset) {
+int MacroAssembler::pop_vp(FloatRegSet regset) {
+  if (regset.bits() == 0) {
+    return 0;
+  }
+  auto bitset = integer_cast<unsigned int>(regset.bits());
   unsigned char regs[32];
   int count = 0;
-
-  if (bitset == 0)
-    return;
 
   for (int reg = 0; reg <= 31; reg++) {
     if (1 & bitset)
@@ -2143,6 +2166,8 @@ void MacroAssembler::pop_vp(unsigned int bitset) {
   }
 
   addi_d(SP, SP, vpr_offset(align_up(count, 2)));
+
+  return count;
 }
 
 void MacroAssembler::load_method_holder(Register holder, Register method) {

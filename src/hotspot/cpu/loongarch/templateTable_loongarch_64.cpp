@@ -3456,7 +3456,6 @@ void TemplateTable::invokeinterface(int byte_no) {
   __ bind(notVFinal);
 
   // Get receiver klass into T1
-  __ restore_locals();
   __ load_klass(T1, T3);
 
   Label no_such_method;

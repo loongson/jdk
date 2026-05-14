@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
-// Copyright (c) 2021, 2025, Loongson Technology. All rights reserved.
+// Copyright (c) 2021, 2026, Loongson Technology. All rights reserved.
 // DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 //
 // This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,7 @@ source %{
 #include "gc/z/zBarrierSetAssembler.hpp"
 
 static void z_load_barrier(MacroAssembler* masm, const MachNode* node, Address ref_addr, Register ref, Register tmp) {
+  Assembler::InlineSkippedInstructionsCounter skipped_counter(masm);
   if (node->barrier_data() == ZBarrierElided) {
     __ z_uncolor(ref);
   } else {
@@ -55,6 +56,7 @@ static void z_load_barrier(MacroAssembler* masm, const MachNode* node, Address r
 }
 
 static void z_store_barrier(MacroAssembler* masm, const MachNode* node, Address ref_addr, Register rnew_zaddress, Register rnew_zpointer, Register tmp, bool is_atomic) {
+  Assembler::InlineSkippedInstructionsCounter skipped_counter(masm);
   if (node->barrier_data() == ZBarrierElided) {
     __ z_color(rnew_zpointer, rnew_zaddress, tmp);
   } else {

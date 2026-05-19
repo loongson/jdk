@@ -426,8 +426,13 @@ void BarrierSetAssembler::check_oop(MacroAssembler* masm, Register obj, Register
   __ beqz(obj, error);     // if klass is null it is broken
 }
 
-#ifdef COMPILER2
+void BarrierSetAssembler::try_peek_weak_handle_in_nmethod(MacroAssembler* masm, Register weak_handle, Register obj,
+                                                          Register tmp, Label& slow_path) {
+  // Load the oop from the weak handle without barriers.
+  __ ld_d(obj, Address(weak_handle));
+}
 
+#ifdef COMPILER2
 OptoReg::Name BarrierSetAssembler::refine_register(const Node* node, OptoReg::Name opto_reg) {
   if (!OptoReg::is_reg(opto_reg)) {
     return OptoReg::Bad;
@@ -440,12 +445,6 @@ OptoReg::Name BarrierSetAssembler::refine_register(const Node* node, OptoReg::Na
 
   return opto_reg;
 }
-
-void BarrierSetAssembler::try_resolve_weak_handle_in_c2(MacroAssembler* masm, Register obj, Register tmp, Label& slow_path) {
-  // Load the oop from the weak handle.
-  __ ld_d(obj, Address(obj));
-}
-
 #undef __
 #define __ _masm->
 

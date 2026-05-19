@@ -183,11 +183,13 @@ public:
                                      ZLoadBarrierStubC2* stub) const;
   void generate_c2_store_barrier_stub(MacroAssembler* masm,
                                       ZStoreBarrierStubC2* stub) const;
-  void try_resolve_weak_handle_in_c2(MacroAssembler* masm,
-                                     Register obj,
-                                     Register tmp,
-                                     Label& slow_path);
 #endif // COMPILER2
+
+  void try_peek_weak_handle_in_nmethod(MacroAssembler* masm,
+                                       Register weak_handle,
+                                       Register obj,
+                                       Register tmp,
+                                       Label& slow_path);
 };
 
 #endif // CPU_LOONGARCH_GC_Z_ZBARRIERSETASSEMBLER_LOONGARCH_HPP

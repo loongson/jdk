@@ -49,9 +49,6 @@ class la {
   friend class StubGenerator;
   friend class StubRoutines;
   friend class VMStructs;
-#if INCLUDE_JVMCI
-  friend class JVMCIVMStructs;
-#endif
 
   // declare fields for arch-specific entries
 

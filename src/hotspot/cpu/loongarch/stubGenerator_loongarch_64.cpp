@@ -6165,7 +6165,6 @@ static const int64_t right_3_bits = right_n_bits(3);
   }
 
   void generate_compiler_stubs() {
-#if COMPILER2_OR_JVMCI
 #ifdef COMPILER2
     if (UseMulAddIntrinsic) {
       StubRoutines::_mulAdd = generate_mulAdd();
@@ -6195,7 +6194,6 @@ static const int64_t right_3_bits = right_n_bits(3);
       StubRoutines::_bigIntegerLeftShiftWorker = generate_bigIntegerLeftShift();
       StubRoutines::_bigIntegerRightShiftWorker = generate_bigIntegerRightShift();
     }
-#endif
 
     StubRoutines::la::_vector_iota_indices = generate_iota_indices();
 
@@ -6232,7 +6230,7 @@ static const int64_t right_3_bits = right_n_bits(3);
 
     generate_string_indexof_stubs();
 
-#endif // COMPILER2_OR_JVMCI
+#endif // COMPILER2
   }
 
  public:

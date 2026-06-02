@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -58,25 +58,6 @@ bool NativeInstruction::is_int_branch() {
 
 bool NativeInstruction::is_float_branch() {
   return Assembler::high(insn_word(), 6) == Assembler::bccondz_op;
-}
-
-bool NativeInstruction::is_lu12iw_lu32id() const {
-  return Assembler::high(int_at(0), 7)   == Assembler::lu12i_w_op &&
-         Assembler::high(int_at(4), 7)   == Assembler::lu32i_d_op;
-}
-
-bool NativeInstruction::is_pcaddi() const {
-  return Assembler::high(int_at(0), 7) == Assembler::pcaddi_op;
-}
-
-bool NativeInstruction::is_pcaddu12i_add() const {
-  return Assembler::high(int_at(0), 7) == Assembler::pcaddu12i_op &&
-         Assembler::high(int_at(4), 10)   == Assembler::addi_d_op;
-}
-
-bool NativeInstruction::is_jalr() const {
-  return Assembler::high(int_at(0), 6) == Assembler::jirl_op &&
-         Assembler::low(int_at(0), 5)  == RA->encoding();
 }
 
 bool NativeCall::is_bl() const {
@@ -182,27 +163,6 @@ void NativeCall::set_destination(address dest) {
   jlong offs = dest - addr_call;
   masm.bl(offs >> 2);
   ICache::invalidate_range(addr_call, instruction_size);
-}
-
-// Generate a trampoline for a branch to dest.  If there's no need for a
-// trampoline, simply patch the call directly to dest.
-address NativeCall::trampoline_jump(CodeBuffer &cbuf, address dest) {
-  MacroAssembler a(&cbuf);
-  address stub = nullptr;
-
-  if (a.far_branches()
-      && ! is_NativeCallTrampolineStub_at()) {
-    stub = a.emit_trampoline_stub(instruction_address() - cbuf.insts()->start(), dest);
-  }
-
-  if (stub == nullptr) {
-    // If we generated no stub, patch this call directly to dest.
-    // This will happen if we don't need far branches or if there
-    // already was a trampoline.
-    set_destination(dest);
-  }
-
-  return stub;
 }
 
 void NativeCall::print() {

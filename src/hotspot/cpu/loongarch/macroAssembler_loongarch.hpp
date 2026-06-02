@@ -736,7 +736,7 @@ class MacroAssembler: public Assembler {
 
   void bind(Label& L) {
     Assembler::bind(L);
-    code()->clear_last_insn();
+    code()->clear_last_merge_candidate();
   }
 
   // ChaCha20 functions support block

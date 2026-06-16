@@ -22,8 +22,8 @@
  */
 
 /*
- * This file has been modified by Loongson Technology in 2023, These
- * modifications are Copyright (c) 2023, Loongson Technology, and are made
+ * This file has been modified by Loongson Technology in 2026, These
+ * modifications are Copyright (c) 2023, 2026, Loongson Technology, and are made
  * available on the same license terms set forth above.
  */
 
@@ -457,7 +457,7 @@ LIR_Opr ZBarrierSetC1::atomic_cmpxchg_at_resolved(LIRAccess& access, LIRItem& cm
   access.gen()->lir()->move(cmp_value.result(), cmp_value_opr);
 
 #if defined(LOONGARCH)
-  LIR_Opr result = access.gen()->new_register(T_OBJECT);
+  LIR_Opr result = access.gen()->new_register(T_INT);
 #endif
 
   __ cas_obj(access.resolved_addr()->as_address_ptr()->base(),

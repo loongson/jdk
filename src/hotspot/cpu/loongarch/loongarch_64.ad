@@ -1176,22 +1176,23 @@ int Matcher::min_vector_size(const BasicType bt) {
   return MIN2(size,max_size);
 }
 
-// Register for DIVI projection of divmodI
-const RegMask& Matcher::divI_proj_mask() {
+// Register for the first projection of an int pair
+const RegMask& Matcher::firstI_proj_mask() {
   return T1_REG_mask();
 }
 
-// Register for MODI projection of divmodI
-const RegMask& Matcher::modI_proj_mask() {
+// Register for the second projection of an int pair
+const RegMask& Matcher::secondI_proj_mask() {
   return T2_REG_mask();
 }
 
-// Register for DIVL projection of divmodL
-const RegMask& Matcher::divL_proj_mask() {
+// Register for the first projection of a long pair
+const RegMask& Matcher::firstL_proj_mask() {
   return T1_LONG_REG_mask();
 }
 
-const RegMask& Matcher::modL_proj_mask() {
+// Register for the second projection of a long pair
+const RegMask& Matcher::secondL_proj_mask() {
   return T2_LONG_REG_mask();
 }
 

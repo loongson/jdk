@@ -458,71 +458,39 @@ void ShenandoahBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssemb
 
 #define __ ce->masm()->
 
-void ShenandoahBarrierSetAssembler::gen_pre_barrier_stub(LIR_Assembler* ce, ShenandoahPreBarrierStub* stub) {
-  ShenandoahBarrierSetC1* bs = (ShenandoahBarrierSetC1*)BarrierSet::barrier_set()->barrier_set_c1();
-  // At this point we know that marking is in progress.
-  // If do_load() is true then we have to emit the
-  // load of the previous value; otherwise it has already
-  // been loaded into _pre_val.
-
+void ShenandoahBarrierSetAssembler::keepalive_barrier_c1_stub(LIR_Assembler* ce, ShenandoahKeepaliveBarrierStub* stub) {
   __ bind(*stub->entry());
 
-  assert(stub->pre_val()->is_register(), "Precondition.");
+  ShenandoahBarrierSetC1* bs = (ShenandoahBarrierSetC1*)BarrierSet::barrier_set()->barrier_set_c1();
 
-  Register pre_val_reg = stub->pre_val()->as_register();
+  Register obj = stub->obj()->as_register();
 
   if (stub->do_load()) {
-    ce->mem2reg(stub->addr(), stub->pre_val(), T_OBJECT, stub->patch_code(), stub->info(), false /*wide*/);
+    ce->mem2reg(stub->addr(), stub->obj(), T_OBJECT, lir_patch_none, nullptr, false /* wide */);
   }
-  __ beqz(pre_val_reg, *stub->continuation());
-  ce->store_parameter(stub->pre_val()->as_register(), 0);
-  __ call(bs->pre_barrier_c1_runtime_code_blob()->code_begin(), relocInfo::runtime_call_type);
+  __ beqz(obj, *stub->continuation());
+
+  ce->store_parameter(obj, 0);
+  __ call(bs->keepalive_barrier_stub(), relocInfo::runtime_call_type);
   __ b(*stub->continuation());
 }
 
-void ShenandoahBarrierSetAssembler::gen_load_reference_barrier_stub(LIR_Assembler* ce, ShenandoahLoadReferenceBarrierStub* stub) {
-  ShenandoahBarrierSetC1* bs = (ShenandoahBarrierSetC1*)BarrierSet::barrier_set()->barrier_set_c1();
+void ShenandoahBarrierSetAssembler::load_reference_barrier_c1_stub(LIR_Assembler* ce, ShenandoahLoadReferenceBarrierStub* stub) {
   __ bind(*stub->entry());
 
-  DecoratorSet decorators = stub->decorators();
-  bool is_strong  = ShenandoahBarrierSet::is_strong_access(decorators);
-  bool is_weak    = ShenandoahBarrierSet::is_weak_access(decorators);
-  bool is_phantom = ShenandoahBarrierSet::is_phantom_access(decorators);
-  bool is_native  = ShenandoahBarrierSet::is_native_access(decorators);
+  ShenandoahBarrierSetC1* bs = (ShenandoahBarrierSetC1*) BarrierSet::barrier_set()->barrier_set_c1();
 
   Register obj = stub->obj()->as_register();
-  Register res = stub->result()->as_register();
   Register addr = stub->addr()->as_pointer_register();
-  Register tmp1 = stub->tmp1()->as_register();
-  Register tmp2 = stub->tmp2()->as_register();
+  Register slow_result = stub->slow_result()->as_register();
+  assert_different_registers(obj, addr, slow_result);
+  assert(slow_result == A0, "C1 must know about our slow call result register");
 
-  assert(res == V0, "result must arrive in V0");
-
-  if (res != obj) {
-    __ move(res, obj);
-  }
-
-  if (is_strong) {
-    // Check for object in cset.
-    __ li(tmp2, ShenandoahHeap::in_cset_fast_test_addr());
-    __ srli_d(tmp1, res, ShenandoahHeapRegion::region_size_bytes_shift_jint());
-    __ ldx_b(tmp2, tmp2, tmp1);
-    __ beqz(tmp2, *stub->continuation());
-  }
-
-  ce->store_parameter(res, 0);
+  ce->store_parameter(obj, 0);
   ce->store_parameter(addr, 1);
-  if (is_strong) {
-    if (is_native) {
-      __ call(bs->load_reference_barrier_strong_native_rt_code_blob()->code_begin(), relocInfo::runtime_call_type);
-    } else {
-      __ call(bs->load_reference_barrier_strong_rt_code_blob()->code_begin(), relocInfo::runtime_call_type);
-    }
-  } else if (is_weak) {
-    __ call(bs->load_reference_barrier_weak_rt_code_blob()->code_begin(), relocInfo::runtime_call_type);
-  } else {
-    assert(is_phantom, "only remaining strength");
-    __ call(bs->load_reference_barrier_phantom_rt_code_blob()->code_begin(), relocInfo::runtime_call_type);
+  __ call(bs->load_reference_barrier_stub(stub->decorators()), relocInfo::runtime_call_type);
+  if (obj != slow_result) {
+    __ move(obj, slow_result);
   }
 
   __ b(*stub->continuation());
@@ -532,89 +500,27 @@ void ShenandoahBarrierSetAssembler::gen_load_reference_barrier_stub(LIR_Assemble
 
 #define __ sasm->
 
-void ShenandoahBarrierSetAssembler::generate_c1_pre_barrier_runtime_stub(StubAssembler* sasm) {
-  __ prologue("shenandoah_pre_barrier", false);
-
-  // arg0 : previous value of memory
-
-  BarrierSet* bs = BarrierSet::barrier_set();
-
-  const Register pre_val = A0;
-  const Register thread = TREG;
-  const Register tmp = SCR1;
-
-  Address queue_index(thread, in_bytes(ShenandoahThreadLocalData::satb_mark_queue_index_offset()));
-  Address buffer(thread, in_bytes(ShenandoahThreadLocalData::satb_mark_queue_buffer_offset()));
-
-  Label done;
-  Label runtime;
-
-  // Is marking still active?
-  Address gc_state(thread, in_bytes(ShenandoahThreadLocalData::gc_state_offset()));
-  __ ld_b(tmp, gc_state);
-  __ andi(tmp, tmp, ShenandoahHeap::MARKING);
-  __ beqz(tmp, done);
-
-  // Can we store original value in the thread's buffer?
-  __ ld_d(tmp, queue_index);
-  __ beqz(tmp, runtime);
-
-  __ addi_d(tmp, tmp, -wordSize);
-  __ st_d(tmp, queue_index);
-  __ ld_d(SCR2, buffer);
-  __ add_d(tmp, tmp, SCR2);
-  __ load_parameter(0, SCR2);
-  __ st_d(SCR2, tmp, 0);
-  __ b(done);
-
-  __ bind(runtime);
-  __ push_call_clobbered_registers();
-  __ load_parameter(0, pre_val);
-  __ call_VM_leaf(CAST_FROM_FN_PTR(address, ShenandoahRuntime::write_barrier_pre), pre_val);
-  __ pop_call_clobbered_registers();
-  __ bind(done);
-
+void ShenandoahBarrierSetAssembler::keepalive_barrier_c1_runtime_stub(StubAssembler* sasm) {
+  __ prologue("shenandoah_keepalive_barrier", false);
+  const Register tmp_obj = A0;
+  const Register tmp1 = A1;
+  const Register tmp2 = A2;
+  __ push(RegSet::of(tmp1, tmp2, tmp_obj));
+  __ load_parameter(0, tmp_obj);
+  satb_barrier(sasm, noreg, tmp_obj, TREG, tmp1, tmp2);
+  __ pop(RegSet::of(tmp1, tmp2, tmp_obj));
   __ epilogue();
 }
 
-void ShenandoahBarrierSetAssembler::generate_c1_load_reference_barrier_runtime_stub(StubAssembler* sasm, DecoratorSet decorators) {
+void ShenandoahBarrierSetAssembler::load_reference_barrier_c1_runtime_stub(StubAssembler* sasm, DecoratorSet decorators) {
   __ prologue("shenandoah_load_reference_barrier", false);
-  __ bstrins_d(SP, R0, 3, 0);
-  // arg0 : object to be resolved
-
-  __ push_call_clobbered_registers_except(RegSet::of(V0));
-  __ load_parameter(0, A0);
-  __ load_parameter(1, A1);
-
-  bool is_strong  = ShenandoahBarrierSet::is_strong_access(decorators);
-  bool is_weak    = ShenandoahBarrierSet::is_weak_access(decorators);
-  bool is_phantom = ShenandoahBarrierSet::is_phantom_access(decorators);
-  bool is_native  = ShenandoahBarrierSet::is_native_access(decorators);
-  if (is_strong) {
-    if (is_native) {
-      __ li(RA, CAST_FROM_FN_PTR(address, ShenandoahRuntime::load_reference_barrier_strong));
-    } else {
-      if (UseCompressedOops) {
-        __ li(RA, CAST_FROM_FN_PTR(address, ShenandoahRuntime::load_reference_barrier_strong_narrow));
-      } else {
-        __ li(RA, CAST_FROM_FN_PTR(address, ShenandoahRuntime::load_reference_barrier_strong));
-      }
-    }
-  } else if (is_weak) {
-    assert(!is_native, "weak must not be called off-heap");
-    if (UseCompressedOops) {
-      __ li(RA, CAST_FROM_FN_PTR(address, ShenandoahRuntime::load_reference_barrier_weak_narrow));
-    } else {
-      __ li(RA, CAST_FROM_FN_PTR(address, ShenandoahRuntime::load_reference_barrier_weak));
-    }
-  } else {
-    assert(is_phantom, "only remaining strength");
-    assert(is_native, "phantom must only be called off-heap");
-    __ li(RA, CAST_FROM_FN_PTR(address, ShenandoahRuntime::load_reference_barrier_phantom));
-  }
-  __ jalr(RA);
-  __ pop_call_clobbered_registers_except(RegSet::of(V0));
-
+  const Register tmp_obj = A0;
+  const Register tmp_addr = A1;
+  __ push(RegSet::of(tmp_addr));
+  __ load_parameter(0, tmp_obj);
+  __ load_parameter(1, tmp_addr);
+  load_reference_barrier(sasm, tmp_obj, Address(tmp_addr, 0), decorators);
+  __ pop(RegSet::of(tmp_addr));
   __ epilogue();
 }
 

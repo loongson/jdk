@@ -2637,7 +2637,7 @@ class StubGenerator: public StubCodeGenerator {
     __ move(scratch_length, length); // length (elements count, 32-bits value)
     __ blt(scratch_length, R0, L_failed);
 
-    __ load_klass(scratch_src_klass, src);
+    __ load_narrow_klass(scratch_src_klass, src);
 #ifdef ASSERT
     // assert(src->klass() != nullptr);
     {
@@ -2652,6 +2652,7 @@ class StubGenerator: public StubCodeGenerator {
       __ block_comment("} assert klasses not null done");
     }
 #endif
+    __ decode_klass_not_null(scratch_src_klass);
 
     // Load layout helper (32-bits)
     //

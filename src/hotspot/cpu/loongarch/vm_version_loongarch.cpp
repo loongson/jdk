@@ -466,6 +466,10 @@ void VM_Version::get_processor_features() {
     FLAG_SET_DEFAULT(UseCopySignIntrinsic, true);
   }
 
+  if (FLAG_IS_DEFAULT(UseSignumIntrinsic)) {
+    FLAG_SET_DEFAULT(UseSignumIntrinsic, true);
+  }
+
   if (UseLSX) {
     if (FLAG_IS_DEFAULT(UsePopCountInstruction)) {
       FLAG_SET_DEFAULT(UsePopCountInstruction, true);

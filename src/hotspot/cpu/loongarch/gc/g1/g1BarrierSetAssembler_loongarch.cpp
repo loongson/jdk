@@ -107,30 +107,29 @@ void G1BarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembler* mas
 
   __ srli_d(start, start, CardTable::card_shift());
   __ srli_d(count, count, CardTable::card_shift());
-  __ sub_d(count, count, start); // Number of bytes to mark - 1.
 
-  // Add card table base offset to start.
+  // Add card table base offset to get card addresses directly.
   Address card_table_address(TREG, G1ThreadLocalData::card_table_base_offset());
   __ ld_d(tmp, card_table_address);
-  __ add_d(start, start, tmp);
+  __ add_d(start, start, tmp); // start := first card address
+  __ add_d(count, count, tmp); // count := last card address
 
+  // Iterate from start card to end card (inclusive).
   __ bind(loop);
   if (UseCondCardMark) {
-    __ add_d(tmp, start, count);
-    __ ld_bu(tmp, Address(tmp, 0));
+    __ ld_bu(tmp, Address(start, 0));
     static_assert((uint)G1CardTable::clean_card_val() == 0xff, "must be");
     __ addi_d(tmp, tmp, -G1CardTable::clean_card_val()); // Convert to clean_card_value() to a comparison
                                                          // against zero to avoid use of an extra temp.
     __ bnez(tmp, next);
   }
 
-  __ add_d(tmp, start, count);
   static_assert(G1CardTable::dirty_card_val() == 0, "must be to use R0");
-  __ st_b(R0, Address(tmp, 0));
+  __ st_b(R0, Address(start, 0));
 
   __ bind(next);
-  __ addi_d(count, count, -1);
-  __ bge(count, R0, loop);
+  __ addi_d(start, start, 1);
+  __ bge(count, start, loop);
 
   __ bind(done);
 }

@@ -1920,7 +1920,7 @@ void C2_MacroAssembler::reduce(Register dst, Register src, FloatRegister vsrc, F
     switch (type) {
       case T_BYTE:  vpickve2gr_bu(dst, tmp1, 0); break;
       case T_SHORT: vpickve2gr_hu(dst, tmp1, 0); break;
-      case T_INT:   vpickve2gr_wu(dst, tmp1, 0); break;
+      case T_INT:   vpickve2gr_w(dst, tmp1, 0); break;
       case T_LONG:  vpickve2gr_du(dst, tmp1, 0); break;
       default:
         ShouldNotReachHere();

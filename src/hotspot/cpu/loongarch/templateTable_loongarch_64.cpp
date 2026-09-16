@@ -2767,11 +2767,11 @@ void TemplateTable::jvmti_post_field_mod(Register cache, Register index, bool is
   }
 }
 
-// used registers : T0, T1, T2, T3, T8
+// used registers : T0, T1, T2, T3, T6
 // T1 : flags
 // T2 : off
 // T3 : obj
-// T8 : volatile bit
+// T6 : volatile bit
 // see ConstantPoolCacheEntry::set_field for more info
 void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteControl rc) {
   transition(vtos, vtos);
@@ -2784,7 +2784,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   const Register flags     = T1;
   const Register bc        = T3;
 
-  const Register scratch = T8;
+  const Register scratch = T6;
 
   resolve_cache_and_index_for_field(byte_no, cache, index);
   jvmti_post_field_mod(cache, index, is_static);
@@ -3048,7 +3048,7 @@ void TemplateTable::jvmti_post_fast_field_mod() {
 void TemplateTable::fast_storefield(TosState state) {
   transition(state, vtos);
 
-  const Register scratch = T8;
+  const Register scratch = T6;
 
   ByteSize base = ConstantPoolCache::base_offset();
 

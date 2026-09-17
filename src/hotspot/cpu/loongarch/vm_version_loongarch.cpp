@@ -36,7 +36,7 @@
 # include "os_linux.inline.hpp"
 #endif
 
-VM_Version::CpuidInfo VM_Version::_cpuid_info   = { 0, };
+VM_Version::CpuidInfo VM_Version::_cpuid_info = {};
 bool VM_Version::_cpu_info_is_initialized = false;
 
 static BufferBlob* stub_blob;

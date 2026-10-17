@@ -155,10 +155,6 @@ void VM_Version::get_processor_features() {
   get_cpu_info_stub(&_cpuid_info);
   _features |= get_feature_flags_by_cpucfg();
 
-  if (UseG1GC && FLAG_IS_DEFAULT(MaxGCPauseMillis)) {
-    FLAG_SET_DEFAULT(MaxGCPauseMillis, 150);
-  }
-
   if (supports_lsx()) {
     if (FLAG_IS_DEFAULT(UseLSX)) {
       FLAG_SET_DEFAULT(UseLSX, true);
@@ -468,6 +464,10 @@ void VM_Version::get_processor_features() {
 
   if (FLAG_IS_DEFAULT(UseCopySignIntrinsic)) {
     FLAG_SET_DEFAULT(UseCopySignIntrinsic, true);
+  }
+
+  if (FLAG_IS_DEFAULT(UseSignumIntrinsic)) {
+    FLAG_SET_DEFAULT(UseSignumIntrinsic, true);
   }
 
   if (UseLSX) {

@@ -4994,11 +4994,9 @@ class StubGenerator: public StubCodeGenerator {
     __ blt(nidx, SCR1, loop_four);
 
     __ bind(loop_eight);
-
     __ addi_d(nidx, nidx, -8);
     __ addi_d(oldArr, oldArr, -32);
     __ addi_d(newArr, newArr, -32);
-
     __ xvld(FT0, oldArr, 4);
     __ xvld(FT1, oldArr, 0);
     __ xvsrl_w(FT0, FT0, vShiftCount);
@@ -5012,13 +5010,12 @@ class StubGenerator: public StubCodeGenerator {
     __ addi_d(nidx, nidx, -4);
     __ addi_d(oldArr, oldArr, -16);
     __ addi_d(newArr, newArr, -16);
-    __ xvld(FT0, oldArr, 4);
-    __ xvld(FT1, oldArr, 0);
-    __ xvsrl_w(FT0, FT0, vShiftCount);
-    __ xvsll_w(FT1, FT1, vShiftRevCount);
+    __ vld(FT0, oldArr, 4);
+    __ vld(FT1, oldArr, 0);
+    __ vsrl_w(FT0, FT0, vShiftCount);
+    __ vsll_w(FT1, FT1, vShiftRevCount);
     __ vor_v(FT0, FT0, FT1);
     __ vst(FT0, newArr, 0);
-
     __ b(loop_four);
 
     __ bind(once);
@@ -5032,7 +5029,6 @@ class StubGenerator: public StubCodeGenerator {
     __ sll_w(SCR2, SCR2, shiftRevCount);
     __ orr(SCR1, SCR1, SCR2);
     __ st_w(SCR1, newArr, 0);
-
     __ b(once);
 
     __ bind(exit);

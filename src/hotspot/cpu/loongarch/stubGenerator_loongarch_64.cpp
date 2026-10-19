@@ -1182,79 +1182,82 @@ class StubGenerator: public StubCodeGenerator {
     __ nop();
     __ nop();
 
-    // 1:
-    __ ld_b(AT, A0, 0);
-    __ st_b(AT, A1, 0);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
+    {
+      UnsafeMemoryAccessMark umam(this, true, true);
+      // 1:
+      __ ld_b(AT, A0, 0);
+      __ st_b(AT, A1, 0);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
+      __ nop();
+      __ nop();
 
-    // 2:
-    __ ld_h(AT, A0, 0);
-    __ st_h(AT, A1, 0);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
+      // 2:
+      __ ld_h(AT, A0, 0);
+      __ st_h(AT, A1, 0);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
+      __ nop();
+      __ nop();
 
-    // 3:
-    __ ld_h(AT, A0, 0);
-    __ ld_b(A2, A0, 2);
-    __ st_h(AT, A1, 0);
-    __ st_b(A2, A1, 2);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 3:
+      __ ld_h(AT, A0, 0);
+      __ ld_b(A2, A0, 2);
+      __ st_h(AT, A1, 0);
+      __ st_b(A2, A1, 2);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 4:
-    __ ld_w(AT, A0, 0);
-    __ st_w(AT, A1, 0);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
+      // 4:
+      __ ld_w(AT, A0, 0);
+      __ st_w(AT, A1, 0);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
+      __ nop();
+      __ nop();
 
-    // 5:
-    __ ld_w(AT, A0, 0);
-    __ ld_b(A2, A0, 4);
-    __ st_w(AT, A1, 0);
-    __ st_b(A2, A1, 4);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 5:
+      __ ld_w(AT, A0, 0);
+      __ ld_b(A2, A0, 4);
+      __ st_w(AT, A1, 0);
+      __ st_b(A2, A1, 4);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 6:
-    __ ld_w(AT, A0, 0);
-    __ ld_h(A2, A0, 4);
-    __ st_w(AT, A1, 0);
-    __ st_h(A2, A1, 4);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 6:
+      __ ld_w(AT, A0, 0);
+      __ ld_h(A2, A0, 4);
+      __ st_w(AT, A1, 0);
+      __ st_h(A2, A1, 4);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 7:
-    __ ld_w(AT, A0, 0);
-    __ ld_w(A2, A0, 3);
-    __ st_w(AT, A1, 0);
-    __ st_w(A2, A1, 3);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 7:
+      __ ld_w(AT, A0, 0);
+      __ ld_w(A2, A0, 3);
+      __ st_w(AT, A1, 0);
+      __ st_w(A2, A1, 3);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 8:
-    __ ld_d(AT, A0, 0);
-    __ st_d(AT, A1, 0);
+      // 8:
+      __ ld_d(AT, A0, 0);
+      __ st_d(AT, A1, 0);
+    }
     __ move(A0, R0);
     __ jr(RA);
 
@@ -1266,242 +1269,249 @@ class StubGenerator: public StubCodeGenerator {
     __ nop();
     __ nop();
 
-    // 9:
-    __ ld_d(AT, A0, 0);
-    __ ld_b(A2, A0, 8);
-    __ st_d(AT, A1, 0);
-    __ st_b(A2, A1, 8);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+    {
+      UnsafeMemoryAccessMark umam(this, true, true);
+      // 9:
+      __ ld_d(AT, A0, 0);
+      __ ld_b(A2, A0, 8);
+      __ st_d(AT, A1, 0);
+      __ st_b(A2, A1, 8);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 10:
-    __ ld_d(AT, A0, 0);
-    __ ld_h(A2, A0, 8);
-    __ st_d(AT, A1, 0);
-    __ st_h(A2, A1, 8);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 10:
+      __ ld_d(AT, A0, 0);
+      __ ld_h(A2, A0, 8);
+      __ st_d(AT, A1, 0);
+      __ st_h(A2, A1, 8);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 11:
-    __ ld_d(AT, A0, 0);
-    __ ld_w(A2, A0, 7);
-    __ st_d(AT, A1, 0);
-    __ st_w(A2, A1, 7);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 11:
+      __ ld_d(AT, A0, 0);
+      __ ld_w(A2, A0, 7);
+      __ st_d(AT, A1, 0);
+      __ st_w(A2, A1, 7);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 12:
-    __ ld_d(AT, A0, 0);
-    __ ld_w(A2, A0, 8);
-    __ st_d(AT, A1, 0);
-    __ st_w(A2, A1, 8);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 12:
+      __ ld_d(AT, A0, 0);
+      __ ld_w(A2, A0, 8);
+      __ st_d(AT, A1, 0);
+      __ st_w(A2, A1, 8);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 13:
-    __ ld_d(AT, A0, 0);
-    __ ld_d(A2, A0, 5);
-    __ st_d(AT, A1, 0);
-    __ st_d(A2, A1, 5);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 13:
+      __ ld_d(AT, A0, 0);
+      __ ld_d(A2, A0, 5);
+      __ st_d(AT, A1, 0);
+      __ st_d(A2, A1, 5);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 14:
-    __ ld_d(AT, A0, 0);
-    __ ld_d(A2, A0, 6);
-    __ st_d(AT, A1, 0);
-    __ st_d(A2, A1, 6);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 14:
+      __ ld_d(AT, A0, 0);
+      __ ld_d(A2, A0, 6);
+      __ st_d(AT, A1, 0);
+      __ st_d(A2, A1, 6);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 15:
-    __ ld_d(AT, A0, 0);
-    __ ld_d(A2, A0, 7);
-    __ st_d(AT, A1, 0);
-    __ st_d(A2, A1, 7);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 15:
+      __ ld_d(AT, A0, 0);
+      __ ld_d(A2, A0, 7);
+      __ st_d(AT, A1, 0);
+      __ st_d(A2, A1, 7);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 16:
-    __ vld(F0, A0, 0);
-    __ vst(F0, A1, 0);
+      // 16:
+      __ vld(F0, A0, 0);
+      __ vst(F0, A1, 0);
+    }
     __ move(A0, R0);
     __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
 
     if (!UseLASX)
         return;
 
-    // 17:
-    __ vld(F0, A0, 0);
-    __ ld_b(AT, A0, 16);
-    __ vst(F0, A1, 0);
-    __ st_b(AT, A1, 16);
-    __ move(A0, R0);
-    __ jr(RA);
+    __ nop();
+    __ nop();
     __ nop();
     __ nop();
 
-    // 18:
-    __ vld(F0, A0, 0);
-    __ ld_h(AT, A0, 16);
-    __ vst(F0, A1, 0);
-    __ st_h(AT, A1, 16);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+    {
+      UnsafeMemoryAccessMark umam(this, true, true);
+      // 17:
+      __ vld(F0, A0, 0);
+      __ ld_b(AT, A0, 16);
+      __ vst(F0, A1, 0);
+      __ st_b(AT, A1, 16);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 19:
-    __ vld(F0, A0, 0);
-    __ ld_w(AT, A0, 15);
-    __ vst(F0, A1, 0);
-    __ st_w(AT, A1, 15);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 18:
+      __ vld(F0, A0, 0);
+      __ ld_h(AT, A0, 16);
+      __ vst(F0, A1, 0);
+      __ st_h(AT, A1, 16);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 20:
-    __ vld(F0, A0, 0);
-    __ ld_w(AT, A0, 16);
-    __ vst(F0, A1, 0);
-    __ st_w(AT, A1, 16);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 19:
+      __ vld(F0, A0, 0);
+      __ ld_w(AT, A0, 15);
+      __ vst(F0, A1, 0);
+      __ st_w(AT, A1, 15);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 21:
-    __ vld(F0, A0, 0);
-    __ ld_d(AT, A0, 13);
-    __ vst(F0, A1, 0);
-    __ st_d(AT, A1, 13);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 20:
+      __ vld(F0, A0, 0);
+      __ ld_w(AT, A0, 16);
+      __ vst(F0, A1, 0);
+      __ st_w(AT, A1, 16);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 22:
-    __ vld(F0, A0, 0);
-    __ ld_d(AT, A0, 14);
-    __ vst(F0, A1, 0);
-    __ st_d(AT, A1, 14);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 21:
+      __ vld(F0, A0, 0);
+      __ ld_d(AT, A0, 13);
+      __ vst(F0, A1, 0);
+      __ st_d(AT, A1, 13);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 23:
-    __ vld(F0, A0, 0);
-    __ ld_d(AT, A0, 15);
-    __ vst(F0, A1, 0);
-    __ st_d(AT, A1, 15);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 22:
+      __ vld(F0, A0, 0);
+      __ ld_d(AT, A0, 14);
+      __ vst(F0, A1, 0);
+      __ st_d(AT, A1, 14);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 24:
-    __ vld(F0, A0, 0);
-    __ ld_d(AT, A0, 16);
-    __ vst(F0, A1, 0);
-    __ st_d(AT, A1, 16);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 23:
+      __ vld(F0, A0, 0);
+      __ ld_d(AT, A0, 15);
+      __ vst(F0, A1, 0);
+      __ st_d(AT, A1, 15);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 25:
-    __ vld(F0, A0, 0);
-    __ vld(F1, A0, 9);
-    __ vst(F0, A1, 0);
-    __ vst(F1, A1, 9);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 24:
+      __ vld(F0, A0, 0);
+      __ ld_d(AT, A0, 16);
+      __ vst(F0, A1, 0);
+      __ st_d(AT, A1, 16);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 26:
-    __ vld(F0, A0, 0);
-    __ vld(F1, A0, 10);
-    __ vst(F0, A1, 0);
-    __ vst(F1, A1, 10);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 25:
+      __ vld(F0, A0, 0);
+      __ vld(F1, A0, 9);
+      __ vst(F0, A1, 0);
+      __ vst(F1, A1, 9);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 27:
-    __ vld(F0, A0, 0);
-    __ vld(F1, A0, 11);
-    __ vst(F0, A1, 0);
-    __ vst(F1, A1, 11);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 26:
+      __ vld(F0, A0, 0);
+      __ vld(F1, A0, 10);
+      __ vst(F0, A1, 0);
+      __ vst(F1, A1, 10);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 28:
-    __ vld(F0, A0, 0);
-    __ vld(F1, A0, 12);
-    __ vst(F0, A1, 0);
-    __ vst(F1, A1, 12);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 27:
+      __ vld(F0, A0, 0);
+      __ vld(F1, A0, 11);
+      __ vst(F0, A1, 0);
+      __ vst(F1, A1, 11);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 29:
-    __ vld(F0, A0, 0);
-    __ vld(F1, A0, 13);
-    __ vst(F0, A1, 0);
-    __ vst(F1, A1, 13);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 28:
+      __ vld(F0, A0, 0);
+      __ vld(F1, A0, 12);
+      __ vst(F0, A1, 0);
+      __ vst(F1, A1, 12);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 30:
-    __ vld(F0, A0, 0);
-    __ vld(F1, A0, 14);
-    __ vst(F0, A1, 0);
-    __ vst(F1, A1, 14);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 29:
+      __ vld(F0, A0, 0);
+      __ vld(F1, A0, 13);
+      __ vst(F0, A1, 0);
+      __ vst(F1, A1, 13);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 31:
-    __ vld(F0, A0, 0);
-    __ vld(F1, A0, 15);
-    __ vst(F0, A1, 0);
-    __ vst(F1, A1, 15);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 30:
+      __ vld(F0, A0, 0);
+      __ vld(F1, A0, 14);
+      __ vst(F0, A1, 0);
+      __ vst(F1, A1, 14);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 32:
-    __ xvld(F0, A0, 0);
-    __ xvst(F0, A1, 0);
+      // 31:
+      __ vld(F0, A0, 0);
+      __ vld(F1, A0, 15);
+      __ vst(F0, A1, 0);
+      __ vst(F1, A1, 15);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
+
+      // 32:
+      __ xvld(F0, A0, 0);
+      __ xvst(F0, A1, 0);
+    }
     __ move(A0, R0);
     __ jr(RA);
   }
@@ -1603,92 +1613,93 @@ class StubGenerator: public StubCodeGenerator {
     __ nop();
     __ nop();
 
-    // 1:
-    __ ld_h(AT, A0, 0);
-    __ st_h(AT, A1, 0);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-
-    // 2:
-    __ ld_w(AT, A0, 0);
-    __ st_w(AT, A1, 0);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-
-    // 3:
-    __ ld_w(AT, A0, 0);
-    __ ld_h(A2, A0, 4);
-    __ st_w(AT, A1, 0);
-    __ st_h(A2, A1, 4);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-
-    // 4:
-    __ ld_d(AT, A0, 0);
-    __ st_d(AT, A1, 0);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-
-    // 5:
-    __ ld_d(AT, A0, 0);
-    __ ld_h(A2, A0, 8);
-    __ st_d(AT, A1, 0);
-    __ st_h(A2, A1, 8);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-
-    // 6:
-    __ ld_d(AT, A0, 0);
-    __ ld_w(A2, A0, 8);
-    __ st_d(AT, A1, 0);
-    __ st_w(A2, A1, 8);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-
-    // 7:
-    __ ld_d(AT, A0, 0);
-    __ ld_d(A2, A0, 6);
-    __ st_d(AT, A1, 0);
-    __ st_d(A2, A1, 6);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-
-    // 8:
-    if (UseLSX) {
-      __ vld(F0, A0, 0);
-      __ vst(F0, A1, 0);
+    {
+      UnsafeMemoryAccessMark umam(this, true, true);
+      // 1:
+      __ ld_h(AT, A0, 0);
+      __ st_h(AT, A1, 0);
       __ move(A0, R0);
       __ jr(RA);
       __ nop();
       __ nop();
-    } else {
+      __ nop();
+      __ nop();
+
+      // 2:
+      __ ld_w(AT, A0, 0);
+      __ st_w(AT, A1, 0);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
+      __ nop();
+      __ nop();
+
+      // 3:
+      __ ld_w(AT, A0, 0);
+      __ ld_h(A2, A0, 4);
+      __ st_w(AT, A1, 0);
+      __ st_h(A2, A1, 4);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
+
+      // 4:
       __ ld_d(AT, A0, 0);
-      __ ld_d(A2, A0, 8);
       __ st_d(AT, A1, 0);
-      __ st_d(A2, A1, 8);
       __ move(A0, R0);
       __ jr(RA);
+      __ nop();
+      __ nop();
+      __ nop();
+      __ nop();
+
+      // 5:
+      __ ld_d(AT, A0, 0);
+      __ ld_h(A2, A0, 8);
+      __ st_d(AT, A1, 0);
+      __ st_h(A2, A1, 8);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
+
+      // 6:
+      __ ld_d(AT, A0, 0);
+      __ ld_w(A2, A0, 8);
+      __ st_d(AT, A1, 0);
+      __ st_w(A2, A1, 8);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
+
+      // 7:
+      __ ld_d(AT, A0, 0);
+      __ ld_d(A2, A0, 6);
+      __ st_d(AT, A1, 0);
+      __ st_d(A2, A1, 6);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
+
+      // 8:
+      if (UseLSX) {
+        __ vld(F0, A0, 0);
+        __ vst(F0, A1, 0);
+        __ nop();
+        __ nop();
+      } else {
+        __ ld_d(AT, A0, 0);
+        __ ld_d(A2, A0, 8);
+        __ st_d(AT, A1, 0);
+        __ st_d(A2, A1, 8);
+      }
     }
+    __ move(A0, R0);
+    __ jr(RA);
 
     if (!UseLASX)
         return;
@@ -1696,79 +1707,82 @@ class StubGenerator: public StubCodeGenerator {
     __ nop();
     __ nop();
 
-    // 9:
-    __ vld(F0, A0, 0);
-    __ ld_h(AT, A0, 16);
-    __ vst(F0, A1, 0);
-    __ st_h(AT, A1, 16);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+    {
+      UnsafeMemoryAccessMark umam(this, true, true);
+      // 9:
+      __ vld(F0, A0, 0);
+      __ ld_h(AT, A0, 16);
+      __ vst(F0, A1, 0);
+      __ st_h(AT, A1, 16);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 10:
-    __ vld(F0, A0, 0);
-    __ ld_w(AT, A0, 16);
-    __ vst(F0, A1, 0);
-    __ st_w(AT, A1, 16);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 10:
+      __ vld(F0, A0, 0);
+      __ ld_w(AT, A0, 16);
+      __ vst(F0, A1, 0);
+      __ st_w(AT, A1, 16);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 11:
-    __ vld(F0, A0, 0);
-    __ ld_d(AT, A0, 14);
-    __ vst(F0, A1, 0);
-    __ st_d(AT, A1, 14);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 11:
+      __ vld(F0, A0, 0);
+      __ ld_d(AT, A0, 14);
+      __ vst(F0, A1, 0);
+      __ st_d(AT, A1, 14);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 12:
-    __ vld(F0, A0, 0);
-    __ ld_d(AT, A0, 16);
-    __ vst(F0, A1, 0);
-    __ st_d(AT, A1, 16);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 12:
+      __ vld(F0, A0, 0);
+      __ ld_d(AT, A0, 16);
+      __ vst(F0, A1, 0);
+      __ st_d(AT, A1, 16);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 13:
-    __ vld(F0, A0, 0);
-    __ vld(F1, A0, 10);
-    __ vst(F0, A1, 0);
-    __ vst(F1, A1, 10);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 13:
+      __ vld(F0, A0, 0);
+      __ vld(F1, A0, 10);
+      __ vst(F0, A1, 0);
+      __ vst(F1, A1, 10);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 14:
-    __ vld(F0, A0, 0);
-    __ vld(F1, A0, 12);
-    __ vst(F0, A1, 0);
-    __ vst(F1, A1, 12);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 14:
+      __ vld(F0, A0, 0);
+      __ vld(F1, A0, 12);
+      __ vst(F0, A1, 0);
+      __ vst(F1, A1, 12);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 15:
-    __ vld(F0, A0, 0);
-    __ vld(F1, A0, 14);
-    __ vst(F0, A1, 0);
-    __ vst(F1, A1, 14);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+      // 15:
+      __ vld(F0, A0, 0);
+      __ vld(F1, A0, 14);
+      __ vst(F0, A1, 0);
+      __ vst(F1, A1, 14);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 16:
-    __ xvld(F0, A0, 0);
-    __ xvst(F0, A1, 0);
+      // 16:
+      __ xvld(F0, A0, 0);
+      __ xvst(F0, A1, 0);
+    }
     __ move(A0, R0);
     __ jr(RA);
   }
@@ -1870,113 +1884,117 @@ class StubGenerator: public StubCodeGenerator {
     __ nop();
     __ nop();
 
-    // 1:
-    __ ld_w(AT, A0, 0);
-    __ st_w(AT, A1, 0);
+    {
+      UnsafeMemoryAccessMark umam(this, true, true);
+      // 1:
+      __ ld_w(AT, A0, 0);
+      __ st_w(AT, A1, 0);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
+      __ nop();
+      __ nop();
+
+      // 2:
+      __ ld_d(AT, A0, 0);
+      __ st_d(AT, A1, 0);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
+      __ nop();
+      __ nop();
+
+      // 3:
+      __ ld_d(AT, A0, 0);
+      __ ld_w(A2, A0, 8);
+      __ st_d(AT, A1, 0);
+      __ st_w(A2, A1, 8);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
+
+      // 4:
+      if (UseLSX) {
+        __ vld(F0, A0, 0);
+        __ vst(F0, A1, 0);
+        __ move(A0, R0);
+        __ jr(RA);
+        __ nop();
+        __ nop();
+      } else {
+        __ ld_d(AT, A0, 0);
+        __ ld_d(A2, A0, 8);
+        __ st_d(AT, A1, 0);
+        __ st_d(A2, A1, 8);
+        __ move(A0, R0);
+        __ jr(RA);
+      }
+      __ nop();
+      __ nop();
+
+      // 5:
+      if (UseLSX) {
+        __ vld(F0, A0, 0);
+        __ ld_w(AT, A0, 16);
+        __ vst(F0, A1, 0);
+        __ st_w(AT, A1, 16);
+        __ move(A0, R0);
+        __ jr(RA);
+        __ nop();
+        __ nop();
+      } else {
+        __ ld_d(AT, A0, 0);
+        __ ld_d(A2, A0, 8);
+        __ ld_w(A3, A0, 16);
+        __ st_d(AT, A1, 0);
+        __ st_d(A2, A1, 8);
+        __ st_w(A3, A1, 16);
+        __ move(A0, R0);
+        __ jr(RA);
+      }
+
+      // 6:
+      if (UseLSX) {
+        __ vld(F0, A0, 0);
+        __ ld_d(AT, A0, 16);
+        __ vst(F0, A1, 0);
+        __ st_d(AT, A1, 16);
+        __ nop();
+        __ nop();
+      } else {
+        __ ld_d(AT, A0, 0);
+        __ ld_d(A2, A0, 8);
+        __ ld_d(A3, A0, 16);
+        __ st_d(AT, A1, 0);
+        __ st_d(A2, A1, 8);
+        __ st_d(A3, A1, 16);
+      }
+    }
     __ move(A0, R0);
     __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-
-    // 2:
-    __ ld_d(AT, A0, 0);
-    __ st_d(AT, A1, 0);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-    __ nop();
-    __ nop();
-
-    // 3:
-    __ ld_d(AT, A0, 0);
-    __ ld_w(A2, A0, 8);
-    __ st_d(AT, A1, 0);
-    __ st_w(A2, A1, 8);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
-
-    // 4:
-    if (UseLSX) {
-      __ vld(F0, A0, 0);
-      __ vst(F0, A1, 0);
-      __ move(A0, R0);
-      __ jr(RA);
-      __ nop();
-      __ nop();
-    } else {
-      __ ld_d(AT, A0, 0);
-      __ ld_d(A2, A0, 8);
-      __ st_d(AT, A1, 0);
-      __ st_d(A2, A1, 8);
-      __ move(A0, R0);
-      __ jr(RA);
-    }
-    __ nop();
-    __ nop();
-
-    // 5:
-    if (UseLSX) {
-      __ vld(F0, A0, 0);
-      __ ld_w(AT, A0, 16);
-      __ vst(F0, A1, 0);
-      __ st_w(AT, A1, 16);
-      __ move(A0, R0);
-      __ jr(RA);
-      __ nop();
-      __ nop();
-    } else {
-      __ ld_d(AT, A0, 0);
-      __ ld_d(A2, A0, 8);
-      __ ld_w(A3, A0, 16);
-      __ st_d(AT, A1, 0);
-      __ st_d(A2, A1, 8);
-      __ st_w(A3, A1, 16);
-      __ move(A0, R0);
-      __ jr(RA);
-    }
-
-    // 6:
-    if (UseLSX) {
-      __ vld(F0, A0, 0);
-      __ ld_d(AT, A0, 16);
-      __ vst(F0, A1, 0);
-      __ st_d(AT, A1, 16);
-      __ move(A0, R0);
-      __ jr(RA);
-      __ nop();
-      __ nop();
-    } else {
-      __ ld_d(AT, A0, 0);
-      __ ld_d(A2, A0, 8);
-      __ ld_d(A3, A0, 16);
-      __ st_d(AT, A1, 0);
-      __ st_d(A2, A1, 8);
-      __ st_d(A3, A1, 16);
-      __ move(A0, R0);
-      __ jr(RA);
-    }
 
     if (!UseLASX)
         return;
 
-    // 7:
-    __ vld(F0, A0, 0);
-    __ vld(F1, A0, 12);
-    __ vst(F0, A1, 0);
-    __ vst(F1, A1, 12);
-    __ move(A0, R0);
-    __ jr(RA);
-    __ nop();
-    __ nop();
+    {
+      UnsafeMemoryAccessMark umam(this, true, true);
+      // 7:
+      __ vld(F0, A0, 0);
+      __ vld(F1, A0, 12);
+      __ vst(F0, A1, 0);
+      __ vst(F1, A1, 12);
+      __ move(A0, R0);
+      __ jr(RA);
+      __ nop();
+      __ nop();
 
-    // 8:
-    __ xvld(F0, A0, 0);
-    __ xvst(F0, A1, 0);
+      // 8:
+      __ xvld(F0, A0, 0);
+      __ xvst(F0, A1, 0);
+    }
     __ move(A0, R0);
     __ jr(RA);
   }
@@ -2192,11 +2210,11 @@ class StubGenerator: public StubCodeGenerator {
         bs->copy_load_at(_masm, decorators, type, 8, T8, Address(A0, 0),  gct1);
         bs->copy_load_at(_masm, decorators, type, 8, A2, Address(A0, 8),  gct1);
         bs->copy_load_at(_masm, decorators, type, 8, A3, Address(A0, 16), gct1);
-        bs->copy_load_at(_masm, decorators, type, 8, A4, Address(A0, 32), gct1);
+        bs->copy_load_at(_masm, decorators, type, 8, A4, Address(A0, 24), gct1);
         bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 0),  T8, gct1, gct2, gct3);
         bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 8),  A2, gct1, gct2, gct3);
         bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 16), A3, gct1, gct2, gct3);
-        bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 32), A4, gct1, gct2, gct3);
+        bs->copy_store_at(_masm, decorators, type, 8, Address(A1, 24), A4, gct1, gct2, gct3);
       }
     }
 

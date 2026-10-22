@@ -31,8 +31,6 @@
 #include "utilities/sizes.hpp"
 
 class VM_Version: public Abstract_VM_Version {
-  friend class JVMCIVMStructs;
-
 public:
 
   union LoongArch_Cpucfg_Id0 {

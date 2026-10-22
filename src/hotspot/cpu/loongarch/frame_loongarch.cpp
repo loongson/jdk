@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2025, Loongson Technology. All rights reserved.
+ * Copyright (c) 2015, 2026, Loongson Technology. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -443,11 +443,11 @@ frame frame::sender_for_interpreter_frame(RegisterMap* map) const {
   // we don't have to always save FP on entry and exit to c2 compiled
   // code, on entry will be enough.
 
-#ifdef COMPILER2_OR_JVMCI
+#ifdef COMPILER2
   if (map->update_map()) {
     update_map_with_saved_link(map, (intptr_t**) addr_at(link_offset));
   }
-#endif // COMPILER2_OR_JVMCI
+#endif // COMPILER2
 
   if (Continuation::is_return_barrier_entry(sender_pc())) {
     if (map->walk_cont()) { // about to walk into an h-stack

@@ -3985,7 +3985,7 @@ void MacroAssembler::cmp_cmov(Register      op1,
 
 void MacroAssembler::membar(Membar_mask_bits hint){
   address prev = pc() - NativeInstruction::sync_instruction_size;
-  address last = code()->last_insn();
+  address last = code()->last_merge_candidate();
   if (last != nullptr && ((NativeInstruction*)last)->is_sync() && prev == last) {
     NativeMembar *membar = (NativeMembar*)prev;
 #ifndef PRODUCT
@@ -3998,7 +3998,7 @@ void MacroAssembler::membar(Membar_mask_bits hint){
     // e.g. LoadLoad and LoadLoad|LoadStore to LoadLoad|LoadStore
     membar->set_hint(membar->get_hint() & (~hint & 0xF));
   } else {
-    code()->set_last_insn(pc());
+    code()->set_last_merge_candidate(pc());
     Assembler::membar(hint);
   }
 }

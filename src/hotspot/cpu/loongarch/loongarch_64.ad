@@ -842,13 +842,16 @@ public:
   };
 };
 
-bool is_CAS(int opcode);
+bool is_CAS(int opcode, bool maybe_volatile);
 bool use_AMO(int opcode);
 
 bool unnecessary_acquire(const Node *barrier);
 bool unnecessary_release(const Node *barrier);
 bool unnecessary_volatile(const Node *barrier);
 bool needs_releasing_store(const Node *store);
+
+// predicate controlling translation of CompareAndSwapX
+bool needs_acquiring_load_reserved(const Node *load);
 
 %} // end source_hpp
 
@@ -2182,7 +2185,7 @@ int MachPrologNode::reloc() const {
   return 0; // a large enough number
 }
 
-bool is_CAS(int opcode)
+bool is_CAS(int opcode, bool maybe_volatile)
 {
   switch(opcode) {
   // We handle these
@@ -2192,12 +2195,6 @@ bool is_CAS(int opcode)
   case Op_CompareAndSwapL:
   case Op_CompareAndSwapP:
   case Op_CompareAndSwapN:
-  case Op_ShenandoahCompareAndSwapP:
-  case Op_ShenandoahCompareAndSwapN:
-  case Op_ShenandoahWeakCompareAndSwapP:
-  case Op_ShenandoahWeakCompareAndSwapN:
-  case Op_ShenandoahCompareAndExchangeP:
-  case Op_ShenandoahCompareAndExchangeN:
   case Op_GetAndSetB:
   case Op_GetAndSetS:
   case Op_GetAndSetI:
@@ -2209,6 +2206,19 @@ bool is_CAS(int opcode)
   case Op_GetAndAddI:
   case Op_GetAndAddL:
     return true;
+  case Op_CompareAndExchangeI:
+  case Op_CompareAndExchangeN:
+  case Op_CompareAndExchangeB:
+  case Op_CompareAndExchangeS:
+  case Op_CompareAndExchangeL:
+  case Op_CompareAndExchangeP:
+  case Op_WeakCompareAndSwapB:
+  case Op_WeakCompareAndSwapS:
+  case Op_WeakCompareAndSwapI:
+  case Op_WeakCompareAndSwapL:
+  case Op_WeakCompareAndSwapP:
+  case Op_WeakCompareAndSwapN:
+    return maybe_volatile;
   default:
     return false;
   }
@@ -2229,6 +2239,23 @@ bool use_AMO(int opcode)
   }
 }
 
+// predicate controlling translation of CAS
+//
+// returns true if CAS needs to use an acquiring load otherwise false
+bool needs_acquiring_load_reserved(const Node *n)
+{
+  assert(n != nullptr && is_CAS(n->Opcode(), true), "expecting a compare and swap");
+
+  LoadStoreNode* ldst = n->as_LoadStore();
+  if (n != nullptr && is_CAS(n->Opcode(), false)) {
+    assert(ldst != nullptr && ldst->trailing_membar() != nullptr, "expected trailing membar");
+  } else {
+    return ldst != nullptr && ldst->trailing_membar() != nullptr;
+  }
+  // so we can just return true here
+  return true;
+}
+
 bool unnecessary_acquire(const Node *barrier)
 {
   assert(barrier->is_MemBar(), "expecting a membar");
@@ -2243,7 +2270,7 @@ bool unnecessary_acquire(const Node *barrier)
   if (mb->trailing_load_store()) {
     Node* load_store = mb->in(MemBarNode::Precedent);
     assert(load_store->is_LoadStore(), "unexpected graph shape");
-    return is_CAS(load_store->Opcode());
+    return is_CAS(load_store->Opcode(), true);
   }
 
   return false;
@@ -2276,7 +2303,7 @@ bool unnecessary_release(const Node *n)
     } else {
       assert(mem->is_LoadStore(), "");
       assert(trailing_mb->Opcode() == Op_MemBarAcquire, "");
-      return is_CAS(mem->Opcode());
+      return is_CAS(mem->Opcode(), true);
     }
   }
 

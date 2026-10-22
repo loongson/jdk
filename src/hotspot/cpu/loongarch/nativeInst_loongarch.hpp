@@ -71,12 +71,6 @@ class NativeInstruction {
   bool is_jump();
   bool is_safepoint_poll();
 
-  // Helper func for jvmci
-  bool is_lu12iw_lu32id() const;
-  bool is_pcaddu12i_add() const;
-  bool is_pcaddi() const;
-  bool is_jalr() const;
-
   // LoongArch has no instruction to generate a illegal instruction exception?
   // But `break  11` is not illegal instruction for LoongArch.
   static int illegal_instruction();
@@ -198,7 +192,6 @@ class NativeCall: public NativeInstruction {
   void set_destination_mt_safe(address dest, bool assert_lock = true);
 
   address get_trampoline();
-  address trampoline_jump(CodeBuffer &cbuf, address dest);
 };
 
 inline NativeCall* nativeCall_at(address address) {

@@ -484,7 +484,7 @@ void MacroAssembler::profile_receiver_type(Register recv, Register mdp, int mdp_
   Register offset = SCR2;
 
   Label L_loop_search_receiver, L_loop_search_empty;
-  Label L_restart, L_found_recv, L_found_empty, L_polymorphic, L_count_update;
+  Label L_restart, L_found_recv, L_found_empty, L_count_update;
 
   // The code here recognizes three major cases:
   //   A. Fastest: receiver found in the table
@@ -514,20 +514,19 @@ void MacroAssembler::profile_receiver_type(Register recv, Register mdp, int mdp_
   //     if (receiver(i) == recv) goto found_recv(i);
   //   }
   //
-  //   // Fast: no receiver, but profile is full
+  //   // Fast: no receiver, but profile is not full
   //   for (i = 0; i < receiver_count(); i++) {
   //     if (receiver(i) == null) goto found_null(i);
   //   }
-  //   goto polymorphic
+  //
+  //   // Slow: profile is full, polymorphic case
+  //   count++;
+  //   return
   //
   //   // Slow: try to install receiver
   // found_null(i):
   //   CAS(&receiver(i), null, recv);
   //   goto restart
-  //
-  // polymorphic:
-  //   count++;
-  //   return
   //
   // found_recv(i):
   //   *receiver_count(i)++
@@ -545,7 +544,7 @@ void MacroAssembler::profile_receiver_type(Register recv, Register mdp, int mdp_
   sub_d(SCR1, offset, SCR1);
   bnez(SCR1, L_loop_search_receiver);
 
-  // Fast: no receiver, but profile is full
+  // Fast: no receiver, but profile is not full
   li(offset, base_receiver_offset);
   bind(L_loop_search_empty);
     ldx_d(SCR1, mdp, offset);
@@ -554,9 +553,13 @@ void MacroAssembler::profile_receiver_type(Register recv, Register mdp, int mdp_
   li(SCR1, end_receiver_offset);
   sub_d(SCR1, offset, SCR1);
   bnez(SCR1, L_loop_search_empty);
-  b(L_polymorphic);
 
-  // Slow: try to install receiver
+  // Slow: Receiver is not found and table is full.
+  // Increment polymorphic counter instead of receiver slot.
+  li(offset, poly_count_offset);
+  b(L_count_update);
+
+  // Slowest: try to install receiver
   bind(L_found_empty);
 
   // Atomically swing receiver slot: null -> recv.
@@ -576,16 +579,11 @@ void MacroAssembler::profile_receiver_type(Register recv, Register mdp, int mdp_
   // and just restart the search from the beginning.
   b(L_restart);
 
-  // Counter updates:
-  // Increment polymorphic counter instead of receiver slot.
-  bind(L_polymorphic);
-  li(offset, poly_count_offset);
-  b(L_count_update);
-
   // Found a receiver, convert its slot offset to corresponding count offset.
   bind(L_found_recv);
   addi_d(offset, offset, receiver_to_count_step);
 
+  // Finally, update the counter
   bind(L_count_update);
   add_d(SCR2, mdp, offset);
   increment(Address(SCR2), DataLayout::counter_increment);

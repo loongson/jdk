@@ -132,7 +132,7 @@ void ZBarrierSetAssembler::check_oop(MacroAssembler* masm, Register obj, Registe
   __ bind(check_oop);
 
   // make sure klass is 'reasonable', which is not zero.
-  __ load_klass(tmp1, obj);  // get klass
+  __ load_narrow_klass(tmp1, obj); // get klass
   __ beqz(tmp1, error); // if klass is null it is broken
 
   __ bind(check_zaddress);

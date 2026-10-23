@@ -2198,15 +2198,17 @@ void MacroAssembler::load_narrow_klass_compact(Register dst, Register src) {
   srli_d(dst, dst, markWord::klass_shift);
 }
 
-// for UseCompressedOops Option
-void MacroAssembler::load_klass(Register dst, Register src) {
+void MacroAssembler::load_narrow_klass(Register dst, Register src) {
   if (UseCompactObjectHeaders) {
     load_narrow_klass_compact(dst, src);
-    decode_klass_not_null(dst);
   } else {
     ld_wu(dst, Address(src, oopDesc::klass_offset_in_bytes()));
-    decode_klass_not_null(dst);
   }
+}
+
+void MacroAssembler::load_klass(Register dst, Register src) {
+  load_narrow_klass(dst, src);
+  decode_klass_not_null(dst);
 }
 
 void MacroAssembler::store_klass(Register dst, Register src) {
